@@ -113,7 +113,22 @@
     <aside class="sidebar" id="sidebar">
         <h1 class="sidebar-title"><img src="images/cetas2.svg" class="sidebar-logo" alt="Cetas"> Cetas <span class="version-badge">v3.2</span></h1>
         <span class="sidebar-credit">By Marexsoft</span>
+        <div class="dev-modules">
+            <button class="dev-module-btn" data-module="marexcode">Marexcode</button>
+            <button class="dev-module-btn" data-module="agentcode">Agent Code</button>
+            <button class="dev-module-btn" data-module="plugins">Plugins</button>
+            <button class="dev-module-btn" data-module="competences">Compétences</button>
+        </div>
+        <div id="dev-toast" class="dev-toast" style="display:none">🚧 Développement</div>
         <button id="new-chat-btn" class="new-chat-btn">Nouvelle conversation</button>
+
+        <div class="fav-section" id="fav-section" style="display:none">
+            <div class="fav-header">
+                <span class="fav-header-icon">★</span>
+                <span class="fav-header-label">Favoris</span>
+            </div>
+            <div id="fav-list" class="fav-list"></div>
+        </div>
 
         <!-- Conteneurs cachés pour compatibilité JS -->
         <div id="sp-list" style="display:none"></div>
@@ -849,8 +864,8 @@
                     <div class="apikeys-panel-body">
                     <p class="apikey-intro">Gérez les comptes utilisateurs pouvant accéder à Cetas.</p>
                     <div id="users-list" class="users-list"></div>
-                    <div class="models-save-row">
-                        <button type="button" id="users-add-btn" class="models-save-btn">+ Ajouter un utilisateur</button>
+                    <div style="margin-top:16px">
+                        <button type="button" id="users-add-btn" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer">+ Ajouter un utilisateur</button>
                     </div>
                     </div>
                 </div>
