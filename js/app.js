@@ -569,10 +569,48 @@ document.querySelectorAll('.sp-toggle').forEach(toggle => {
 const sidebarToggle = document.getElementById('sidebar-toggle');
 const sidebar = document.getElementById('sidebar');
 
-sidebarToggle.addEventListener('click', () => {
-    const collapsed = sidebar.classList.toggle('collapsed');
+function _isMobile() { return window.innerWidth <= 768; }
+
+function _updateSidebarState() {
+    const collapsed = sidebar.classList.contains('collapsed');
     sidebarToggle.classList.toggle('collapsed', collapsed);
     sidebarToggle.title = collapsed ? 'Afficher le panneau' : 'Masquer le panneau';
+    document.body.classList.toggle('sidebar-open', !collapsed && _isMobile());
+}
+
+sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    _updateSidebarState();
+});
+
+// Collapse sidebar on outside click
+function _collapseSidebar() {
+    if (!sidebar.classList.contains('collapsed')) {
+        sidebar.classList.add('collapsed');
+        _updateSidebarState();
+    }
+}
+document.addEventListener('click', (e) => {
+    // Collapse uniquement sur mobile (overlay)
+    if (!_isMobile()) return;
+    if (sidebar.contains(e.target)) return;
+    if (sidebarToggle.contains(e.target)) return;
+    if (e.target.closest('.sp-modal-overlay, .apikeys-modal-overlay, .login-overlay, #lightbox-overlay')) return;
+    _collapseSidebar();
+});
+
+// Mobile : sidebar fermée par défaut. Desktop : ouverte.
+if (_isMobile()) {
+    sidebar.classList.add('collapsed');
+}
+_updateSidebarState();
+
+// Re-vérifier au resize
+window.addEventListener('resize', () => {
+    if (_isMobile() && !sidebar.classList.contains('collapsed')) {
+        sidebar.classList.add('collapsed');
+    }
+    _updateSidebarState();
 });
 
 // --- Panneau droit (Rôle) + toolbar latérale (gear + canvas) ---
@@ -2524,6 +2562,7 @@ initConfig().then(async () => {
     // qu'une fois la durée minimale atteinte ET ce signal envoyé.
     refreshConvList().finally(() => {
         if (typeof window.__kiroSplashReady === 'function') window.__kiroSplashReady();
+        renderFavList();
     });
     refreshCatBar();
     await importDefaultSystemPrompts();
@@ -2548,6 +2587,21 @@ initConfig().then(async () => {
     updateWebSearchBtn();
     if (typeof updateCanvasBtn === 'function') updateCanvasBtn();
     promptInput.focus();
+
+    // --- Modules de développement (grisés) ---
+    document.querySelectorAll('.dev-module-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const toast = document.getElementById('dev-toast');
+            if (!toast) return;
+            toast.style.display = '';
+            // Réinitialiser l'animation
+            toast.style.animation = 'none';
+            void toast.offsetWidth;
+            toast.style.animation = '';
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        });
+    });
 
     // --- Gestion de la déconnexion ---
     const logoutBtn = document.getElementById('logout-btn');
@@ -5602,6 +5656,23 @@ async function refreshConvList() {
             showCatPopup(catBtn, conv.filename, conv.category);
         });
 
+        const favBtn = document.createElement('button');
+        favBtn.className = 'conv-action-btn fav-toggle';
+        favBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+        favBtn.title = 'Ajouter aux favoris';
+        if (_isFavorite(conv.filename)) {
+            favBtn.classList.add('active');
+            favBtn.title = 'Retirer des favoris';
+        }
+        favBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            _toggleFavorite(conv.filename);
+            favBtn.classList.toggle('active');
+            favBtn.title = favBtn.classList.contains('active') ? 'Retirer des favoris' : 'Ajouter aux favoris';
+            renderFavList();
+        });
+
+        actionsDiv.appendChild(favBtn);
         actionsDiv.appendChild(deleteBtn);
         actionsDiv.appendChild(renameBtn);
         actionsDiv.appendChild(catBtn);
@@ -5618,6 +5689,7 @@ async function refreshConvList() {
     }
     convList.appendChild(fragment);
     highlightActiveConv();
+    renderFavList();
 
     if (convSearch.value) {
         convSearch.dispatchEvent(new Event('input'));
@@ -10557,6 +10629,84 @@ if (window.Canvas && typeof window.Canvas.init === 'function') {
 // Vérification de mise à jour au chargement (désactivée)
 
 // Pas de focus initial sur la barre de saisie
+
+// --- Favoris ---
+const FAV_KEY = 'cetas-favorites';
+
+function _getFavorites() {
+    try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; }
+    catch { return []; }
+}
+
+function _saveFavorites(arr) {
+    localStorage.setItem(FAV_KEY, JSON.stringify(arr));
+}
+
+function _isFavorite(filename) {
+    return _getFavorites().includes(filename);
+}
+
+function _toggleFavorite(filename) {
+    const favs = _getFavorites();
+    const idx = favs.indexOf(filename);
+    if (idx >= 0) favs.splice(idx, 1);
+    else favs.push(filename);
+    _saveFavorites(favs);
+}
+
+function renderFavList() {
+    const favSection = document.getElementById('fav-section');
+    const favList = document.getElementById('fav-list');
+    if (!favSection || !favList) return;
+
+    const favs = _getFavorites();
+    if (favs.length === 0) {
+        favSection.style.display = 'none';
+        return;
+    }
+    favSection.style.display = '';
+
+    // Récupérer les métadonnées depuis le manifeste
+    const metas = [];
+    for (const filename of favs) {
+        const meta = typeof getConvMetadata === 'function' ? getConvMetadata(filename) : null;
+        if (meta && !meta.deleted) metas.push(meta);
+    }
+
+    favList.innerHTML = metas.map(m => {
+        const title = m.titre || m.firstMessage || m.id || m.filename;
+        return `<div class="fav-item" data-filename="${escHtml(m.filename)}">
+            <span class="fav-item-icon">★</span>
+            <span class="fav-item-title">${escHtml(title.substring(0, 40))}</span>
+            <button class="fav-item-remove" title="Retirer des favoris">×</button>
+        </div>`;
+    }).join('');
+
+    // Clic sur l'item → ouvrir la conversation
+    favList.querySelectorAll('.fav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.fav-item-remove')) return;
+            const filename = item.dataset.filename;
+            if (filename) loadConversation(filename);
+        });
+    });
+
+    // Bouton retirer
+    favList.querySelectorAll('.fav-item-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const filename = btn.closest('.fav-item').dataset.filename;
+            _toggleFavorite(filename);
+            renderFavList();
+            refreshConvList();
+        });
+    });
+
+    // Nettoyer les favoris orphelins (conversation supprimée)
+    const validFiles = new Set(metas.map(m => m.filename));
+    const cleaned = favs.filter(f => validFiles.has(f));
+    if (cleaned.length !== favs.length) _saveFavorites(cleaned);
+}
 
 // --- Gestion des utilisateurs (admin uniquement) ---
 function _initUserManagement() {
