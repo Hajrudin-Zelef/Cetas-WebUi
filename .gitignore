@@ -1,0 +1,6 @@
+core/
+setup.py
+setup.py.bak
+setup.py.or
+.vault/
+__pycache__/
