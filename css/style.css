@@ -2643,37 +2643,147 @@ body.dark .model-alert {
     display: block;
 }
 
-/* Le custom-select dans input-wrapper devient static pour que le dropdown se positionne par rapport à input-wrapper */
-.input-wrapper > .custom-select {
-    position: static;
-}
+/* Le custom-select dans input-wrapper supprimé — le sélecteur est dans le menu "+" */
 
-/* Dropdown du sélecteur principal (unifié) : taille fixe, aligné à gauche de input-wrapper */
-.input-wrapper > .custom-select .custom-select-dropdown {
-    width: 300px;
-    min-width: 300px;
-    height: 360px;
-    max-height: 360px;
-    overflow: hidden;
-    border-radius: 12px;
-    bottom: calc(100% + 6px);
-    left: 0;
-}
-
-.input-wrapper > .custom-select.open .custom-select-dropdown {
+/* Sélecteur de modèle dans le dropdown "+" */
+.plus-model-tabs {
     display: flex;
-    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
 }
-
-.input-wrapper > .custom-select .custom-select-tabs {
+.plus-model-tab {
+    flex: 1;
+    padding: 4px 0;
+    font-size: 0.68rem;
+    font-weight: 500;
+    font-family: inherit;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+}
+.plus-model-tab:hover {
+    border-color: var(--text-secondary);
+    color: var(--text);
+}
+.plus-model-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.plus-model-list {
+    max-height: 260px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.plus-model-provider {
+    margin-bottom: 2px;
+}
+.plus-model-provider-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 4px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.1s;
+    user-select: none;
+}
+.plus-model-provider-header:hover {
+    background: var(--bg-hover);
+}
+.plus-model-provider-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
     flex-shrink: 0;
 }
-
-.input-wrapper > .custom-select .custom-select-tab-content {
-    flex: 1;
-    overflow-y: auto;
-    scrollbar-width: none;
+body.dark .plus-model-provider-icon {
+    filter: invert(1) brightness(1.1);
 }
+.plus-model-provider-name {
+    flex: 1;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text);
+}
+.plus-model-provider-count {
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+.plus-model-chevron {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    transition: transform 0.2s;
+}
+.plus-model-provider.open .plus-model-chevron {
+    transform: rotate(90deg);
+}
+.plus-model-items {
+    display: none;
+    padding: 2px 0 2px 27px;
+}
+.plus-model-provider.open .plus-model-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.plus-model-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.76rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+}
+.plus-model-item:hover {
+    background: var(--bg-hover);
+}
+.plus-model-item.active {
+    background: var(--accent);
+    color: #fff;
+}
+.plus-model-item-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.plus-model-item-price {
+    font-size: 0.62rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+.plus-model-item.active .plus-model-item-price {
+    color: rgba(255,255,255,0.7);
+}
+.plus-model-empty {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 16px 0;
+    line-height: 1.5;
+}
+.plus-model-empty-link {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+}
+.plus-model-empty-link:hover { opacity: 0.85; }
 
 /* Onglets Texte / Image / Recherche dans le sélecteur unifié */
 .custom-select-tabs {
@@ -3243,71 +3353,7 @@ body.dark .input-wrapper:focus-within {
     border-color: var(--active-cat-color, #3B87CE);
 }
 
-/* Sélecteur de modèle intégré dans la barre de saisie */
-.input-line-1 > .custom-select .custom-select-trigger,
-.input-wrapper > .custom-select .custom-select-trigger {
-    border: none;
-    background: transparent;
-    border-radius: 0;
-    padding: 4px 10px 4px 8px;
-    color: var(--text-secondary);
-    font-weight: 500;
-    min-width: auto;
-    flex: 1;
-    align-self: stretch;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-.input-line-1 > .custom-select .custom-select-trigger::after,
-.input-wrapper > .custom-select .custom-select-trigger::after {
-    content: '';
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    margin-left: 6px;
-    border-right: 1.5px solid var(--text-secondary);
-    border-bottom: 1.5px solid var(--text-secondary);
-    transform: rotate(45deg);
-    position: relative;
-    top: -2px;
-    flex-shrink: 0;
-    opacity: 0.5;
-}
-
-.input-line-1 > .custom-select,
-.input-wrapper > .custom-select {
-    flex-shrink: 0;
-    border-right: 1px solid var(--border-input);
-    margin-right: 2px;
-    align-self: stretch;
-    display: flex;
-    align-items: center;
-    min-height: 100%;
-    max-width: 160px;
-}
-
-.input-line-1 > .custom-select .custom-select-trigger,
-.input-wrapper > .custom-select .custom-select-trigger {
-    max-width: 100%;
-    overflow: hidden;
-}
-
-.input-line-1 > .custom-select .custom-select-text,
-.input-wrapper > .custom-select .custom-select-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: block;
-    max-width: 110px;
-}
-
-.input-line-1 > .custom-select.open .custom-select-trigger,
-.input-wrapper > .custom-select.open .custom-select-trigger {
-    border-radius: 0;
-}
-
+/* Sélecteur de modèle migré dans le menu "+" */
 /* Boutons d'action sous la barre de saisie */
 .input-action-buttons {
     display: flex;
@@ -3705,7 +3751,8 @@ body.dark .input-action-btn.active .input-action-arrow {
     font-size: 0.95rem;
     font-family: inherit;
     resize: none;
-    max-height: 200px;
+    min-height: 48px;
+    max-height: 300px;
     line-height: 1.5;
     padding: 4px 0;
     background: transparent;

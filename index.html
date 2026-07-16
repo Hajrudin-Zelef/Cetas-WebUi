@@ -236,19 +236,9 @@
             <div id="attach-preview"></div>
             <div class="input-row">
             <div class="input-wrapper">
-                <!-- Sélecteur de modèle (toute la hauteur, à gauche) -->
-                <select id="model-select" class="model-select input-model-select">
-                    <option value="">—</option>
-                </select>
-                <!-- Selects cachés pour compatibilité JS -->
-                <select id="image-model-select" class="model-select" style="display:none"><option value="">—</option></select>
-                <select id="image-format-select" class="model-select" style="display:none">
-                    <option value="square">Carré</option>
-                    <option value="vertical">Vertical</option>
-                    <option value="horizontal">Horizontal</option>
-                </select>
-                <select id="search-model-select" class="model-select" style="display:none"><option value="">—</option></select>
                 <input type="file" id="file-input" accept="image/*,.pdf,.txt,.md,.csv,.json,.xml,.log,.js,.py,.html,.css" multiple hidden>
+                <!-- model-select conservé caché pour compatibilité JS (STATE, _customValue, etc.) -->
+                <select id="model-select" class="model-select" style="display:none"><option value="">—</option></select>
                 <!-- Contenu principal (textarea + ligne 2) à droite du sélecteur -->
                 <div class="input-content">
                     <!-- Ligne 1 : textarea -->
@@ -257,7 +247,7 @@
                             id="prompt-input"
                             class="prompt-input"
                             placeholder="Écrivez votre message..."
-                            rows="1"
+                            rows="2"
                         ></textarea>
                     </div>
                     <!-- Ligne 2 -->
@@ -308,10 +298,15 @@
                     </span>
                 </button>
                 <div class="plus-menu-sep"></div>
-                <!-- Section Provider -->
-                <div class="plus-menu-section">
-                    <div class="plus-menu-section-title">Provider</div>
-                    <div id="plus-menu-providers" class="plus-menu-providers"></div>
+                <!-- Section Modèles -->
+                <div class="plus-menu-section" id="plus-model-section">
+                    <div class="plus-menu-section-title">Modèles</div>
+                    <div class="plus-model-tabs" id="plus-model-tabs">
+                        <button type="button" class="plus-model-tab active" data-tab="text">Texte</button>
+                        <button type="button" class="plus-model-tab" data-tab="image">Image</button>
+                        <button type="button" class="plus-model-tab" data-tab="search">Recherche</button>
+                    </div>
+                    <div id="plus-model-list" class="plus-model-list"></div>
                 </div>
                 <div class="plus-menu-sep"></div>
                 <!-- Section Mode Réflexion -->

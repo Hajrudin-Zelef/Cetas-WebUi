@@ -1441,46 +1441,126 @@ function initConversationPanel() {
 
 }
 
+// Peuple la liste des modèles dans le menu "+" pour l'onglet donné
+function populatePlusModels(tab) {
+    const plusModelList = document.getElementById('plus-model-list');
+    if (!plusModelList) return;
+
+    const models = tab === 'text' ? MODELS : tab === 'image' ? IMAGE_MODELS : SEARCH_MODELS;
+    const tarifFn = tab === 'text' ? getTarif : tab === 'image' ? getImageTarif : getSearchTarif;
+
+    const prefs = loadCatalogPrefs();
+    const _disabled = new Set(prefs.disabled || []);
+    const _orEnabled = new Set(prefs.orEnabled || []);
+    const filtered = models.filter(m => {
+        if (HIDDEN_EDITEURS.has(m.editeur)) return false;
+        if (m.editeur === 'openrouter') return _orEnabled.has(m.id) && hasProviderKey('openrouter');
+        return hasProviderKey(m.editeur) && !_disabled.has(m.id);
+    });
+
+    if (filtered.length === 0) {
+        plusModelList.innerHTML = `<div class="plus-model-empty">Aucun modèle disponible.<br><span class="plus-model-empty-link">Configurer →</span></div>`;
+        plusModelList.querySelector('.plus-model-empty-link')?.addEventListener('click', () => {
+            if (typeof openApiKeysModal === 'function') openApiKeysModal();
+        });
+        return;
+    }
+
+    const groups = {};
+    filtered.forEach(m => {
+        if (!groups[m.editeur]) groups[m.editeur] = [];
+        groups[m.editeur].push(m);
+    });
+
+    const sorted = Object.keys(groups).sort((a, b) => {
+        const ia = EDITEUR_ORDER.indexOf(a), ib = EDITEUR_ORDER.indexOf(b);
+        if (ia === -1 && ib === -1) return a.localeCompare(b);
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+    });
+
+    const activeModel = tab === 'text' ? STATE.currentModel :
+                       tab === 'image' ? STATE.currentImageModel : STATE.currentSearchModel;
+
+    const plusBtn = document.getElementById('plus-menu-btn');
+    const plusDropdown = document.getElementById('plus-menu-dropdown');
+
+    let html = '';
+    sorted.forEach(editeur => {
+        const models = groups[editeur];
+        const logo = PROVIDER_LOGOS[editeur] || '';
+        const logoHtml = logo ? `<img src="${logo}" class="plus-model-provider-icon" alt="" onerror="this.style.display='none'">` : '';
+        html += `<div class="plus-model-provider">`;
+        html += `<div class="plus-model-provider-header">${logoHtml}<span class="plus-model-provider-name">${editeur.charAt(0).toUpperCase() + editeur.slice(1)}</span><span class="plus-model-provider-count">${models.length}</span><svg class="plus-model-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></div>`;
+        html += `<div class="plus-model-items">`;
+        models.forEach(m => {
+            const tarif = tarifFn(m.id);
+            const priceStr = _formatModelPriceString(m, tarif);
+            const activeClass = m.id === activeModel ? ' active' : '';
+            html += `<button type="button" class="plus-model-item${activeClass}" data-model="${escHtmlAttr(m.id)}" data-editeur="${escHtmlAttr(m.editeur)}"><span class="plus-model-item-name">${escHtml(m.label)}</span>${priceStr ? `<span class="plus-model-item-price">${priceStr}</span>` : ''}</button>`;
+        });
+        html += `</div></div>`;
+    });
+
+    plusModelList.innerHTML = html;
+
+    plusModelList.querySelectorAll('.plus-model-provider-header').forEach(header => {
+        header.addEventListener('click', () => {
+            header.parentElement.classList.toggle('open');
+        });
+    });
+
+    plusModelList.querySelectorAll('.plus-model-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const modelId = item.dataset.model;
+            const lookupFn = tab === 'text' ? getModelEditeur : tab === 'image' ? getImageModelEditeur : getSearchModelEditeur;
+            if (modelId && !checkApiKeyForModel(modelId, lookupFn)) return;
+
+            modelSelect._activeCategory = tab;
+            modelSelect._customValue = modelId;
+            _applyModelSelection(tab, modelId);
+            updateActiveOption(modelSelect);
+            updateInputHint();
+            updateWebSearchBtn();
+            if (typeof updateCanvasBtn === 'function') updateCanvasBtn();
+            if (plusDropdown) plusDropdown.style.display = 'none';
+            if (plusBtn) plusBtn.classList.remove('open');
+        });
+    });
+
+    plusModelList.querySelector('.plus-model-empty-link')?.addEventListener('click', () => {
+        if (typeof openApiKeysModal === 'function') openApiKeysModal();
+    });
+}
+
 function initPlusMenu() {
     const plusBtn = document.getElementById('plus-menu-btn');
     const plusDropdown = document.getElementById('plus-menu-dropdown');
-    const plusProviders = document.getElementById('plus-menu-providers');
     const plusSkills = document.getElementById('plus-menu-skills');
     const plusReflectionToggle = document.getElementById('plus-reflection-toggle');
     const plusWebsearchToggle = document.getElementById('plus-websearch-toggle');
     const plusWebsearchDepth = document.getElementById('plus-websearch-depth');
+    const plusModelList = document.getElementById('plus-model-list');
+    const plusModelTabs = document.getElementById('plus-model-tabs');
 
     if (!plusBtn || !plusDropdown) return;
 
-    // --- Peupler la liste des providers ---
-    if (plusProviders) {
-        const providerCounts = {};
-        MODELS.forEach(m => {
-            if (!providerCounts[m.editeur]) providerCounts[m.editeur] = 0;
-            providerCounts[m.editeur]++;
-        });
-        const sorted = Object.entries(providerCounts).sort((a, b) => b[1] - a[1]);
-        sorted.forEach(([editeur, count]) => {
-            const badge = document.createElement('span');
-            badge.className = 'plus-menu-provider-badge';
-            const logo = PROVIDER_LOGOS[editeur];
-            if (logo) {
-                const img = document.createElement('img');
-                img.src = logo;
-                img.alt = editeur;
-                img.onerror = function() { this.style.display = 'none'; };
-                badge.appendChild(img);
-            }
-            const name = document.createElement('span');
-            name.textContent = editeur.charAt(0).toUpperCase() + editeur.slice(1);
-            badge.appendChild(name);
-            const cnt = document.createElement('span');
-            cnt.className = 'plus-provider-count';
-            cnt.textContent = count;
-            badge.appendChild(cnt);
-            plusProviders.appendChild(badge);
+    let _activeTab = 'text';
+
+    // --- Onglets Modèles ---
+    if (plusModelTabs) {
+        plusModelTabs.querySelectorAll('.plus-model-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                plusModelTabs.querySelectorAll('.plus-model-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                populatePlusModels(tab.dataset.tab);
+            });
         });
     }
+
+    // Peuplement initial
+    populatePlusModels('text');
 
     // --- Peupler les compétences ---
     if (plusSkills) {
@@ -1610,20 +1690,6 @@ function initPlusMenu() {
         });
     }
 
-    // --- Action : Provider badges (ouvre la config) ---
-    // Un clic sur un badge provider ouvre le panneau API et Modèles
-    plusProviders?.addEventListener('click', (e) => {
-        const badge = e.target.closest('.plus-menu-provider-badge');
-        if (!badge) return;
-        // Ouvre le panneau de config API et Modèles
-        const apikeysOverlay = document.getElementById('apikeys-modal-overlay');
-        if (apikeysOverlay && typeof openApiKeysModal === 'function') {
-            openApiKeysModal();
-        }
-        plusDropdown.style.display = 'none';
-        plusBtn.classList.remove('open');
-    });
-
     // Fermeture au clic extérieur
     document.addEventListener('click', (e) => {
         if (plusDropdown.style.display === 'block' &&
@@ -1670,6 +1736,11 @@ function refreshPlusMenuState() {
             });
         }
     }
+    // Rafraîchir la liste des modèles (après changement de clés API ou préférences)
+    const activeTab = document.querySelector('#plus-model-tabs .plus-model-tab.active');
+    if (activeTab && typeof populatePlusModels === 'function') {
+        populatePlusModels(activeTab.dataset.tab);
+    }
 }
 
 function applySkillPrompt(comp) {
@@ -1694,6 +1765,26 @@ function applySkillPrompt(comp) {
     const rpRoleActions = document.getElementById('rp-role-actions');
     if (spEditBtn) spEditBtn.style.display = 'inline-flex';
     if (rpRoleActions) rpRoleActions.style.display = 'flex';
+}
+
+// Met à jour #input-hint avec le modèle actif (utilisé depuis le sélecteur du menu "+")
+function updateInputHint() {
+    const hint = document.getElementById('input-hint');
+    if (!hint) return;
+    const tab = modelSelect._activeCategory || 'text';
+    const modelId = modelSelect._customValue;
+    if (!modelId) {
+        hint.innerHTML = 'Sélectionnez un modèle dans le <b>+</b>';
+        return;
+    }
+    const models = tab === 'text' ? MODELS : tab === 'image' ? IMAGE_MODELS : SEARCH_MODELS;
+    const m = models.find(x => x.id === modelId);
+    if (m) {
+        const logo = PROVIDER_LOGOS[m.editeur];
+        hint.innerHTML = logo ? `<img src="${logo}" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;border-radius:2px" alt=""> ${escHtml(m.label)}` : escHtml(m.label);
+    } else {
+        hint.textContent = modelId;
+    }
 }
 
 // --- Bouton Canvas ---
@@ -2778,6 +2869,11 @@ function hasAnyProviderKey() {
 }
 
 function updateTriggerDisplay(selectEl) {
+    if (!selectEl._customUI) {
+        // Sélecteur dans le menu "+" — utiliser #input-hint
+        if (typeof updateInputHint === 'function') updateInputHint();
+        return;
+    }
     const { triggerText, triggerIcon } = selectEl._customUI;
     const val = selectEl._customValue;
     if (!val) {
@@ -2803,6 +2899,7 @@ function updateTriggerDisplay(selectEl) {
 }
 
 function updateActiveOption(selectEl) {
+    if (!selectEl._customUI) return; // Sélecteur dans le menu "+"
     const { dropdown } = selectEl._customUI;
     const val = selectEl._customValue;
     dropdown.querySelectorAll('.custom-select-option, .custom-select-option--empty').forEach(el => {
@@ -2903,8 +3000,9 @@ function populateCustomSelect(selectEl, models, tarifFn) {
 // --- Initialisation ---
 Auth.init().then(() => {
 initConfig().then(async () => {
-    upgradeToCustomSelect(modelSelect);
-    populateUnifiedSelect();
+    // upgradeToCustomSelect + populateUnifiedSelect retirés — sélecteur dans le menu "+"
+    // updateTriggerDisplay() utilise maintenant #input-hint
+    updateInputHint();
 
     updateTokenDisplay();
     // Notifie le splash dès que la liste des conversations est prête (lecture
@@ -2930,6 +3028,17 @@ initConfig().then(async () => {
         STATE.currentModel = lastModel;
         updateTriggerDisplay(modelSelect);
         updateEffortMandatory(lastModel);
+    }
+    // Fallback : si aucun modèle sélectionné, prendre le premier disponible
+    if (!STATE.currentModel) {
+        const firstAvailable = MODELS.find(m => hasProviderKey(m.editeur));
+        if (firstAvailable) {
+            modelSelect._customValue = firstAvailable.id;
+            modelSelect._activeCategory = 'text';
+            STATE.currentModel = firstAvailable.id;
+            updateTriggerDisplay(modelSelect);
+            updateEffortMandatory(firstAvailable.id);
+        }
     }
     // Filtrer les réglages image selon le dernier modèle image utilisé (même si LLM sélectionné)
     const lastImageModel = localStorage.getItem('minou-last-image-model');
@@ -3020,28 +3129,32 @@ function _buildModelsHtml(models, tarifFn) {
 function _switchTab(tab, autoSelect) {
     modelSelect._activeCategory = tab;
 
-    // Mettre à jour les onglets visuellement
-    const tabs = modelSelect._customUI.dropdown.querySelectorAll('.custom-select-tab');
-    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    // Sélecteur dans le menu "+" — pas de _customUI à mettre à jour
+    if (modelSelect._customUI) {
+        const tabs = modelSelect._customUI.dropdown.querySelectorAll('.custom-select-tab');
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    }
 
-    // Mettre à jour la liste des modèles
-    const content = modelSelect._customUI.dropdown.querySelector('.custom-select-tab-content');
-    let models, tarifFn;
+    let models;
     if (tab === 'text') {
-        models = MODELS; tarifFn = getTarif;
+        models = MODELS;
     } else if (tab === 'image') {
-        models = IMAGE_MODELS; tarifFn = getImageTarif;
+        models = IMAGE_MODELS;
     } else {
-        models = SEARCH_MODELS; tarifFn = getSearchTarif;
+        models = SEARCH_MODELS;
     }
     modelSelect._customModels = models;
-    content.innerHTML = _buildModelsHtml(models, tarifFn);
+
+    // Mettre à jour l'UI du dropdown custom si présent
+    if (modelSelect._customUI) {
+        const content = modelSelect._customUI.dropdown.querySelector('.custom-select-tab-content');
+        content.innerHTML = _buildModelsHtml(models, tab === 'text' ? getTarif : tab === 'image' ? getImageTarif : getSearchTarif);
+    }
 
     // Auto-sélectionner le dernier modèle utilisé pour cet onglet
     if (autoSelect) {
         const lsKey = tab === 'text' ? 'minou-last-model' : tab === 'image' ? 'minou-last-image-model' : 'minou-last-search-model';
         let lastVal = localStorage.getItem(lsKey);
-        // Vérifier que le modèle stocké appartient bien au bon type et que sa clé API existe
         if (lastVal) {
             const modelObj = models.find(m => m.id === lastVal);
             const isValid = tab === 'text' ? true
@@ -3052,7 +3165,6 @@ function _switchTab(tab, autoSelect) {
                 lastVal = null;
             }
         }
-        // Ne sélectionner un modèle par défaut que s'il est disponible (clé API renseignée + catalogue)
         const _sp = loadCatalogPrefs(); const _sd = new Set(_sp.disabled||[]); const _soe = new Set(_sp.orEnabled||[]);
         const available = models.filter(m => {
             if (HIDDEN_EDITEURS.has(m.editeur)) return false;
@@ -3064,7 +3176,6 @@ function _switchTab(tab, autoSelect) {
             modelSelect._customValue = modelId;
             updateTriggerDisplay(modelSelect);
             updateActiveOption(modelSelect);
-            // Appliquer la sélection
             _applyModelSelection(tab, modelId);
         } else {
             modelSelect._customValue = '';
@@ -3121,70 +3232,71 @@ function _applyModelSelection(tab, val) {
 }
 
 function populateUnifiedSelect() {
-    const { dropdown } = modelSelect._customUI;
-
-    // Créer les onglets
-    const tabsHtml = `
-        <div class="custom-select-tabs">
-            <div class="custom-select-tab active" data-tab="text">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
-                Texte
+    // Sélecteur dans le menu "+" — rafraîchir la liste
+    if (modelSelect._customUI) {
+        const { dropdown } = modelSelect._customUI;
+        const tabsHtml = `
+            <div class="custom-select-tabs">
+                <div class="custom-select-tab active" data-tab="text">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+                    Texte
+                </div>
+                <div class="custom-select-tab" data-tab="image">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    Image
+                </div>
+                <div class="custom-select-tab" data-tab="search">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    Recherche
+                </div>
             </div>
-            <div class="custom-select-tab" data-tab="image">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                Image
-            </div>
-            <div class="custom-select-tab" data-tab="search">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                Recherche
-            </div>
-        </div>
-        <div class="custom-select-tab-content"></div>
-    `;
-    dropdown.innerHTML = tabsHtml;
-
-    // Event listeners sur les onglets
-    dropdown.querySelectorAll('.custom-select-tab').forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            e.stopPropagation();
-            _switchTab(tab.dataset.tab, true);
+            <div class="custom-select-tab-content"></div>
+        `;
+        dropdown.innerHTML = tabsHtml;
+        dropdown.querySelectorAll('.custom-select-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.stopPropagation();
+                _switchTab(tab.dataset.tab, true);
+            });
         });
-    });
-
-    // Rendre le contenu initial (texte)
-    modelSelect._customModels = MODELS;
-    const content = dropdown.querySelector('.custom-select-tab-content');
-    content.innerHTML = _buildModelsHtml(MODELS, getTarif);
+        modelSelect._customModels = MODELS;
+        const content = dropdown.querySelector('.custom-select-tab-content');
+        content.innerHTML = _buildModelsHtml(MODELS, getTarif);
+    }
+    // Mettre à jour le menu "+" et le hint
+    if (typeof populatePlusModels === 'function') populatePlusModels('text');
+    updateInputHint();
 }
 
 function populateModelSelect() {
-    // Mémoriser le modèle actif avant le refresh
     const prevModel = STATE.currentModel || STATE.currentImageModel || STATE.currentSearchModel;
     const prevTab = modelSelect._activeCategory || 'text';
 
-    populateUnifiedSelect();
-
-    // Restaurer le modèle actif (sinon il se perd après un refresh du dropdown)
-    if (prevModel) {
-        const isImg = IMAGE_MODELS.some(m => m.id === prevModel);
-        const isSrch = SEARCH_MODELS.some(m => m.id === prevModel);
-        if (isImg) {
-            STATE.currentImageModel = prevModel; STATE.currentModel = null; STATE.currentSearchModel = null;
-            _switchTab('image', false);
-        } else if (isSrch) {
-            STATE.currentSearchModel = prevModel; STATE.currentModel = null; STATE.currentImageModel = null;
-            _switchTab('search', false);
+    // Mettre à jour le custom-select (si présent) + le menu "+"
+    if (modelSelect._customUI) {
+        populateUnifiedSelect();
+        if (prevModel) {
+            const isImg = IMAGE_MODELS.some(m => m.id === prevModel);
+            const isSrch = SEARCH_MODELS.some(m => m.id === prevModel);
+            if (isImg) {
+                _switchTab('image', false);
+            } else if (isSrch) {
+                _switchTab('search', false);
+            } else {
+                _switchTab('text', false);
+            }
+            modelSelect._customValue = prevModel;
+            updateTriggerDisplay(modelSelect);
+            updateActiveOption(modelSelect);
         } else {
-            STATE.currentModel = prevModel; STATE.currentImageModel = null; STATE.currentSearchModel = null;
-            _switchTab('text', false);
+            modelSelect._customValue = '';
+            updateTriggerDisplay(modelSelect);
         }
-        modelSelect._customValue = prevModel;
-        updateTriggerDisplay(modelSelect);
-        updateActiveOption(modelSelect);
     } else {
-        STATE.currentModel = null; STATE.currentImageModel = null; STATE.currentSearchModel = null;
-        modelSelect._customValue = '';
-        updateTriggerDisplay(modelSelect);
+        // Sélecteur dans le menu "+" — rafraîchir l'onglet actif
+        const tab = document.querySelector('#plus-model-tabs .plus-model-tab.active');
+        if (tab && typeof populatePlusModels === 'function') populatePlusModels(tab.dataset.tab);
+        updateInputHint();
     }
 }
 
