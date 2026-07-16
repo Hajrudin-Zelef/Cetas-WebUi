@@ -2,11 +2,11 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light dark">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: blob: data:; script-src 'self' file: 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: blob: https: http://localhost:* http://127.0.0.1:*; font-src 'self' file: data:; media-src 'self' file: data: blob:; connect-src 'self' file: blob: data: https://api.openai.com https://api.anthropic.com https://api.deepseek.com https://api.mistral.ai https://api.perplexity.ai https://api.x.ai https://api.z.ai https://generativelanguage.googleapis.com https://openrouter.ai https://cdn.jsdelivr.net http://localhost:* http://127.0.0.1:*; worker-src 'self' file: blob: https://cdn.jsdelivr.net; manifest-src 'self'; frame-src 'self' file: blob: data:; object-src 'none'; base-uri 'self'; form-action 'none';">
     <title>Cetas</title>
-    <link rel="icon" type="image/svg+xml" href="images/cetas2.svg">
+    <link rel="icon" type="image/png" href="images/Cetas42.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1a1a2e">
     <meta name="mobile-web-app-capable" content="yes">
@@ -75,7 +75,7 @@
          se fait à `animationend` côté JS, mais sa présence à opacity:0 +
          pointer-events:none ne gêne pas l'UI en attendant. -->
     <div id="kiro-splash" class="kiro-splash" aria-hidden="true">
-        <img src="images/cetas2.svg" alt="" class="kiro-splash-logo">
+        <img src="images/Cetas42.png" alt="" class="kiro-splash-logo">
         <p class="kiro-splash-text">Bienvenue sur Cetas !</p>
         <div class="kiro-splash-spinner" aria-hidden="true"></div>
     </div>
@@ -97,6 +97,12 @@
             state.dbReady = true;
             maybeHide();
         };
+        // Si une conversation est en cours, passer directement au contenu (pas de splash)
+        if (localStorage.getItem('cetas-last-conv')) {
+            state.minElapsed = true;
+            state.dbReady = true;
+            s.style.display = 'none';
+        }
         setTimeout(function () { state.minElapsed = true; maybeHide(); }, 1800);
         // Le spinner ne se montre que si la BD met plus de 2.5s à charger.
         setTimeout(function () { if (!state.dbReady) s.classList.add('show-spinner'); }, 2500);
@@ -111,7 +117,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
     </button>
     <aside class="sidebar" id="sidebar">
-        <h1 class="sidebar-title"><img src="images/cetas2.svg" class="sidebar-logo" alt="Cetas"> Cetas <span class="version-badge">v3.2</span></h1>
+        <h1 class="sidebar-title"><img src="images/Cetas42.png" class="sidebar-logo" alt="Cetas"> Cetas <span class="version-badge">v3.2</span></h1>
         <span class="sidebar-credit">By Marexsoft</span>
         <div class="dev-modules">
             <button class="dev-module-btn" data-module="marexcode">Marexcode</button>
@@ -202,7 +208,7 @@
         </div>
         <div id="chat-container" class="chat-container">
             <div id="empty-chat-placeholder" class="empty-chat-placeholder">
-                <img src="images/cetas3.png" alt="Cetas" class="empty-chat-logo">
+                <img src="images/Cetas42.png" alt="Cetas" class="empty-chat-logo">
                 <p class="empty-chat-text">Sélectionnez une conversation ou démarrez-en une nouvelle en saisissant votre message ci-dessous.</p>
                 <div id="empty-chat-category" class="empty-chat-category" style="display:none"></div>
             </div>
@@ -247,7 +253,7 @@
                             id="prompt-input"
                             class="prompt-input"
                             placeholder="Écrivez votre message..."
-                            rows="2"
+                            rows="1"
                         ></textarea>
                     </div>
                     <!-- Ligne 2 -->
@@ -273,6 +279,7 @@
                             </button>
                         </div>
                         <div class="input-line-2-right">
+                            <button id="mobile-send-btn" class="mobile-send-btn" title="Envoyer" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
                             <button id="mic-btn" class="mic-btn" title="Dicter"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                         </div>
                     </div>
@@ -1219,7 +1226,7 @@
     <!-- Overlay de connexion -->
     <div id="login-overlay" class="login-overlay" style="display:none">
         <div class="login-card">
-            <img src="images/cetas2.svg" alt="Cetas" class="login-logo">
+            <img src="images/Cetas42.png" alt="Cetas" class="login-logo">
             <h1 class="login-title">Cetas</h1>
             <p class="login-subtitle">Assistant IA multi-modèles</p>
             <form id="login-form" class="login-form">

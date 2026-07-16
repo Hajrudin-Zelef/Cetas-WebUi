@@ -25,7 +25,6 @@
     width: 96px;
     height: 96px;
     object-fit: contain;
-    border-radius: 50%;
     will-change: transform, opacity;
     animation: kiro-splash-logo-in 0.7s cubic-bezier(0.2, 0.8, 0.3, 1.1) both;
 }
@@ -284,6 +283,9 @@ body.dark {
 
 html, body {
     overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
 }
 
 body {
@@ -293,6 +295,8 @@ body {
     overflow: hidden;
     background: var(--bg);
     color: var(--text);
+    touch-action: manipulation;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Sidebar */
@@ -1507,24 +1511,26 @@ body.canvas-active .side-panel-toolbar {
 }
 
 @media (max-width: 768px) {
-    .right-panel {
-        display: none;
-    }
-    .side-panel-toolbar {
-        display: none;
-    }
+    /* --- Masquer les panneaux fixes --- */
+    .right-panel { display: none; }
+    .side-panel-toolbar { display: none; }
+
+    /* --- Sidebar overlay --- */
     .sidebar {
         position: fixed;
         left: 0;
         top: 0;
         bottom: 0;
         z-index: 1000;
+        width: 260px;
+        min-width: 260px;
         box-shadow: 2px 0 16px rgba(0,0,0,0.15);
     }
-    .sidebar-toggle {
-        z-index: 1001;
+    .sidebar.collapsed {
+        width: 0;
+        min-width: 0;
     }
-    /* Overlay sombre derrière la sidebar sur mobile */
+    .sidebar-toggle { z-index: 1001; }
     body.sidebar-open::after {
         content: '';
         position: fixed;
@@ -1532,6 +1538,95 @@ body.canvas-active .side-panel-toolbar {
         background: rgba(0,0,0,0.4);
         z-index: 999;
     }
+
+    /* --- Chat plein écran --- */
+    .main { width: 100%; }
+    .chat-container {
+        padding: 12px 12px 80px;
+        gap: 10px;
+    }
+    body:has(#right-panel.collapsed):not(.canvas-active) .chat-container {
+        padding-right: 12px;
+    }
+
+    /* --- Messages --- */
+    .message {
+        max-width: 90%;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+    .message-wrapper .message { max-width: 90%; }
+    .message-images img { max-width: 260px; max-height: 260px; }
+
+    /* --- Input area --- */
+    .input-area {
+        padding: 10px 8px 14px;
+        gap: 4px;
+    }
+    .input-row { gap: 4px; }
+    .input-wrapper {
+        padding: 6px 8px;
+        border-radius: 18px;
+    }
+    .prompt-input { font-size: 16px; min-height: 28px; max-height: 120px; }
+    .input-line-2 { gap: 2px; }
+    .input-line-2-center { display: none; }
+    .input-line-2-left { gap: 1px; }
+    .input-line-2-right { gap: 1px; }
+
+    /* --- Token bar --- */
+    .token-bar {
+        padding: 4px 12px;
+        font-size: 0.68rem;
+    }
+
+    /* --- Boutons sidebar bottom --- */
+    .sidebar-bottom-btn { font-size: 0.7rem; padding: 5px 6px; }
+
+    /* --- Menu "+" --- */
+    .plus-menu-dropdown {
+        width: 280px;
+        left: 8px;
+        max-height: 380px;
+    }
+    .plus-model-list { max-height: 180px; }
+
+    /* --- Boutons d'action --- */
+    .export-btns-group { gap: 2px; }
+    .export-action-btn { padding: 2px 4px; }
+
+    /* --- Modales --- */
+    .sp-modal {
+        width: 95vw;
+        max-width: 95vw;
+        padding: 16px;
+    }
+    .apikeys-modal {
+        width: 95vw;
+        max-width: 95vw;
+    }
+    .apikeys-tab {
+        font-size: 0.68rem;
+        padding: 6px 4px;
+    }
+
+    /* --- Canvas --- */
+    .canvas-panel {
+        width: 100vw;
+        min-width: 100vw;
+    }
+}
+
+/* Très petits écrans (iPhone SE, etc.) */
+@media (max-width: 380px) {
+    .chat-container { padding: 8px 6px 70px; }
+    .message { max-width: 95%; padding: 8px 10px; font-size: 0.85rem; }
+    .message-wrapper .message { max-width: 95%; }
+    .input-area { padding: 8px 4px 10px; }
+    .input-wrapper { padding: 4px 6px; border-radius: 14px; }
+    .plus-menu-dropdown { width: 260px; left: 2px; }
+    .token-bar { padding: 3px 8px; font-size: 0.62rem; }
+    .sidebar-bottom-btn { font-size: 0.65rem; padding: 4px 4px; }
 }
 
 .sidebar-title {
@@ -1549,7 +1644,6 @@ body.canvas-active .side-panel-toolbar {
     width: 40px;
     height: 40px;
     object-fit: contain;
-    border-radius: 50%;
 }
 .version-badge {
     font-size: 0.45em;
@@ -1861,6 +1955,9 @@ body.canvas-active .side-panel-toolbar {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 @keyframes chat-fade-in {
@@ -1883,10 +1980,9 @@ body.canvas-active .side-panel-toolbar {
 }
 
 .empty-chat-logo {
-    width: 80px;
-    height: 80px;
+    width: 120px;
+    height: 120px;
     object-fit: contain;
-    border-radius: 50%;
 }
 
 .empty-chat-text {
@@ -3127,6 +3223,7 @@ body.dark #cost-info {
     position: relative;
     z-index: 18;
     background: var(--bg);
+    touch-action: manipulation;
 }
 /* Ancrage pour le dropdown du menu "+" */
 .plus-menu-dropdown {
@@ -3189,6 +3286,11 @@ body.dark #cost-info {
     background: var(--bg-input);
     gap: 6px;
     position: relative;
+}
+/* Empêcher le zoom iOS sur focus des inputs */
+.input-wrapper input,
+.input-wrapper textarea {
+    font-size: 16px;
 }
 
 /* Contenu principal à droite du sélecteur de modèle */
@@ -3326,6 +3428,32 @@ body.dark #cost-info {
 }
 
 /* Micro en mode stop (streaming) */
+/* Bouton envoyer mobile */
+.mobile-send-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.15s;
+}
+.mobile-send-btn:hover {
+    background: var(--accent-dark);
+    transform: scale(1.05);
+}
+.mobile-send-btn:active {
+    transform: scale(0.95);
+}
+
 .mic-btn.stop-mode {
     background: var(--active-cat-color, var(--accent, #3B87CE));
     color: #fff;
@@ -3748,10 +3876,10 @@ body.dark .input-action-btn.active .input-action-arrow {
     min-width: 0;
     border: none;
     outline: none;
-    font-size: 0.95rem;
+    font-size: 16px;
     font-family: inherit;
     resize: none;
-    min-height: 48px;
+    min-height: 36px;
     max-height: 300px;
     line-height: 1.5;
     padding: 4px 0;
@@ -8801,9 +8929,9 @@ body.storage-preview-mode .code-copy-btn {
     box-shadow: 0 4px 24px rgba(0,0,0,0.08);
 }
 .login-logo {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
     margin-bottom: 16px;
 }
 .login-title {
