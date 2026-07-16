@@ -1787,6 +1787,20 @@ function updateInputHint() {
     }
 }
 
+// --- Bouton Envoyer mobile ---
+const mobileSendBtn = document.getElementById('mobile-send-btn');
+if (mobileSendBtn) {
+    promptInput.addEventListener('input', () => {
+        const hasText = promptInput.value.trim().length > 0;
+        mobileSendBtn.style.display = hasText ? 'flex' : 'none';
+        if (micBtn) micBtn.style.display = hasText ? 'none' : '';
+    });
+    mobileSendBtn.addEventListener('click', () => {
+        if (STATE.isStreaming) return;
+        sendMessage();
+    });
+}
+
 // --- Bouton Canvas ---
 // Affiché uniquement pour les modèles texte (pas image, pas search).
 // L'état actif/inactif est géré dans canvas.js (persisté par conversation).
@@ -3045,6 +3059,13 @@ initConfig().then(async () => {
     updateImageParamsVisibility(getImageModelEditeur(lastImageModel) || '', lastImageModel);
     updateWebSearchBtn();
     if (typeof updateCanvasBtn === 'function') updateCanvasBtn();
+    // Restaurer la dernière conversation
+    const lastConv = localStorage.getItem('cetas-last-conv');
+    if (lastConv) {
+        try {
+            await loadConversation(lastConv);
+        } catch(e) { /* conversation corrompue ou absente */ }
+    }
     promptInput.focus();
 
     // --- Modules de développement (grisés) ---
@@ -3529,6 +3550,7 @@ function resetConversation() {
     STATE.totalTitleCost = 0;
     STATE.costByModel = {};
     STATE.conversationId = null;
+    localStorage.removeItem('cetas-last-conv');
     STATE.conversationStartTime = null;
     STATE.conversationLastActivity = null;
     STATE.conversationTitle = null;
@@ -4758,7 +4780,8 @@ function createStreamRenderer(resizeEl, getTextEl, seedText) {
         const scroller = textEl.scrollHeight > textEl.clientHeight ? textEl : null;
         if (!scroller) return;
         scroller.addEventListener('scroll', () => {
-            const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 12;
+            const scrollThreshold = window.innerWidth < 768 ? 120 : 12;
+            const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < scrollThreshold;
             _userScrolledUp = !atBottom;
         });
         _stickAttached = true;
@@ -5524,8 +5547,10 @@ function startEditMessage(wrapper, msgDiv) {
 let _userHasScrolledUp = false;
 
 chatContainer.addEventListener('scroll', () => {
-    // Considérer que l'utilisateur est "en bas" s'il est à moins de 80px du fond
-    const atBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 80;
+    // Seuil plus large sur mobile (200px) pour éviter que le clavier ou
+    // un léger défilement tactile ne bloque l'auto-scroll vers le bas.
+    const threshold = window.innerWidth < 768 ? 200 : 80;
+    const atBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < threshold;
     _userHasScrolledUp = !atBottom;
 });
 
@@ -5551,8 +5576,11 @@ chatContainer.addEventListener('click', (e) => {
 });
 
 function scrollToBottom(force) {
-    if (!force && _userHasScrolledUp) return;
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    // Sur mobile, toujours forcer pendant le streaming (STATE.isStreaming)
+    // car les events scroll du clavier virtuel faussent _userHasScrolledUp
+    const isMobile = window.innerWidth < 768;
+    if (!force && _userHasScrolledUp && !(isMobile && STATE.isStreaming)) return;
+    chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: 'instant' });
 }
 
 // --- Gestion centralisée des erreurs API ---
@@ -5615,6 +5643,33 @@ function sendMessage() {
     _userHasScrolledUp = false;
     removeRegenBtn();
 
+    // Sur mobile, fermer le clavier et attendre que le viewport se stabilise
+    // avant de scroller. Sans ça, le scroll se fait sur un viewport réduit
+    // (clavier visible) et après fermeture du clavier on se retrouve trop haut.
+    if (window.innerWidth < 768) {
+        promptInput.blur();
+        let _mobileScrollDone = false;
+        const _mobileForceScroll = () => {
+            if (_mobileScrollDone) return;
+            _mobileScrollDone = true;
+            _userHasScrolledUp = false;
+            scrollToBottom(true);
+        };
+        // Tenter après 200ms et 500ms (le clavier met ~300-400ms à se fermer)
+        setTimeout(_mobileForceScroll, 200);
+        setTimeout(_mobileForceScroll, 500);
+        // VisualViewport : détecter quand le clavier est vraiment fermé
+        if (window.visualViewport) {
+            let _stableTimer;
+            const _onResize = () => {
+                clearTimeout(_stableTimer);
+                _stableTimer = setTimeout(_mobileForceScroll, 150);
+            };
+            window.visualViewport.addEventListener('resize', _onResize, { once: false });
+            setTimeout(() => window.visualViewport.removeEventListener('resize', _onResize), 1500);
+        }
+    }
+
     // Vérifier qu'un modèle est sélectionné
     if (!STATE.currentModel && !STATE.currentImageModel && !STATE.currentSearchModel) {
         showModelAlert();
@@ -5638,6 +5693,8 @@ function sendMessage() {
         STATE.firstPrompt = _firstLabel;
         STATE.conversationStartTime = new Date().toISOString();
         STATE.conversationId = generateConversationId(STATE.firstPrompt);
+        const _newFn = STATE.conversationId.replace(/[<>:"/\\|?*]/g, '_') + '.json';
+        localStorage.setItem('cetas-last-conv', _newFn);
     }
     STATE.conversationLastActivity = new Date().toISOString();
 
@@ -6152,7 +6209,15 @@ async function refreshConvList() {
         itemContent.appendChild(dateLine);
 
         item.appendChild(itemContent);
-        item.addEventListener('click', () => loadConversation(conv.filename));
+        item.addEventListener('click', () => {
+            loadConversation(conv.filename);
+            // Sur mobile, fermer la sidebar après sélection
+            if (window.innerWidth < 768) {
+                document.body.classList.remove('sidebar-open');
+            }
+        });
+        // Support tactile immédiat (pas de délai 300ms)
+        item.style.touchAction = 'manipulation';
         fragment.appendChild(item);
     }
     convList.appendChild(fragment);
@@ -6386,6 +6451,7 @@ async function loadConversation(filename) {
 
     // Restaurer l'état de la conversation
     STATE.conversationId = data.id;
+    localStorage.setItem('cetas-last-conv', filename);
     STATE.conversationTitle = data.titre || null;
     STATE.conversationStartTime = data.date;
     STATE.conversationLastActivity = data.lastActivity || data.date;
@@ -6495,7 +6561,7 @@ async function loadConversation(filename) {
     if (typeof updateCanvasBtn === 'function') updateCanvasBtn();
 
     // Restaurer le modèle actif depuis le dernier model-switch
-    const lastSwitch = [...conversationHistory].reverse().find(m => m.type === 'model-switch');
+    const lastSwitch = [...STATE.conversationHistory].reverse().find(m => m.type === 'model-switch');
     if (lastSwitch) {
         const restoredModel = lastSwitch.to;
         const isImg = IMAGE_MODELS.some(m => m.id === restoredModel);
