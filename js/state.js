@@ -60,6 +60,7 @@ export const STATE = {
 
     // --- Divers ---
     webSearchEnabled: false,
+    webSearchDepth: 'standard',
     originalPromptBeforeEnhance: null,
     isEnhancing: false,
     _fullTextsLoaded: false,

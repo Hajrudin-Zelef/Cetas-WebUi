@@ -36,7 +36,20 @@ const MODELS_DATA = {
     { "id": "glm-5-turbo",                 "label": "GLM-5 Turbo",       "editeur": "zai",       "inputPer1M": 1.2,   "outputPer1M": 4.0,  "description": "Version rapide de GLM-5, bon compromis performance / latence (mode raisonnement activable)." },
     { "id": "glm-5.1",                     "label": "GLM-5.1",           "editeur": "zai",       "inputPer1M": 1.4,   "outputPer1M": 4.4,  "description": "Modèle codage le plus puissant de Zhipu AI, 200K de contexte, avec mode raisonnement activable." },
     { "id": "glm-5",                       "label": "GLM-5",             "editeur": "zai",       "inputPer1M": 1,     "outputPer1M": 3.2,  "description": "Modèle phare de Zhipu AI (744B MoE), rival des meilleurs modèles mondiaux (mode raisonnement activable)." },
-    { "id": "glm-4.7-flash",               "label": "GLM-4.7 Flash",     "editeur": "zai",       "inputPer1M": 0,     "outputPer1M": 0,    "description": "Modèle ultra-rapide de Zhipu, gratuit, bon pour les tâches simples." }
+    { "id": "glm-4.7-flash",               "label": "GLM-4.7 Flash",     "editeur": "zai",       "inputPer1M": 0,     "outputPer1M": 0,    "description": "Modèle ultra-rapide de Zhipu, gratuit, bon pour les tâches simples." },
+
+    // --- Groq (API OpenAI-compatible) ---
+    { "id": "llama-3.3-70b-versatile",     "label": "Llama 3.3 70B",     "editeur": "groq",      "inputPer1M": 0.59,  "outputPer1M": 0.79, "description": "Modèle phare Meta Llama 3.3 70B, excellent rapport qualite/vitesse." },
+    { "id": "llama-3.1-8b-instant",        "label": "Llama 3.1 8B",      "editeur": "groq",      "inputPer1M": 0.05,  "outputPer1M": 0.08, "description": "Llama 3.1 8B ultra-rapide et economique, ideal pour les taches simples." },
+    { "id": "mixtral-8x7b-32768",          "label": "Mixtral 8x7B",      "editeur": "groq",      "inputPer1M": 0.24,  "outputPer1M": 0.24, "description": "Mistral Mixtral 8x7B, bon equilibre performance/cout." },
+    { "id": "gemma2-9b-it",                "label": "Gemma 2 9B",        "editeur": "groq",      "inputPer1M": 0.06,  "outputPer1M": 0.06, "description": "Gemma 2 9B de Google, compact et performant." },
+    { "id": "deepseek-r1-distill-llama-70b","label": "DeepSeek R1 70B",  "editeur": "groq",      "inputPer1M": 0.75,  "outputPer1M": 0.99, "description": "DeepSeek R1 distillee via Llama 70B, raisonnement avance sur Groq." },
+
+    // --- Nvidia NIM (API OpenAI-compatible) ---
+    { "id": "nvidia/llama-3.1-nemotron-70b-instruct", "label": "Nemotron 70B", "editeur": "nvidia", "inputPer1M": 0.5, "outputPer1M": 0.5, "description": "Llama Nemotron 70B de Nvidia, optimise pour le codage et le raisonnement." },
+    { "id": "meta/llama-3.1-405b-instruct",            "label": "Llama 3.1 405B", "editeur": "nvidia", "inputPer1M": 2.0, "outputPer1M": 2.0, "description": "Llama 3.1 405B, le plus grand modele Meta, via Nvidia NIM." },
+    { "id": "mistralai/mixtral-8x22b-instruct-v0.1",   "label": "Mixtral 8x22B", "editeur": "nvidia", "inputPer1M": 0.9, "outputPer1M": 0.9, "description": "Mistral Mixtral 8x22B, contexte long et performances elevees." },
+    { "id": "google/gemma-2-27b-it",                   "label": "Gemma 2 27B", "editeur": "nvidia", "inputPer1M": 0.4, "outputPer1M": 0.4, "description": "Gemma 2 27B de Google, bon compromis qualite/cout." }
   ],
   "image": [
     { "id": "gemini-3-pro-image",            "label": "Nano Banana Pro", "editeur": "google", "inputPer1M": 2,   "outputPer1M": 12, "imageOutput": 0.134, "imagePricing": { "1K": 0.134, "2K": 0.134, "4K": 0.24 }, "description": "Génération d'images via Gemini Pro, haute qualité et bonne compréhension des prompts." },

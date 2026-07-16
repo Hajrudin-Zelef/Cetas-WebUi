@@ -621,7 +621,8 @@ const sideToggleSettings = document.getElementById('side-toggle-settings');
 const sideToggleCanvas = document.getElementById('side-toggle-canvas');
 
 function isRightPanelOpen() {
-    return !rightPanel.classList.contains('collapsed');
+    // Panneau droit migré dans Configuration → toujours fermé
+    return false;
 }
 function isCanvasPanelOpen() {
     const p = document.getElementById('canvas-panel');
@@ -629,13 +630,7 @@ function isCanvasPanelOpen() {
 }
 
 function setRightPanelOpen(open) {
-    const collapsed = !open;
-    rightPanel.classList.toggle('collapsed', collapsed);
-    // Conserver la sync avec l'ancien bouton (caché mais toujours présent)
-    if (rightPanelToggle) {
-        rightPanelToggle.classList.toggle('collapsed', collapsed);
-        rightPanelToggle.title = collapsed ? 'Afficher le panneau' : 'Masquer le panneau';
-    }
+    // Panneau droit migré dans Configuration → no-op
     updateSideToolbarState();
 }
 
@@ -652,10 +647,10 @@ function setCanvasPanelOpen(open) {
 
 function updateSideToolbarState() {
     if (sideToggleSettings) {
-        sideToggleSettings.classList.toggle('active', isRightPanelOpen() && !isCanvasPanelOpen());
-        sideToggleSettings.title = (isRightPanelOpen() && !isCanvasPanelOpen())
-            ? 'Masquer les réglages'
-            : 'Réglages de la conversation';
+        // Le panneau droit est dans Configuration → toujours afficher le bouton
+        sideToggleSettings.style.display = '';
+        sideToggleSettings.classList.remove('active');
+        sideToggleSettings.title = 'Réglages de la conversation';
     }
     if (sideToggleCanvas) {
         const canvasActive = !!(window.Canvas && window.Canvas.isActive());
@@ -692,7 +687,7 @@ function toggleCanvasPanel() {
     }
 }
 
-if (sideToggleSettings) sideToggleSettings.addEventListener('click', toggleSettingsPanel);
+// sideToggleSettings → redirigé vers Config (onglet Conversation) dans initConversationPanel()
 if (sideToggleCanvas) sideToggleCanvas.addEventListener('click', toggleCanvasPanel);
 
 // Garder toolbar active sur changements du canvas (activation, ouverture, fichiers, resize)
@@ -722,8 +717,7 @@ if (window.ResizeObserver) {
     }
 }
 
-// Bouton réglages dans la barre de titre de conversation → même comportement que le gear latéral
-chatHeaderSettings.addEventListener('click', () => toggleSettingsPanel());
+// chatHeaderSettings → redirigé vers Config (onglet Conversation) dans initConversationPanel()
 
 // Onglets du volet droit
 function setRightPanelTab(tabName) {
@@ -1241,7 +1235,8 @@ function getModelParams() {
             const toggle = document.getElementById('rp-effort-toggle');
             if (!toggle || !toggle.checked) return undefined;
             return document.getElementById('rp-effort-select')?.value || 'medium';
-        })()
+        })(),
+        webSearchDepth: STATE.webSearchDepth || 'standard'
     };
 }
 
@@ -1344,6 +1339,361 @@ if (webSearchBtn) {
         STATE.webSearchEnabled = !STATE.webSearchEnabled;
         webSearchBtn.classList.toggle('active', STATE.webSearchEnabled);
     });
+}
+
+// --- Menu "+" (Plus d'options) ---
+
+// Mapping des logos de provider (SVG dans images/)
+const PROVIDER_LOGOS = {
+    openai: 'images/OpenAI.svg',
+    anthropic: 'images/Anthropic.svg',
+    google: 'images/Google.svg',
+    mistral: 'images/Mistral.svg',
+    perplexity: 'images/Perplexity.svg',
+    deepseek: 'images/DeepSeek.svg',
+    grok: 'images/Grok.svg',
+    zai: 'images/Z.ai.svg',
+    groq: 'images/Groq.svg',
+    nvidia: 'images/Nvidia.svg',
+    cabreras: 'images/Cabreras.svg',
+    openrouter: 'images/OpenRouter.svg',
+    ollama: 'images/Ollama.svg',
+    lmstudio: 'images/LMStudio.svg',
+    llamacpp: 'images/LlamaCpp.svg'
+};
+
+// 5 compétences réelles (prompts système prédéfinis)
+const COMPETENCES = [
+    {
+        id: 'correcteur',
+        name: 'Correcteur orthographique',
+        icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+        prompt: 'Tu es un correcteur orthographique et grammatical professionnel. Ta tâche est de corriger toutes les fautes d\'orthographe, de grammaire, de conjugaison et de ponctuation dans le texte fourni. Explique brièvement les corrections importantes. Reformule uniquement si nécessaire pour la clarté.'
+    },
+    {
+        id: 'traducteur',
+        name: 'Traducteur Français-Anglais',
+        icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>',
+        prompt: 'Tu es un traducteur professionnel français-anglais. Traduis le texte fourni dans l\'autre langue (français vers anglais, ou anglais vers français selon le cas). Conserve le ton, le style et le registre du texte original. Si le texte contient des termes techniques, utilise la terminologie appropriée.'
+    },
+    {
+        id: 'code-expert',
+        name: 'Expert en programmation',
+        icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        prompt: 'Tu es un expert en programmation et génie logiciel. Analyse le code fourni, explique son fonctionnement, identifie les bugs potentiels, et propose des améliorations (performance, lisibilité, sécurité). Donne des exemples concrets et référence les bonnes pratiques.'
+    },
+    {
+        id: 'resumeur',
+        name: 'Résumé de texte',
+        icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/><line x1="4" y1="18" x2="10" y2="18"/></svg>',
+        prompt: 'Tu es un expert en synthèse de documents. Résume le texte fourni de manière concise et structurée. Utilise des puces pour les points clés. Conserve les informations essentielles et le ton du document original. La synthèse doit être environ 3 à 5 fois plus courte que l\'original.'
+    },
+    {
+        id: 'pedagogue',
+        name: 'Assistant pédagogique',
+        icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+        prompt: 'Tu es un professeur patient et pédagogue. Explique le concept ou le sujet fourni de manière simple et accessible, comme si tu t\'adressais à un débutant. Utilise des analogies, des exemples concrets, et progresse du plus simple au plus complexe. Pose des questions pour vérifier la compréhension.'
+    }
+];
+
+function initConversationPanel() {
+    const rightPanel = document.getElementById('right-panel');
+    const convPanelBody = document.getElementById('panel-conversation-body');
+    if (!rightPanel || !convPanelBody) return;
+
+    // Déplacer tout le contenu du panneau droit dans l'onglet Conversation
+    while (rightPanel.firstChild) {
+        convPanelBody.appendChild(rightPanel.firstChild);
+    }
+
+    // Rediriger le bouton engrenage (barre de saisie) vers l'onglet Conversation
+    if (chatHeaderSettings) {
+        chatHeaderSettings.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof openApiKeysModal === 'function') {
+                openApiKeysModal();
+                // Activer l'onglet Conversation
+                setTimeout(() => {
+                    const tab = document.querySelector('.apikeys-tab[data-tab="conversation"]');
+                    if (tab) tab.click();
+                }, 50);
+            }
+        });
+    }
+
+    // Rediriger le bouton settings de la toolbar latérale
+    const sideSettings = document.getElementById('side-toggle-settings');
+    if (sideSettings) {
+        sideSettings.title = 'Réglages de la conversation';
+        sideSettings.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof openApiKeysModal === 'function') {
+                openApiKeysModal();
+                setTimeout(() => {
+                    const tab = document.querySelector('.apikeys-tab[data-tab="conversation"]');
+                    if (tab) tab.click();
+                }, 50);
+            }
+        });
+    }
+
+}
+
+function initPlusMenu() {
+    const plusBtn = document.getElementById('plus-menu-btn');
+    const plusDropdown = document.getElementById('plus-menu-dropdown');
+    const plusProviders = document.getElementById('plus-menu-providers');
+    const plusSkills = document.getElementById('plus-menu-skills');
+    const plusReflectionToggle = document.getElementById('plus-reflection-toggle');
+    const plusWebsearchToggle = document.getElementById('plus-websearch-toggle');
+    const plusWebsearchDepth = document.getElementById('plus-websearch-depth');
+
+    if (!plusBtn || !plusDropdown) return;
+
+    // --- Peupler la liste des providers ---
+    if (plusProviders) {
+        const providerCounts = {};
+        MODELS.forEach(m => {
+            if (!providerCounts[m.editeur]) providerCounts[m.editeur] = 0;
+            providerCounts[m.editeur]++;
+        });
+        const sorted = Object.entries(providerCounts).sort((a, b) => b[1] - a[1]);
+        sorted.forEach(([editeur, count]) => {
+            const badge = document.createElement('span');
+            badge.className = 'plus-menu-provider-badge';
+            const logo = PROVIDER_LOGOS[editeur];
+            if (logo) {
+                const img = document.createElement('img');
+                img.src = logo;
+                img.alt = editeur;
+                img.onerror = function() { this.style.display = 'none'; };
+                badge.appendChild(img);
+            }
+            const name = document.createElement('span');
+            name.textContent = editeur.charAt(0).toUpperCase() + editeur.slice(1);
+            badge.appendChild(name);
+            const cnt = document.createElement('span');
+            cnt.className = 'plus-provider-count';
+            cnt.textContent = count;
+            badge.appendChild(cnt);
+            plusProviders.appendChild(badge);
+        });
+    }
+
+    // --- Peupler les compétences ---
+    if (plusSkills) {
+        COMPETENCES.forEach(comp => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'plus-menu-skill';
+            btn.dataset.skillId = comp.id;
+            btn.innerHTML = `<span class="plus-menu-skill-icon">${comp.icon}</span>${comp.name}`;
+            btn.addEventListener('click', () => {
+                applySkillPrompt(comp);
+                plusDropdown.style.display = 'none';
+                plusBtn.classList.remove('open');
+            });
+            plusSkills.appendChild(btn);
+        });
+    }
+
+    // --- Mode Réflexion : sync avec le panneau droit ---
+    if (plusReflectionToggle) {
+        const rpEffortToggle = document.getElementById('rp-effort-toggle');
+        const rpEffortSection = document.getElementById('rp-effort-section');
+        // Lecture état initial
+        if (rpEffortToggle && rpEffortSection) {
+            plusReflectionToggle.checked = rpEffortToggle.checked && !rpEffortSection.classList.contains('rp-param-disabled');
+        }
+        // Au changement → propager vers le panneau droit
+        plusReflectionToggle.addEventListener('change', () => {
+            if (rpEffortToggle && rpEffortSection) {
+                rpEffortToggle.checked = plusReflectionToggle.checked;
+                if (plusReflectionToggle.checked) {
+                    rpEffortSection.classList.remove('rp-param-disabled');
+                } else {
+                    rpEffortSection.classList.add('rp-param-disabled');
+                }
+                rpEffortToggle.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    }
+
+    // --- Effort : sync avec le select du panneau droit ---
+    const effortPills = document.querySelectorAll('#plus-effort-pills .plus-menu-pill');
+    if (effortPills.length) {
+        const rpEffortSelect = document.getElementById('rp-effort-select');
+        // Lecture état initial
+        if (rpEffortSelect) {
+            updateEffortPills(rpEffortSelect.value);
+        }
+        effortPills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                const val = pill.dataset.effort;
+                updateEffortPills(val);
+                if (rpEffortSelect) {
+                    rpEffortSelect.value = val;
+                    rpEffortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                // Activer la réflexion si elle ne l'est pas déjà
+                if (plusReflectionToggle && !plusReflectionToggle.checked) {
+                    plusReflectionToggle.checked = true;
+                    plusReflectionToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        });
+    }
+
+    function updateEffortPills(val) {
+        effortPills.forEach(p => p.classList.toggle('active', p.dataset.effort === val));
+    }
+
+    // --- Recherche web : toggle + profondeur ---
+    if (plusWebsearchToggle) {
+        // Lecture état initial
+        plusWebsearchToggle.checked = STATE.webSearchEnabled;
+        if (STATE.webSearchDepth === 'deep') {
+            const deepPill = plusWebsearchDepth?.querySelector('[data-depth="deep"]');
+            const stdPill = plusWebsearchDepth?.querySelector('[data-depth="standard"]');
+            if (deepPill) deepPill.classList.add('active');
+            if (stdPill) stdPill.classList.remove('active');
+        }
+        if (plusWebsearchDepth) {
+            plusWebsearchDepth.style.display = plusWebsearchToggle.checked ? 'flex' : 'none';
+        }
+
+        plusWebsearchToggle.addEventListener('change', () => {
+            STATE.webSearchEnabled = plusWebsearchToggle.checked;
+            if (plusWebsearchDepth) {
+                plusWebsearchDepth.style.display = plusWebsearchToggle.checked ? 'flex' : 'none';
+            }
+            // Sync avec le bouton globe
+            if (webSearchBtn) {
+                webSearchBtn.classList.toggle('active', STATE.webSearchEnabled);
+            }
+        });
+
+        // Pilules profondeur
+        plusWebsearchDepth?.querySelectorAll('.plus-menu-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                plusWebsearchDepth.querySelectorAll('.plus-menu-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                STATE.webSearchDepth = pill.dataset.depth;
+            });
+        });
+    }
+
+    // --- Ouverture / fermeture ---
+    plusBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = plusDropdown.style.display === 'block';
+        if (isOpen) {
+            plusDropdown.style.display = 'none';
+            plusBtn.classList.remove('open');
+        } else {
+            // Rafraîchir l'état avant ouverture
+            refreshPlusMenuState();
+            plusDropdown.style.display = 'block';
+            plusBtn.classList.add('open');
+        }
+    });
+
+    // --- Action : Fichiers (attache) ---
+    const attachItem = plusDropdown.querySelector('[data-action="attach"]');
+    if (attachItem) {
+        attachItem.addEventListener('click', () => {
+            fileInput.click();
+            plusDropdown.style.display = 'none';
+            plusBtn.classList.remove('open');
+        });
+    }
+
+    // --- Action : Provider badges (ouvre la config) ---
+    // Un clic sur un badge provider ouvre le panneau API et Modèles
+    plusProviders?.addEventListener('click', (e) => {
+        const badge = e.target.closest('.plus-menu-provider-badge');
+        if (!badge) return;
+        // Ouvre le panneau de config API et Modèles
+        const apikeysOverlay = document.getElementById('apikeys-modal-overlay');
+        if (apikeysOverlay && typeof openApiKeysModal === 'function') {
+            openApiKeysModal();
+        }
+        plusDropdown.style.display = 'none';
+        plusBtn.classList.remove('open');
+    });
+
+    // Fermeture au clic extérieur
+    document.addEventListener('click', (e) => {
+        if (plusDropdown.style.display === 'block' &&
+            !plusDropdown.contains(e.target) &&
+            e.target !== plusBtn &&
+            !plusBtn.contains(e.target)) {
+            plusDropdown.style.display = 'none';
+            plusBtn.classList.remove('open');
+        }
+    });
+
+    // Fermeture à Échap
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && plusDropdown.style.display === 'block') {
+            plusDropdown.style.display = 'none';
+            plusBtn.classList.remove('open');
+        }
+    });
+}
+
+function refreshPlusMenuState() {
+    // Mode Réflexion
+    const rpEffortToggle = document.getElementById('rp-effort-toggle');
+    const rpEffortSection = document.getElementById('rp-effort-section');
+    const plusReflectionToggle = document.getElementById('plus-reflection-toggle');
+    if (plusReflectionToggle && rpEffortToggle && rpEffortSection) {
+        plusReflectionToggle.checked = rpEffortToggle.checked && !rpEffortSection.classList.contains('rp-param-disabled');
+    }
+    // Effort
+    const rpEffortSelect = document.getElementById('rp-effort-select');
+    if (rpEffortSelect) {
+        const pills = document.querySelectorAll('#plus-effort-pills .plus-menu-pill');
+        pills.forEach(p => p.classList.toggle('active', p.dataset.effort === rpEffortSelect.value));
+    }
+    // Recherche web
+    const plusWebsearchToggle = document.getElementById('plus-websearch-toggle');
+    const plusWebsearchDepth = document.getElementById('plus-websearch-depth');
+    if (plusWebsearchToggle) {
+        plusWebsearchToggle.checked = STATE.webSearchEnabled;
+        if (plusWebsearchDepth) {
+            plusWebsearchDepth.style.display = STATE.webSearchEnabled ? 'flex' : 'none';
+            plusWebsearchDepth.querySelectorAll('.plus-menu-pill').forEach(p => {
+                p.classList.toggle('active', p.dataset.depth === (STATE.webSearchDepth || 'standard'));
+            });
+        }
+    }
+}
+
+function applySkillPrompt(comp) {
+    // Appliquer le prompt système comme un rôle
+    const spTextarea = document.getElementById('sp-textarea');
+    const spSelect = document.getElementById('sp-select');
+    if (spTextarea) {
+        spTextarea.value = comp.prompt;
+        // Mettre à jour le system prompt courant
+        if (STATE.currentSystemPrompt) {
+            STATE.currentSystemPrompt.contenu = comp.prompt;
+        } else {
+            STATE.currentSystemPrompt = { nom: comp.name, contenu: comp.prompt };
+        }
+        // Déclencher input pour les handlers
+        spTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    // Désélectionner le select (le rôle est custom)
+    if (spSelect) spSelect.value = '';
+    // Afficher le bouton d'enregistrement
+    const spEditBtn = document.getElementById('sp-edit-btn');
+    const rpRoleActions = document.getElementById('rp-role-actions');
+    if (spEditBtn) spEditBtn.style.display = 'inline-flex';
+    if (rpRoleActions) rpRoleActions.style.display = 'flex';
 }
 
 // --- Bouton Canvas ---
@@ -2612,6 +2962,12 @@ initConfig().then(async () => {
 
     // --- Gestion des utilisateurs (admin) ---
     _initUserManagement();
+
+    // --- Migration panneau droit → Configuration (onglet Conversation) ---
+    initConversationPanel();
+
+    // --- Menu "+" (Plus d'options) ---
+    initPlusMenu();
 });
 });
 
@@ -7204,18 +7560,35 @@ function _flashSavedFeedback(btn) {
     }, 1300);
 }
 
+function _maskedKey(value) {
+    if (!value) return '';
+    if (value.length <= 8) return value.substring(0, 2) + '....';
+    return value.substring(0, 6) + '....' + value.slice(-2);
+}
+
+function _updateMaskedKeyDisplay(providerId) {
+    const row = document.getElementById('apikey-masked-' + providerId);
+    const text = document.getElementById('apikey-masked-text-' + providerId);
+    if (!row || !text) return;
+    const val = API_KEYS[providerId] || '';
+    if (val) {
+        text.textContent = _maskedKey(val);
+        row.style.display = '';
+    } else {
+        row.style.display = 'none';
+    }
+}
+
 function _restoreApiKeyInputs() {
-    document.getElementById('apikey-openai').value = API_KEYS.openai || '';
-    document.getElementById('apikey-anthropic').value = API_KEYS.anthropic || '';
-    document.getElementById('apikey-google').value = API_KEYS.google || '';
-    document.getElementById('apikey-perplexity').value = API_KEYS.perplexity || '';
-    document.getElementById('apikey-mistral').value = API_KEYS.mistral || '';
-    document.getElementById('apikey-deepseek').value = API_KEYS.deepseek || '';
-    document.getElementById('apikey-grok').value = API_KEYS.grok || '';
-    document.getElementById('apikey-zai').value = API_KEYS.zai || '';
-    document.getElementById('apikey-openrouter').value = API_KEYS.openrouter || '';
+    const providers = ['openai','anthropic','google','perplexity','mistral','deepseek','grok','zai','groq','nvidia','cabreras','openrouter'];
+    for (const id of providers) {
+        const el = document.getElementById('apikey-' + id);
+        if (el) el.value = API_KEYS[id] || '';
+        _updateMaskedKeyDisplay(id);
+    }
     document.getElementById('apikey-ollama').value = API_KEYS.ollama || 'http://localhost:11434';
     document.getElementById('apikey-lmstudio').value = API_KEYS.lmstudio || 'http://localhost:1234';
+    document.getElementById('apikey-llamacpp').value = API_KEYS.llamacpp || 'http://localhost:8080';
 }
 
 apikeysBtn.addEventListener('click', () => openApiKeysModal());
@@ -7224,7 +7597,8 @@ apikeysBtn.addEventListener('click', () => openApiKeysModal());
     // Clés API — listeners attachés dynamiquement par _initApiModelesPanel()
     const apiKeyIds = ['apikey-openai','apikey-anthropic','apikey-google','apikey-perplexity',
         'apikey-mistral','apikey-deepseek','apikey-grok','apikey-zai',
-        'apikey-openrouter','apikey-ollama','apikey-lmstudio'];
+        'apikey-groq','apikey-nvidia','apikey-cabreras',
+        'apikey-openrouter','apikey-ollama','apikey-lmstudio','apikey-llamacpp'];
     function saveApiKeysFromInputs() {
         const keys = {};
         for (const id of apiKeyIds) {
@@ -7233,6 +7607,10 @@ apikeysBtn.addEventListener('click', () => openApiKeysModal());
         }
         saveApiKeys(keys);
         _setKeysDirty(false);
+        // Mettre à jour l'affichage masqué pour tous les providers cloud
+        for (const id of ['openai','anthropic','google','perplexity','mistral','deepseek','grok','zai','groq','nvidia','cabreras','openrouter']) {
+            _updateMaskedKeyDisplay(id);
+        }
     }
 
     // Bouton « Sauvegarder » du panel API et Modèles — sauve clés + catalogue
@@ -7337,8 +7715,12 @@ const PROVIDERS_CONFIG = [
     { id: 'deepseek',   label: 'DeepSeek',         icon: 'DeepSeek.svg',   placeholder: 'sk-...',     link: 'https://platform.deepseek.com/api_keys',                     linkLabel: 'Obtenir une clé API DeepSeek' },
     { id: 'grok',       label: 'Grok',             icon: 'Grok.svg',       placeholder: 'xai-...',    link: 'https://console.x.ai/',                                      linkLabel: 'Obtenir une clé API Grok' },
     { id: 'zai',        label: 'Z.ai',             icon: 'Z.ai.svg',       placeholder: '...',        link: 'https://z.ai/manage-apikey/apikey-list',                     linkLabel: 'Obtenir une clé API Z.ai' },
+    { id: 'groq',       label: 'Groq',             icon: 'Groq.svg',       placeholder: 'gsk_...',    link: 'https://console.groq.com/keys',                              linkLabel: 'Obtenir une clé API Groq' },
+    { id: 'nvidia',     label: 'Nvidia NIM',       icon: 'Nvidia.svg',     placeholder: 'nvapi-...',  link: 'https://build.nvidia.com/explore/discover',                  linkLabel: 'Obtenir une clé API Nvidia' },
+    { id: 'cabreras',   label: 'Cabreras',         icon: 'Cabreras.svg',   placeholder: 'ck-...',     link: 'https://cabreras.ai/',                                       linkLabel: 'Obtenir une clé API Cabreras' },
     { id: 'ollama',     label: 'Ollama',           icon: 'Ollama.svg',     placeholder: 'http://localhost:11434',                                                                                                      isLocal: true },
-    { id: 'lmstudio',   label: 'LM Studio',        icon: 'LMStudio.svg',   placeholder: 'http://localhost:1234',                                                                                                       isLocal: true }
+    { id: 'lmstudio',   label: 'LM Studio',        icon: 'LMStudio.svg',   placeholder: 'http://localhost:1234',                                                                                                       isLocal: true },
+    { id: 'llamacpp',   label: 'LLaMA.cpp',        icon: 'LlamaCpp.svg',   placeholder: 'http://localhost:8080',                                                                                                       isLocal: true }
 ];
 
 let _activeProvider = 'openrouter';
@@ -7362,12 +7744,18 @@ function _buildProviderSectionHtml(p, isFirst) {
     const localStatusHtml = p.isLocal ? `<p class="apikey-local-status" id="apikey-${p.id}-status"></p>` : '';
     const refreshBtn = p.isLocal ? `<button id="apikey-${p.id}-refresh" type="button" class="apikey-local-update-btn" data-provider="${p.id}">Mettre à jour</button>` : '';
     const eyeBtn = p.isLocal ? '' : `<button type="button" class="apikey-eye-btn" data-target="apikey-${p.id}" title="Afficher la clé" aria-label="Afficher la clé">${_EYE_SVG}</button>`;
+    // Affichage de la clé masquée + bouton Valider (providers cloud uniquement)
+    const maskedKeyHtml = p.isLocal ? '' : `<div class="apikey-masked-row" id="apikey-masked-${p.id}" style="display:none">
+        <span class="apikey-masked-key" id="apikey-masked-text-${p.id}"></span>
+        <button type="button" class="apikey-validate-btn" id="apikey-validate-${p.id}" data-provider="${p.id}">Valider</button>
+    </div>`;
     return `
         <div class="provider-section${isFirst ? ' active' : ''}" data-provider="${p.id}">
             <div class="apikey-label-row">
                 <label class="sp-modal-label" for="apikey-${p.id}">Clé API ${escHtml(p.label)}${labelExtra}</label>
                 ${linkHtml}
             </div>
+            ${maskedKeyHtml}
             <div class="apikey-field">
                 <div class="apikey-input-wrap">
                     <input type="${inputType}" id="apikey-${p.id}" class="sp-modal-input apikey-input" placeholder="${escHtml(p.placeholder || '')}">
@@ -7402,6 +7790,22 @@ function _initApiModelesPanel() {
         btn.addEventListener('click', () => _selectProvider(btn.dataset.provider));
     });
 
+    // Boutons "Valider" — sauvegarde la clé et affiche les modèles
+    PROVIDERS_CONFIG.forEach(p => {
+        if (p.isLocal) return;
+        const btn = document.getElementById('apikey-validate-' + p.id);
+        if (btn) btn.addEventListener('click', () => {
+            const input = document.getElementById('apikey-' + p.id);
+            if (!input) return;
+            const key = input.value.trim();
+            if (!key) return;
+            saveApiKeys({ [p.id]: key });
+            _updateMaskedKeyDisplay(p.id);
+            _setKeysDirty(false);
+            renderProviderCatalog(p.id);
+        });
+    });
+
     // Listeners par section
     PROVIDERS_CONFIG.forEach(p => {
         const section = contentContainer.querySelector(`.provider-section[data-provider="${p.id}"]`);
@@ -7409,6 +7813,8 @@ function _initApiModelesPanel() {
         const input = section.querySelector(`#apikey-${p.id}`);
         if (input) input.addEventListener('input', () => {
             _setKeysDirty(true);
+            // Mettre à jour l'affichage masqué
+            _updateMaskedKeyDisplay(p.id);
             // Re-render catalog (les modèles deviennent visibles dès qu'une clé est saisie)
             renderProviderCatalog(p.id);
         });
@@ -7728,7 +8134,7 @@ function renderProviderCatalog(providerId) {
     }
 
     if (!hasProviderKey(providerId)) {
-        container.innerHTML = '<div class="provider-models-empty">Renseignez votre clé API ci-dessus pour afficher les modèles disponibles.</div>';
+        container.innerHTML = '<div class="provider-models-empty">Ajoutez et renseignez votre clé API ci-dessus pour afficher les modèles disponibles.</div>';
         return;
     }
 
@@ -9410,10 +9816,8 @@ async function _enrichImagePricesFromEndpoints(models, tabType, category) {
             const m = models[i++];
             try {
                 // NE PAS encodeURIComponent : le slash du slug (`author/model`) doit rester un slash dans le path
-                const url = `https://openrouter.ai/api/v1/models/${m.id}/endpoints`;
-                const res = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${API_KEYS.openrouter}`, 'HTTP-Referer': 'https://cetas.local/', 'X-Title': 'Cetas' }
-                });
+                const url = proxyUrl('openrouter', `https://openrouter.ai/api/v1/models/${m.id}/endpoints`);
+                const res = await fetch(url, {});
                 if (!res.ok) continue;
                 const json = await res.json();
                 const endpoints = json?.data?.endpoints || [];
@@ -9503,10 +9907,9 @@ async function _loadOrModels(isImage, category = _orCategory) {
         const params = [];
         if (isImage) params.push('output_modalities=image');
         if (fetchCategory && fetchCategory !== 'all') params.push(`category=${encodeURIComponent(fetchCategory)}`);
-        const url = 'https://openrouter.ai/api/v1/models' + (params.length ? '?' + params.join('&') : '');
-        const res = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${API_KEYS.openrouter}`, 'HTTP-Referer': 'https://cetas.local/', 'X-Title': 'Cetas' }
-        });
+        const base = 'https://openrouter.ai/api/v1/models' + (params.length ? '?' + params.join('&') : '');
+        const url = proxyUrl('openrouter', base);
+        const res = await fetch(url, {});
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
@@ -9896,18 +10299,8 @@ function openApiKeysModal(tab = 'apimodeles') {
         btn.title = 'Afficher la clé';
         btn.setAttribute('aria-label', 'Afficher la clé');
     });
-    document.getElementById('apikey-openai').value = API_KEYS.openai || '';
-    document.getElementById('apikey-anthropic').value = API_KEYS.anthropic || '';
-    document.getElementById('apikey-google').value = API_KEYS.google || '';
-    document.getElementById('apikey-perplexity').value = API_KEYS.perplexity || '';
-    document.getElementById('apikey-mistral').value = API_KEYS.mistral || '';
-    document.getElementById('apikey-deepseek').value = API_KEYS.deepseek || '';
-    document.getElementById('apikey-grok').value = API_KEYS.grok || '';
-    document.getElementById('apikey-zai').value = API_KEYS.zai || '';
-    document.getElementById('apikey-openrouter').value = API_KEYS.openrouter || '';
-    document.getElementById('apikey-ollama').value = API_KEYS.ollama || 'http://localhost:11434';
-    document.getElementById('apikey-lmstudio').value = API_KEYS.lmstudio || 'http://localhost:1234';
-    for (const localId of ['ollama', 'lmstudio']) {
+    _restoreApiKeyInputs();
+    for (const localId of ['ollama', 'lmstudio', 'llamacpp']) {
         const status = document.getElementById(`apikey-${localId}-status`);
         if (status) { status.textContent = ''; status.className = 'apikey-local-status'; }
     }
