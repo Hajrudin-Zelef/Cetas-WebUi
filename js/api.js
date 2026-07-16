@@ -13,14 +13,39 @@ let API_KEYS = {
     deepseek: '',
     grok: '',
     zai: '',
+    groq: '',
+    nvidia: '',
+    cabreras: '',
     openrouter: '',     // Clé API OpenRouter (Flux, etc.)
     ollama: '',         // URL du serveur Ollama (ex: http://localhost:11434)
-    lmstudio: ''        // URL du serveur LM Studio (ex: http://localhost:1234)
+    lmstudio: '',       // URL du serveur LM Studio (ex: http://localhost:1234)
+    llamacpp: ''        // URL du serveur LLaMA.cpp (ex: http://localhost:8080)
 };
 
 // Helper : un éditeur correspond-il à un fournisseur local (Ollama ou LM Studio) ?
 function isLocalEditeur(editeur) {
-    return editeur === 'ollama' || editeur === 'lmstudio';
+    return editeur === 'ollama' || editeur === 'lmstudio' || editeur === 'llamacpp';
+}
+
+// Préfixe du proxy backend (les providers cloud passent par /api/proxy/{provider}/...)
+const PROXY_BASE = '/api/proxy';
+
+// Route une URL provider vers le proxy si c'est un provider cloud.
+// Les providers locaux (ollama, lmstudio, llamacpp) gardent leurs URLs directes.
+function proxyUrl(provider, url) {
+    if (isLocalEditeur(provider)) return url;
+    const parsed = new URL(url);
+    return `${PROXY_BASE}/${provider}${parsed.pathname}${parsed.search}`;
+}
+
+// Nettoie les headers avant envoi au proxy (supprime les clés d'auth que le proxy injectera)
+function proxyHeaders(provider, headers) {
+    if (isLocalEditeur(provider)) return headers;
+    const h = Object.assign({}, headers);
+    delete h['Authorization'];
+    delete h['x-api-key'];
+    delete h['anthropic-dangerous-direct-browser-access'];
+    return h;
 }
 
 let MODELS = [];
@@ -32,7 +57,28 @@ let SEARCH_TARIFS = {};
 
 // --- 2. Fonctions publiques utilitaires ---
 
-function loadApiKeys() {
+async function loadApiKeys() {
+    // 1. Coffre chiffré (prioritaire)
+    if (typeof Auth !== 'undefined' && Auth.isVaultReady()) {
+        try {
+            const encrypted = localStorage.getItem('cetas-vault-keys');
+            if (encrypted) {
+                const plaintext = await Auth.vaultDecrypt(encrypted);
+                const parsed = JSON.parse(plaintext);
+                if (parsed.local && !parsed.ollama && !parsed.lmstudio) {
+                    if (/11434/.test(parsed.local)) parsed.ollama = parsed.local;
+                    else if (/1234/.test(parsed.local)) parsed.lmstudio = parsed.local;
+                    else parsed.ollama = parsed.local;
+                }
+                delete parsed.local;
+                Object.assign(API_KEYS, parsed);
+                return;
+            }
+        } catch (e) {
+            console.warn('Lecture du coffre impossible :', e);
+        }
+    }
+    // 2. Fallback : ancien stockage en clair (pré-migration)
     try {
         const stored = localStorage.getItem('minou-apikeys');
         if (stored) {
@@ -50,9 +96,45 @@ function loadApiKeys() {
     }
 }
 
-function saveApiKeys(keys) {
+async function saveApiKeys(keys) {
     Object.assign(API_KEYS, keys);
+    // Proxy actif → ne pas persister dans le navigateur
+    try {
+        const resp = await fetch('/api/keys', { method: 'HEAD', signal: AbortSignal.timeout(1000) });
+        if (resp.ok) return; // Proxy disponible, on garde en mémoire uniquement
+    } catch (e) { /* Proxy injoignable → fallback localStorage */ }
+    // Coffre chiffré (prioritaire)
+    if (typeof Auth !== 'undefined' && Auth.isVaultReady()) {
+        try {
+            const encrypted = await Auth.vaultEncrypt(JSON.stringify(API_KEYS));
+            localStorage.setItem('cetas-vault-keys', encrypted);
+            localStorage.removeItem('minou-apikeys');
+            return;
+        } catch (e) {
+            console.warn('Écriture coffre impossible, fallback localStorage en clair :', e);
+        }
+    }
+    // Fallback
     localStorage.setItem('minou-apikeys', JSON.stringify(API_KEYS));
+}
+
+/** Synchronise les clés depuis le proxy backend au démarrage.
+ *  Proxy actif → clés en mémoire seulement, jamais dans localStorage.
+ *  Proxy absent → fallback localStorage.
+ */
+async function syncKeysFromProxy() {
+    try {
+        const resp = await fetch('/api/keys', { signal: AbortSignal.timeout(3000) });
+        if (!resp.ok) return false;
+        const keys = await resp.json();
+        if (!keys || Object.keys(keys).length === 0) return false;
+        // Proxy disponible : garder en mémoire uniquement, pas de localStorage
+        Object.assign(API_KEYS, keys);
+        console.info('[proxy]', Object.keys(keys).length, 'clés chargées en mémoire');
+        return true;
+    } catch (e) {
+        return false; // Proxy injoignable, fallback localStorage
+    }
 }
 
 // --- Catalogue de modèles (prefs + cache OpenRouter) ---
@@ -292,7 +374,12 @@ function getSearchModelEditeur(modelId) {
 let VAULT_LOCKED = false;
 
 async function initConfig() {
-    loadApiKeys();
+    // Proxy actif ? → clés en mémoire seulement, localStorage ignoré
+    const synced = await syncKeysFromProxy();
+    if (!synced) {
+        // Proxy injoignable → fallback localStorage (coffre ou clair)
+        await loadApiKeys();
+    }
     // Migration des IDs renommés persistés (dernier modèle utilisé) — AVANT
     // pruneLastSelectionsOrphans() qui purgerait sinon les anciens IDs.
     try {
@@ -310,7 +397,8 @@ async function initConfig() {
     // Rafraîchissement silencieux du catalogue OpenRouter (non bloquant).
     // Met à jour les caches text+image, purge les IDs orphelins de orEnabled,
     // puis reconstruit MODELS/IMAGE_MODELS et le sélecteur.
-    if (API_KEYS.openrouter && typeof refreshOrCacheSilently === 'function') {
+    // Le proxy gère l'auth — plus de clé locale nécessaire
+    if (typeof refreshOrCacheSilently === 'function') {
         refreshOrCacheSilently().then((ok) => {
             if (!ok) return;
             pruneOrEnabledOrphans();
@@ -323,10 +411,11 @@ async function initConfig() {
 // Récupère le catalogue OpenRouter (text + image, catégorie 'all') sans toucher l'UI
 // du panneau Catalogue. Utilisé au démarrage pour avoir des métadonnées à jour.
 async function refreshOrCacheSilently() {
-    if (!API_KEYS.openrouter) return false;
-    const headers = { 'Authorization': `Bearer ${API_KEYS.openrouter}`, 'HTTP-Referer': 'https://cetas.local/', 'X-Title': 'Cetas' };
+    // Le proxy backend gère l'auth — la clé n'est plus dans le navigateur
+    const headers = {};
     async function fetchOne(isImage) {
-        const url = 'https://openrouter.ai/api/v1/models' + (isImage ? '?output_modalities=image' : '');
+        const base = 'https://openrouter.ai/api/v1/models' + (isImage ? '?output_modalities=image' : '');
+        const url = proxyUrl('openrouter', base);
         const res = await fetch(url, { headers });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -484,7 +573,7 @@ function _applyLocalModels(ed, ids) {
 // Charge les modèles locaux mis en cache (à appeler à l'init avant le fetch réseau).
 function loadCachedLocalModels() {
     const cache = _readLocalModelsCache();
-    for (const ed of ['ollama', 'lmstudio']) {
+    for (const ed of ['ollama', 'lmstudio', 'llamacpp']) {
         const ids = Array.isArray(cache[ed]) ? cache[ed] : [];
         if (ids.length) _applyLocalModels(ed, ids);
     }
@@ -493,7 +582,7 @@ function loadCachedLocalModels() {
 // Récupérer la liste des modèles depuis les serveurs locaux (Ollama + LM Studio).
 // En cas d'échec (serveur éteint), les modèles précédemment mis en cache sont conservés.
 async function fetchLocalModels(onlyEditeur = null) {
-    const editeurs = onlyEditeur ? [onlyEditeur] : ['ollama', 'lmstudio'];
+    const editeurs = onlyEditeur ? [onlyEditeur] : ['ollama', 'lmstudio', 'llamacpp'];
     const cache = _readLocalModelsCache();
 
     await Promise.all(editeurs.map(async (ed) => {
@@ -540,8 +629,8 @@ function unloadLocalModel(modelId, editeur = null) {
             body: JSON.stringify({ model: modelId, keep_alive: 0 }),
             signal: AbortSignal.timeout(2000)
         }).catch(() => {});
-    } else if (ed === 'lmstudio') {
-        // LM Studio : POST /api/v1/models/unload
+    } else if (ed === 'lmstudio' || ed === 'llamacpp') {
+        // LM Studio / LLaMA.cpp : POST /api/v1/models/unload (ou équivalent)
         fetch(`${origin}/api/v1/models/unload`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -820,19 +909,22 @@ const PROVIDERS = {
 
     openai: {
         getHeaders() {
-            return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEYS.openai}` };
+            return { 'Content-Type': 'application/json' };
         },
         getUrl(modelId, webSearch) {
-            return webSearch
+            const base = webSearch
                 ? 'https://api.openai.com/v1/responses'
                 : 'https://api.openai.com/v1/chat/completions';
+            return proxyUrl('openai', base);
         },
         formatMessages(history) {
             return formatChatCompletionsMessages(history);
         },
         buildBody(modelId, messages, systemPrompt, webSearch, modelParams) {
             if (webSearch) {
-                const body = { model: modelId, input: messages, tools: [{ type: 'web_search_preview' }], stream: true };
+                const tool = { type: 'web_search_preview' };
+                if (modelParams?.webSearchDepth === 'deep') tool.search_context_size = 'high';
+                const body = { model: modelId, input: messages, tools: [tool], stream: true };
                 if (systemPrompt) body.instructions = systemPrompt;
                 if (modelParams?.temperature !== undefined) body.temperature = modelParams.temperature;
                 if (modelParams?.max_tokens !== undefined) body.max_output_tokens = modelParams.max_tokens;
@@ -875,14 +967,12 @@ const PROVIDERS = {
         getHeaders() {
             return {
                 'Content-Type': 'application/json',
-                'x-api-key': API_KEYS.anthropic,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerous-direct-browser-access': 'true'
+                'anthropic-version': '2023-06-01'
             };
         },
 
         getUrl() {
-            return 'https://api.anthropic.com/v1/messages';
+            return proxyUrl('anthropic', 'https://api.anthropic.com/v1/messages');
         },
 
         formatMessages(history) {
@@ -1001,7 +1091,8 @@ const PROVIDERS = {
         },
 
         getUrl(modelId) {
-            return `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${API_KEYS.google}`;
+            const base = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse`;
+            return proxyUrl('google', base);
         },
 
         formatMessages(history) {
@@ -1109,8 +1200,8 @@ const PROVIDERS = {
     // ===================== Perplexity (Chat Completions) =====================
 
     perplexity: chatCompletionsProvider({
-        getUrl: () => 'https://api.perplexity.ai/chat/completions',
-        getHeaders: () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEYS.perplexity}` }),
+        getUrl: () => proxyUrl('perplexity', 'https://api.perplexity.ai/chat/completions'),
+        getHeaders: () => ({ 'Content-Type': 'application/json' }),
         formatOptions: { textOnly: true },
         bodyExtras: () => ({ return_citations: true }),
         parserOptions: {
@@ -1121,8 +1212,8 @@ const PROVIDERS = {
     // ===================== Mistral (Chat Completions) =====================
 
     mistral: chatCompletionsProvider({
-        getUrl: () => 'https://api.mistral.ai/v1/chat/completions',
-        getHeaders: () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEYS.mistral}` }),
+        getUrl: () => proxyUrl('mistral', 'https://api.mistral.ai/v1/chat/completions'),
+        getHeaders: () => ({ 'Content-Type': 'application/json' }),
         formatOptions: { trimTrailingAssistant: true },
         bodyExtras: (modelId, webSearch, modelParams) => {
             // Mistral Small 4 / Medium 3.5 : toggle binaire `reasoning_effort: "high"|"none"`.
@@ -1140,8 +1231,8 @@ const PROVIDERS = {
     // ===================== DeepSeek (Chat Completions) =====================
 
     deepseek: chatCompletionsProvider({
-        getUrl: () => 'https://api.deepseek.com/chat/completions',
-        getHeaders: () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEYS.deepseek}` }),
+        getUrl: () => proxyUrl('deepseek', 'https://api.deepseek.com/chat/completions'),
+        getHeaders: () => ({ 'Content-Type': 'application/json' }),
         bodyExtras: (modelId, webSearch, modelParams) => {
             // `deepseek-chat` expose un toggle binaire ; si activé ('high'), on bascule
             // vers l'endpoint `deepseek-reasoner` (chaîne de pensée).
@@ -1160,8 +1251,8 @@ const PROVIDERS = {
     // ===================== Grok / xAI (Chat Completions) =====================
 
     grok: chatCompletionsProvider({
-        getUrl: () => 'https://api.x.ai/v1/chat/completions',
-        getHeaders: () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEYS.grok}` }),
+        getUrl: () => proxyUrl('grok', 'https://api.x.ai/v1/chat/completions'),
+        getHeaders: () => ({ 'Content-Type': 'application/json' }),
         bodyExtras: (modelId, webSearch, modelParams) => {
             // Grok 4.20 : toggle binaire — si désactivé ('minimal'), bascule sur la variante non-reasoning
             const effort = modelParams?.reasoning_effort;
@@ -1191,8 +1282,8 @@ const PROVIDERS = {
     // ===================== Z.ai / Zhipu GLM (Chat Completions) =====================
 
     zai: chatCompletionsProvider({
-        getUrl: () => 'https://api.z.ai/api/paas/v4/chat/completions',
-        getHeaders: () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEYS.zai}` }),
+        getUrl: () => proxyUrl('zai', 'https://api.z.ai/api/paas/v4/chat/completions'),
+        getHeaders: () => ({ 'Content-Type': 'application/json' }),
         bodyExtras: (modelId, webSearch, modelParams) => {
             // GLM-5 / 5.1 / 5.2 / 5-Turbo : toggle binaire via `thinking: { type: "enabled" | "disabled" }`
             const isGlmReasoning = ['glm-5', 'glm-5.1', 'glm-5.2', 'glm-5-turbo'].includes(modelId);
@@ -1225,15 +1316,42 @@ const PROVIDERS = {
         bodyExtras: () => ({ stream_options: { include_usage: true } })
     }),
 
+    // ===================== Local — LLaMA.cpp =====================
+
+    llamacpp: chatCompletionsProvider({
+        getUrl: () => `${API_KEYS.llamacpp.replace(/\/+$/, '')}/v1/chat/completions`,
+        getHeaders: () => ({ 'Content-Type': 'application/json' }),
+        formatOptions: { collapseTextOnly: true },
+        bodyExtras: () => ({ stream_options: { include_usage: true } })
+    }),
+
+    // ===================== Groq =====================
+
+    groq: chatCompletionsProvider({
+        getUrl: () => proxyUrl('groq', 'https://api.groq.com/openai/v1/chat/completions'),
+        getHeaders: () => ({ 'Content-Type': 'application/json' })
+    }),
+
+    // ===================== Nvidia NIM =====================
+
+    nvidia: chatCompletionsProvider({
+        getUrl: () => proxyUrl('nvidia', 'https://integrate.api.nvidia.com/v1/chat/completions'),
+        getHeaders: () => ({ 'Content-Type': 'application/json' })
+    }),
+
+    // ===================== Cabreras =====================
+
+    cabreras: chatCompletionsProvider({
+        getUrl: () => proxyUrl('cabreras', 'https://api.cabreras.ai/v1/chat/completions'),
+        getHeaders: () => ({ 'Content-Type': 'application/json' })
+    }),
+
     // ===================== OpenRouter (LLM & Images) =====================
 
     openrouter: chatCompletionsProvider({
-        getUrl: () => 'https://openrouter.ai/api/v1/chat/completions',
+        getUrl: () => proxyUrl('openrouter', 'https://openrouter.ai/api/v1/chat/completions'),
         getHeaders: () => ({
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEYS.openrouter}`,
-            'HTTP-Referer': 'https://cetas.local/',
-            'X-Title': 'Cetas'
+            'Content-Type': 'application/json'
         }),
         // Opt-in usage accounting : OR ajoute `usage.cost` (USD) dans la dernière chunk SSE
         // https://openrouter.ai/docs/use-cases/usage-accounting
@@ -1387,11 +1505,8 @@ const IMAGE_PROVIDERS = {
                 }
                 // `moderation` n'existe pas sur /v1/images/edits : ne pas l'envoyer.
 
-                response = await fetch('https://api.openai.com/v1/images/edits', {
+                response = await fetch(proxyUrl('openai', 'https://api.openai.com/v1/images/edits'), {
                     method: 'POST',
-                    // Pas de Content-Type explicite : le navigateur pose lui-même
-                    // le multipart/form-data avec son boundary.
-                    headers: { 'Authorization': `Bearer ${API_KEYS.openai}` },
                     body: form,
                     signal
                 });
@@ -1411,12 +1526,9 @@ const IMAGE_PROVIDERS = {
                     body.output_compression = output_compression;
                 }
 
-                response = await fetch('https://api.openai.com/v1/images/generations', {
+                response = await fetch(proxyUrl('openai', 'https://api.openai.com/v1/images/generations'), {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${API_KEYS.openai}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
                     signal
                 });
@@ -1453,7 +1565,8 @@ const IMAGE_PROVIDERS = {
             const imageSize = imageParams?.imageSize || '1K';
             const thinkingLevel = imageParams?.thinkingLevel || 'minimal';
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${API_KEYS.google}`;
+            const base = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent`;
+            const url = proxyUrl('google', base);
 
             const parts = [];
             if (referenceImages && referenceImages.length > 0) {
@@ -1563,12 +1676,9 @@ const IMAGE_PROVIDERS = {
                 body.seed = imageParams.seed;
             }
 
-            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            const response = await fetch(proxyUrl('openrouter', 'https://openrouter.ai/api/v1/chat/completions'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${API_KEYS.openrouter}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
                 signal
             });
@@ -1731,7 +1841,7 @@ async function ttsSpeak(text, onDone, onError, silent = false, onPlayingStart = 
     if (ttsEditeur === 'google') {
         try {
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel.id}:generateContent?key=${API_KEYS.google}`,
+                proxyUrl('google', `https://generativelanguage.googleapis.com/v1beta/models/${ttsModel.id}:generateContent`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1769,12 +1879,9 @@ async function ttsSpeak(text, onDone, onError, silent = false, onPlayingStart = 
             if (audioCtx) { try { audioCtx.close(); } catch (e) {} audioCtx = null; }
         };
         try {
-            const response = await fetch('https://api.mistral.ai/v1/audio/speech', {
+            const response = await fetch(proxyUrl('mistral', 'https://api.mistral.ai/v1/audio/speech'), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${API_KEYS.mistral}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: ttsModel.id,
                     input: text,
@@ -1888,12 +1995,9 @@ async function ttsSpeak(text, onDone, onError, silent = false, onPlayingStart = 
     // OpenAI TTS (défaut)
     try {
         const openaiModel = ttsEditeur === 'openai' ? ttsModel : MODELS_DATA.tts.find(m => m.editeur === 'openai');
-        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+        const response = await fetch(proxyUrl('openai', 'https://api.openai.com/v1/audio/speech'), {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEYS.openai}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: openaiModel.id,
                 input: text,
@@ -1922,7 +2026,7 @@ async function transcribeAudio(audioBlob, onDone, onError) {
                 reader.readAsDataURL(audioBlob);
             });
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${sttModel.id}:generateContent?key=${API_KEYS.google}`,
+                proxyUrl('google', `https://generativelanguage.googleapis.com/v1beta/models/${sttModel.id}:generateContent`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1953,9 +2057,9 @@ async function transcribeAudio(audioBlob, onDone, onError) {
             formData.append('file', audioBlob, 'audio.webm');
             formData.append('model', sttModel.id);
             formData.append('language', 'fr');
-            const response = await fetch('https://api.mistral.ai/v1/audio/transcriptions', {
+            const response = await fetch(proxyUrl('mistral', 'https://api.mistral.ai/v1/audio/transcriptions'), {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${API_KEYS.mistral}` },
+                headers: {},
                 body: formData
             });
             if (!response.ok) {
@@ -1975,9 +2079,8 @@ async function transcribeAudio(audioBlob, onDone, onError) {
         formData.append('file', audioBlob, 'audio.webm');
         formData.append('model', openaiSttModel.id);
         formData.append('language', 'fr');
-        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        const response = await fetch(proxyUrl('openai', 'https://api.openai.com/v1/audio/transcriptions'), {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${API_KEYS.openai}` },
             body: formData
         });
         if (!response.ok) {
@@ -2010,12 +2113,9 @@ async function streamText(modelId, prompt, onDelta) {
         throw new Error(`Modèle introuvable : "${modelId}". Ce modèle n'est plus disponible dans le catalogue, sélectionnez-en un autre dans le menu.`);
     }
 
-    // Vérifier la clé API
+    // Vérifier la clé API (locaux uniquement — le proxy gère l'auth pour les cloud)
     if (isLocalEditeur(editeur)) {
-        if (!API_KEYS[editeur]) throw new Error(`URL du serveur ${editeur === 'ollama' ? 'Ollama' : 'LM Studio'} requise. Renseignez-la dans Configuration.`);
-    } else {
-        const key = API_KEYS[editeur] !== undefined ? editeur : 'openai';
-        if (!API_KEYS[key]) throw new Error(`Clé API ${key} requise. Renseignez-la dans Configuration.`);
+        if (!API_KEYS[editeur]) throw new Error(`URL du serveur ${editeur === 'ollama' ? 'Ollama' : editeur === 'lmstudio' ? 'LM Studio' : 'LLaMA.cpp'} requise. Renseignez-la dans Configuration.`);
     }
 
     const provider = PROVIDERS[editeur];

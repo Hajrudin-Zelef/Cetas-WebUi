@@ -7,9 +7,14 @@ const Auth = (() => {
 
   const LS_USERS = 'cetas-users';
   const SS_SESSION = 'cetas-session';
+  const SS_VAULT_KEY = 'cetas-vault-key';       // clé AES-256 raw hex
+  const LS_VAULT_KEYS = 'cetas-vault-keys';      // clés API chiffrées
+  const LS_LEGACY_KEYS = 'minou-apikeys';         // ancien stockage en clair
   const SEED_URL = 'core/users-seed.json';
+  const PBKDF2_ITER = 600000;
 
   let _currentUser = null; // {username, email, role, created_at}
+  let _vaultReady = false; // true si la clé de coffre est disponible
 
   // --- Helpers ---
 
@@ -61,6 +66,7 @@ const Auth = (() => {
       const s = sessionStorage.getItem(SS_SESSION);
       if (s) {
         _currentUser = JSON.parse(s);
+        _vaultReady = !!sessionStorage.getItem(SS_VAULT_KEY);
         return true;
       }
     } catch (e) {}
@@ -71,29 +77,35 @@ const Auth = (() => {
 
   async function _bootstrapUsers() {
     let users = _readUsers();
-    if (users.length > 0) return users;
 
-    // Essayer de charger le seed depuis setup.py
+    // Toujours tenter de sync depuis le seed setup.py
+    // (ajoute les nouveaux comptes sans écraser les existants)
     try {
       const resp = await fetch(SEED_URL);
       if (resp.ok) {
         const seed = await resp.json();
         if (Array.isArray(seed) && seed.length > 0) {
-          // Marquer tous les comptes du seed comme admin
-          users = seed.map(u => ({
-            username: u.username,
-            email: u.email || '',
-            password_hash: u.password_hash,
-            role: 'admin',
-            created_at: u.created_at || new Date().toISOString()
-          }));
-          _writeUsers(users);
-          return users;
+          let changed = false;
+          for (const su of seed) {
+            if (!users.find(u => u.username === su.username)) {
+              users.push({
+                username: su.username,
+                email: su.email || '',
+                password_hash: su.password_hash,
+                role: 'admin',
+                created_at: su.created_at || new Date().toISOString()
+              });
+              changed = true;
+            }
+          }
+          if (changed) _writeUsers(users);
         }
       }
     } catch (e) {
-      // Fichier seed inexistant (normal si setup.py n'a pas été lancé)
+      // Fichier seed inexistant
     }
+
+    if (users.length > 0) return users;
 
     // Fallback — compte admin par défaut
     const defaultHash = await _sha256('admin');
@@ -106,6 +118,90 @@ const Auth = (() => {
     }];
     _writeUsers(users);
     return users;
+  }
+
+  // --- Coffre clés API (PBKDF2 + AES-256-GCM) ---
+
+  function _hexToBytes(hex) {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+    }
+    return bytes;
+  }
+
+  function _bytesToHex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /** Dérive une clé AES-256 depuis le mot de passe via PBKDF2 */
+  async function _deriveVaultKey(password) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+    );
+    const derived = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: enc.encode('cetas-vault-salt-v1'), iterations: PBKDF2_ITER, hash: 'SHA-256' },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      true, // extractable
+      ['encrypt', 'decrypt']
+    );
+    return derived;
+  }
+
+  /** Stocke la clé dans sessionStorage (raw hex) */
+  async function _storeVaultKey(cryptoKey) {
+    const raw = await crypto.subtle.exportKey('raw', cryptoKey);
+    sessionStorage.setItem(SS_VAULT_KEY, _bytesToHex(new Uint8Array(raw)));
+    _vaultReady = true;
+  }
+
+  /** Récupère la clé depuis sessionStorage (null si absente) */
+  async function _getVaultKey() {
+    if (!_vaultReady) return null;
+    const hex = sessionStorage.getItem(SS_VAULT_KEY);
+    if (!hex) return null;
+    try {
+      return await crypto.subtle.importKey(
+        'raw', _hexToBytes(hex), 'AES-GCM', false, ['encrypt', 'decrypt']
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /** Initialise le coffre au login (appelé après authentification réussie) */
+  async function _vaultInit(password) {
+    const key = await _deriveVaultKey(password);
+    await _storeVaultKey(key);
+    // Migration : anciennes clés en clair → coffre chiffré
+    await _vaultMigrate();
+  }
+
+  /** Migre minou-apikeys → cetas-vault-keys */
+  async function _vaultMigrate() {
+    const legacy = localStorage.getItem(LS_LEGACY_KEYS);
+    if (!legacy) return;
+    const existing = localStorage.getItem(LS_VAULT_KEYS);
+    if (existing) return; // déjà migré
+    try {
+      // Ré-encrypte avec la clé du coffre
+      const key = await _getVaultKey();
+      if (!key) return;
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const enc = new TextEncoder();
+      const ct = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv }, key, enc.encode(legacy)
+      );
+      const combined = new Uint8Array(iv.length + ct.byteLength);
+      combined.set(iv);
+      combined.set(new Uint8Array(ct), iv.length);
+      localStorage.setItem(LS_VAULT_KEYS, _bytesToHex(combined));
+      localStorage.removeItem(LS_LEGACY_KEYS);
+    } catch (e) {
+      // Échec silencieux — on retentera au prochain login
+    }
   }
 
   // --- API publique ---
@@ -202,12 +298,16 @@ const Auth = (() => {
       const user = users.find(u => u.username === username && u.password_hash === hash);
       if (!user) return false;
       _createSession(user);
+      // Dériver la clé de coffre depuis le mot de passe
+      await _vaultInit(password);
       return true;
     },
 
     /** Déconnecte l'utilisateur et recharge la page */
     logout() {
       _clearSession();
+      sessionStorage.removeItem(SS_VAULT_KEY);
+      _vaultReady = false;
       window.location.reload();
     },
 
@@ -221,6 +321,39 @@ const Auth = (() => {
     isAdmin() {
       const u = Auth.getCurrentUser();
       return u && u.role === 'admin';
+    },
+
+    /** Le coffre de clés API est-il prêt ? */
+    isVaultReady() {
+      return _vaultReady;
+    },
+
+    /** Chiffre une chaîne avec la clé de coffre → hex (iv + ciphertext) */
+    async vaultEncrypt(plaintext) {
+      const key = await _getVaultKey();
+      if (!key) throw new Error('Coffre non disponible.');
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const enc = new TextEncoder();
+      const ct = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv }, key, enc.encode(plaintext)
+      );
+      const combined = new Uint8Array(iv.length + ct.byteLength);
+      combined.set(iv);
+      combined.set(new Uint8Array(ct), iv.length);
+      return _bytesToHex(combined);
+    },
+
+    /** Déchiffre une chaîne chiffrée par vaultEncrypt → texte clair */
+    async vaultDecrypt(hexCiphertext) {
+      const key = await _getVaultKey();
+      if (!key) throw new Error('Coffre non disponible.');
+      const combined = _hexToBytes(hexCiphertext);
+      const iv = combined.slice(0, 12);
+      const ct = combined.slice(12);
+      const pt = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv }, key, ct
+      );
+      return new TextDecoder().decode(pt);
     },
 
     /** Admin : liste tous les utilisateurs */

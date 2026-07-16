@@ -263,7 +263,8 @@
                     <!-- Ligne 2 -->
                     <div class="input-line-2">
                         <div class="input-line-2-left">
-                            <button id="attach-btn" title="Joindre un fichier"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg></button>
+                            <button id="plus-menu-btn" class="input-icon-btn" title="Plus d'options"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                            <button id="attach-btn" title="Joindre un fichier" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg></button>
                             <button id="web-search-btn" class="input-icon-btn custom-select-info" title="Recherche web" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
                             <button id="canvas-toggle-btn" class="input-icon-btn" title="Activer le Canvas pour cette conversation" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></button>
                         </div>
@@ -297,6 +298,70 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
             </div>
+            <div id="plus-menu-dropdown" class="plus-menu-dropdown" style="display:none">
+                <!-- Section Fichiers -->
+                <button type="button" class="plus-menu-item" data-action="attach">
+                    <span class="plus-menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg></span>
+                    <span class="plus-menu-item-text">
+                        <span class="plus-menu-item-title">Ajouter des fichiers</span>
+                        <span class="plus-menu-item-desc">Images, PDF, .md, .txt, .csv…</span>
+                    </span>
+                </button>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Provider -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-section-title">Provider</div>
+                    <div id="plus-menu-providers" class="plus-menu-providers"></div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Mode Réflexion -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-row">
+                        <span class="plus-menu-row-label">
+                            <span class="plus-menu-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg></span>
+                            Mode Réflexion
+                        </span>
+                        <label class="plus-menu-toggle" id="plus-reflection-toggle-label">
+                            <input type="checkbox" id="plus-reflection-toggle">
+                            <span class="plus-menu-toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Effort -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-section-title">Effort</div>
+                    <div class="plus-menu-pills" id="plus-effort-pills">
+                        <button type="button" class="plus-menu-pill" data-effort="low">Faible <span class="plus-menu-pill-hint">Rapide</span></button>
+                        <button type="button" class="plus-menu-pill active" data-effort="medium">Moyen <span class="plus-menu-pill-hint">Équilibré</span></button>
+                        <button type="button" class="plus-menu-pill" data-effort="high">Max <span class="plus-menu-pill-hint">Qualité</span></button>
+                    </div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Compétences -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-section-title">Compétences</div>
+                    <div id="plus-menu-skills" class="plus-menu-skills"></div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Recherche web -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-row">
+                        <span class="plus-menu-row-label">
+                            <span class="plus-menu-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+                            Recherche web
+                        </span>
+                        <label class="plus-menu-toggle" id="plus-websearch-toggle-label">
+                            <input type="checkbox" id="plus-websearch-toggle">
+                            <span class="plus-menu-toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="plus-menu-pills plus-menu-pills-tight" id="plus-websearch-depth" style="display:none">
+                        <button type="button" class="plus-menu-pill active" data-depth="standard">Standard</button>
+                        <button type="button" class="plus-menu-pill" data-depth="deep">Approfondi</button>
+                    </div>
+                </div>
+            </div>
             <span class="input-hint" id="input-hint"></span>
         </div>
     </main>
@@ -312,7 +377,7 @@
     <!-- Ancien bouton (conservé caché pour compatibilité JS) -->
     <button id="right-panel-toggle" class="right-panel-toggle" style="display:none" aria-hidden="true"></button>
 
-    <aside class="right-panel" id="right-panel">
+    <aside class="right-panel" id="right-panel" style="display:none" hidden>
         <div class="rp-panel-title">
             Réglages de la conversation
         </div>
@@ -603,6 +668,7 @@
                 <button class="apikeys-tab" data-tab="stockage">Stockage</button>
                 <button class="apikeys-tab" data-tab="users" id="tab-users" style="display:none">Utilisateurs</button>
                 <div class="apikeys-tabs-spacer"></div>
+                <button class="apikeys-tab" data-tab="conversation">Conversation</button>
                 <button class="apikeys-tab" data-tab="faq">FAQ</button>
                 <button class="apikeys-tab" data-tab="statistiques">Statistiques</button>
                 <button class="apikeys-tab" data-tab="share">Partager</button>
@@ -868,6 +934,12 @@
                         <button type="button" id="users-add-btn" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer">+ Ajouter un utilisateur</button>
                     </div>
                     </div>
+                </div>
+                <!-- Panel FAQ -->
+                <!-- Panel Conversation (content migré depuis #right-panel par JS à l'init) -->
+                <div class="apikeys-panel" id="panel-conversation">
+                    <h3>Réglages de la conversation</h3>
+                    <div class="apikeys-panel-body" id="panel-conversation-body"></div>
                 </div>
                 <!-- Panel FAQ -->
                 <div class="apikeys-panel" id="panel-faq">
