@@ -35,7 +35,7 @@ body.ocean-theme {
 /* Sidebar et panneau droit */
 body.ocean-theme .sidebar,
 body.ocean-theme .right-panel {
-    background: color-mix(in srgb, var(--bg-sidebar) 62%, transparent);
+    background: color-mix(in srgb, var(--bg-sidebar) 82%, transparent);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     isolation: isolate;
@@ -49,7 +49,7 @@ body.ocean-theme .right-panel {
 
 /* Zone de saisie */
 body.ocean-theme .input-area {
-    background: color-mix(in srgb, var(--bg) 55%, transparent);
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     isolation: isolate;
@@ -60,7 +60,7 @@ body.ocean-theme .input-area {
 body.ocean-theme .sp-modal,
 body.ocean-theme .budget-alert-popup,
 body.ocean-theme .custom-dialog {
-    background: color-mix(in srgb, var(--bg-input) 72%, transparent);
+    background: color-mix(in srgb, var(--bg-input) 90%, transparent);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     will-change: backdrop-filter;
@@ -86,7 +86,7 @@ body.ocean-theme .user-menu-dropdown,
 body.ocean-theme .plus-menu-dropdown,
 body.ocean-theme .share-menu,
 body.ocean-theme .cat-select-dropdown {
-    background: color-mix(in srgb, var(--bg-input) 68%, transparent);
+    background: color-mix(in srgb, var(--bg-input) 92%, transparent);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-color: var(--ocean-border-glow);
@@ -98,6 +98,20 @@ body.ocean-theme #token-info,
 body.ocean-theme #cost-info {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+}
+
+/* --- 3bis. THINKING BLOCK — Harmonisation glassmorphism --- */
+
+body.ocean-theme .thinking-block {
+    background: color-mix(in srgb, var(--bg-input) 55%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: var(--ocean-border-glow);
+    isolation: isolate;
+}
+
+body.ocean-theme .thinking-block summary {
+    background: transparent;
 }
 
 /* --- 4. GLOW BIOLUMINESCENT — Interactions lumineuses --- */
@@ -153,6 +167,17 @@ body.ocean-theme .input-icon-btn.active {
 
 body.ocean-theme .input-icon-btn:hover {
     color: var(--ocean-accent);
+}
+
+/* Le bouton + doit rester opaque pour être lisible */
+body.ocean-theme #plus-menu-btn {
+    background: var(--bg-input);
+}
+body.ocean-theme #plus-menu-btn:hover {
+    background: var(--bg-hover);
+}
+body.ocean-theme #plus-menu-btn.open {
+    background: var(--active-cat-color, var(--ocean-accent));
 }
 
 /* Boutons des panels latéraux */
