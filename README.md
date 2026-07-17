@@ -6,15 +6,17 @@ By **Marexsoft Corporation**
 
 ## Fonctionnalités
 
+- **SamAgent** — routeur intelligent multi-modèles : fusionne automatiquement les modèles de 5+ providers (DeepSeek, Google, Groq, Nvidia, OpenRouter) avec fallback automatique et rotation de modèles
 - Chat avec 15 fournisseurs d'IA (OpenAI, Anthropic, Google, Mistral, DeepSeek, Grok/xAI, Z.ai/GLM, Perplexity, OpenRouter, Groq, Nvidia, Cabreras + locaux Ollama, LM Studio, LLaMA.cpp)
 - Génération d'images, synthèse vocale (TTS), transcription audio (STT)
-- Recherche web intégrée (Perplexity Sonar)
+- Recherche web intégrée (Perplexity Sonar + OpenRouter)
 - Raisonnement visible (thinking blocks)
 - Favoris, catégories, prompts enregistrés, rôles personnalisés
 - Canvas intégré
 - Authentification multi-utilisateurs avec rôles
 - Proxy backend : les clés API restent côté serveur, jamais dans le navigateur
 - Synchronisation automatique des clés depuis le proxy au démarrage
+- Synchronisation des conversations multi-appareils via le proxy
 - Chiffrement des clés API au repos (AES-256-GCM) et coffre-fort Scrypt
 - Suivi de coûts en temps réel, budget alertes
 - Export Markdown / HTML, sauvegarde JSON
