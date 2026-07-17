@@ -3556,7 +3556,10 @@ promptInput.addEventListener('input', () => {
     updatePromptToolbar();
 });
 
-promptInput.addEventListener('focus', () => updatePromptToolbar());
+promptInput.addEventListener('focus', () => {
+    updatePromptToolbar();
+    if (window.innerWidth < 768) setTimeout(() => scrollToBottom(true), 300);
+});
 promptInput.addEventListener('blur', () => {
     // Petit délai pour permettre le clic sur un bouton toolbar / picker avant de masquer
     setTimeout(() => {
@@ -3598,6 +3601,7 @@ sendBtn.addEventListener('click', () => {
         if (STATE.currentAbortController) STATE.currentAbortController.abort();
         if (STATE.conversationId) STATE._activeStreams.delete(STATE.conversationId);
         STATE.isStreaming = false;
+        if (window.Ocean?.setPaused) window.Ocean.setPaused(false);
         STATE.currentAbortController = null;
         updateSendButton();
     } else {
@@ -4785,6 +4789,7 @@ function collapseThinkBlock(thinkBlock) {
 
 // --- Fin de streaming avec transition douce ---
 function endStreaming(el) {
+    if (window.Ocean?.setPaused) window.Ocean.setPaused(false);
     // Figer la largeur actuelle (inclut le min-width éventuel du collapseThinkBlock)
     const currentW = el.offsetWidth;
     el.classList.remove('streaming');
@@ -4886,12 +4891,10 @@ function createStreamRenderer(resizeEl, getTextEl, seedText) {
     function render() {
         const textEl = getTextEl();
         if (!textEl) return;
-        if (displayed.length - lastParsedLen >= 3 || buffer.length === 0) {
-            const _delta = displayed.length - lastParsedLen;
+        // Ne reparse que si au moins 20 nouveaux chars ou flush final (buffer vide)
+        if (displayed.length - lastParsedLen >= 20 || buffer.length === 0) {
             lastParsedLen = displayed.length;
             textEl.innerHTML = marked.parse(displayed);
-            // A réparer
-            // _wrapNewChars(textEl, _delta);
             scrollToBottom();
             _ensureStickyHandler(textEl);
             // Scroll interne du textEl (pour les blocs scrollables comme .thinking-content)
@@ -4901,29 +4904,18 @@ function createStreamRenderer(resizeEl, getTextEl, seedText) {
         }
     }
 
-    function scheduleNext() {
-        if (buffer.length === 0) { timer = null; return; }
-
-        let delay, chars;
-        if (buffer.length > 200)      { delay = 5;  chars = Math.ceil(buffer.length / 15); }
-        else if (buffer.length > 80)  { delay = 8;  chars = 4; }
-        else if (buffer.length > 30)  { delay = 14; chars = 2; }
-        else if (buffer.length > 8)   { delay = 22; chars = 1; }
-        else                          { delay = 40; chars = 1; }
-
-        timer = setTimeout(() => {
-            const n = Math.min(chars, buffer.length);
-            displayed += buffer.slice(0, n);
-            buffer = buffer.slice(n);
-            render();
-            scheduleNext();
-        }, delay);
+    function _flush() {
+        timer = null;
+        if (buffer.length === 0) return;
+        displayed += buffer;
+        buffer = '';
+        render();
     }
 
     return {
         add(chunk) {
             buffer += chunk;
-            if (!timer) scheduleNext();
+            if (!timer) timer = setTimeout(_flush, 80);
         },
         flush() {
             if (timer) { clearTimeout(timer); timer = null; }
@@ -5091,6 +5083,7 @@ async function regenerateLastResponse() {
     // Re-générer
     STATE.conversationLastActivity = new Date().toISOString();
     STATE.isStreaming = true;
+    if (window.Ocean?.setPaused) window.Ocean.setPaused(true);
     STATE.currentAbortController = new AbortController();
     updateSendButton();
 
@@ -5249,12 +5242,7 @@ async function regenerateLastResponse() {
                     sr.flush();
                     if (thinkSr) thinkSr.flush();
                     endStreaming(assistantDiv);
-                    const textEl = assistantDiv.querySelector('.message-text');
-                    if (textEl) { textEl.innerHTML = marked.parse(fullResponse); addCodeCopyButtons(textEl); }
-                    if (fullThinking.trim()) {
-                        const thinkContent = assistantDiv.querySelector('.thinking-content');
-                        if (thinkContent) thinkContent.innerHTML = marked.parse(fullThinking);
-                    } else {
+                    if (!fullThinking.trim()) {
                         const emptyBlock = assistantDiv.querySelector('.thinking-block');
                         if (emptyBlock) emptyBlock.remove();
                     }
@@ -5425,6 +5413,7 @@ function startEditMessage(wrapper, msgDiv) {
         // Régénérer la réponse
         _userHasScrolledUp = false;
         STATE.isStreaming = true;
+        if (window.Ocean?.setPaused) window.Ocean.setPaused(true);
         STATE.currentAbortController = new AbortController();
         updateSendButton();
 
@@ -5592,12 +5581,7 @@ function startEditMessage(wrapper, msgDiv) {
                     sr.flush();
                     if (thinkSr) thinkSr.flush();
                     endStreaming(assistantDiv);
-                    const el = assistantDiv.querySelector('.message-text');
-                    if (el) { el.innerHTML = marked.parse(fullResponse); addCodeCopyButtons(el); }
-                    if (fullThinking.trim()) {
-                        const tc = assistantDiv.querySelector('.thinking-content');
-                        if (tc) tc.innerHTML = marked.parse(fullThinking);
-                    } else {
+                    if (!fullThinking.trim()) {
                         const eb = assistantDiv.querySelector('.thinking-block');
                         if (eb) eb.remove();
                     }
@@ -5867,6 +5851,7 @@ async function sendMessage() {
     promptInput.style.height = 'auto';
     STATE.originalPromptBeforeEnhance = null;
     STATE.isStreaming = true;
+    if (window.Ocean?.setPaused) window.Ocean.setPaused(true);
     STATE.currentAbortController = new AbortController();
     updateSendButton();
 
@@ -6123,12 +6108,7 @@ async function sendMessage() {
                     if (_streamCtx.sr) _streamCtx.sr.flush();
                     if (_streamCtx.thinkSr) _streamCtx.thinkSr.flush();
                     endStreaming(ad);
-                    const textEl = ad.querySelector('.message-text');
-                    if (textEl) { textEl.innerHTML = marked.parse(fullResponse); addCodeCopyButtons(textEl); }
-                    if (fullThinking.trim()) {
-                        const thinkContent = ad.querySelector('.thinking-content');
-                        if (thinkContent) thinkContent.innerHTML = marked.parse(fullThinking);
-                    } else {
+                    if (!fullThinking.trim()) {
                         const emptyBlock = ad.querySelector('.thinking-block');
                         if (emptyBlock) emptyBlock.remove();
                     }

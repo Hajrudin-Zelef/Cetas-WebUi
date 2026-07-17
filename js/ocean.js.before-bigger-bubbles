@@ -6,7 +6,6 @@ import { setOnThemeChange } from './theme.js';
 
 let canvas, ctx, w, h, isDark, bubbles, planktons, frame = 0;
 let rafId = null;
-let _paused = false;
 
 // --- Initialisation ---
 
@@ -44,11 +43,11 @@ function _createParticles() {
         bubbles.push({
             x: Math.random() * w,
             y: Math.random() * h,
-            r: 6 + Math.random() * 14,
+            r: 1.5 + Math.random() * 4,
             speed: 0.1 + Math.random() * 0.25,
             wobble: Math.random() * Math.PI * 2,
             drift: 0.01 + Math.random() * 0.03,
-            alpha: 0.04 + Math.random() * 0.05,
+            alpha: 0.03 + Math.random() * 0.04,
         });
     }
 
@@ -77,7 +76,6 @@ function _detectTheme() {
 
 function _loop() {
     rafId = requestAnimationFrame(_loop);
-    if (_paused) return;
     frame++;
     ctx.clearRect(0, 0, w, h);
     _drawBackground();
@@ -204,12 +202,8 @@ function _onClickRipple(e) {
 
 // --- Enregistrement global (pattern window.Canvas) ---
 
-export function setPaused(paused) {
-    _paused = paused;
-}
-
 export function isActive() {
     return true;
 }
 
-window.Ocean = { init, isActive, setPaused };
+window.Ocean = { init, isActive };
