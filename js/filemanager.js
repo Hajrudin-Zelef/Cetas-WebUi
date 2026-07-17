@@ -280,6 +280,8 @@ async function deleteConversationFile(filename) {
         const existing = await readConversationFile(filename);
         if (existing) {
             const archived = { ...existing, messages: [], deleted: true };
+            // Sync serveur (suppression logique)
+            syncDeleteFromServer(filename).catch(function(){});
             return writeConversationFile(filename, archived);
         }
         return false;
@@ -488,4 +490,107 @@ function formatConversationFile(data) {
     if (data.category) obj.category = data.category;
     if (data.canvas) obj.canvas = data.canvas;
     return JSON.stringify(obj, null, 2);
+}
+
+// ── Sync conversations vers le serveur (multi-appareils) ──────────────
+
+function _getCetasUsername() {
+    try {
+        // Lire depuis localStorage (permanent) ou sessionStorage (session auth)
+        var u = localStorage.getItem('cetas-user') || localStorage.getItem('kiro-user') || '';
+        if (!u) {
+            var sess = sessionStorage.getItem('cetas-session') || sessionStorage.getItem('kiro-session') || '{}';
+            try { var s = JSON.parse(sess); u = s.username || ''; } catch(e) {}
+        }
+        return u.trim();
+    } catch(e) { return ''; }
+}
+
+async function syncPushToServer(filename, content) {
+    var username = _getCetasUsername();
+    if (!username) return false;
+    try {
+        var resp = await fetch('/api/conversations/' + encodeURIComponent(filename), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Cetas-User': username },
+            body: content
+        });
+        return resp.ok;
+    } catch(e) {
+        console.warn('[Sync] push échoué:', e.message);
+        return false;
+    }
+}
+
+async function syncPullFromServer() {
+    var username = _getCetasUsername();
+    if (!username) return 0;
+    try {
+        var resp = await fetch('/api/conversations', {
+            headers: { 'X-Cetas-User': username }
+        });
+        if (!resp.ok) return 0;
+        var metaList = await resp.json();
+        if (!Array.isArray(metaList)) return 0;
+
+        var db = await openConvDB();
+        var tx = db.transaction('conversations', 'readwrite');
+        var store = tx.objectStore('conversations');
+        var imported = 0;
+
+        for (var i = 0; i < metaList.length; i++) {
+            var meta = metaList[i];
+            var fn = meta.filename;
+            // Vérifier si on a déjà une version plus récente en local
+            try {
+                var existing = await new Promise(function(r) {
+                    var req = store.get(fn);
+                    req.onsuccess = function() { r(req.result); };
+                    req.onerror = function() { r(null); };
+                });
+                if (existing) {
+                    var localData = typeof existing === 'string' ? JSON.parse(existing) : existing;
+                    var localActivity = localData.lastActivity || localData.date || '';
+                    var serverActivity = meta.lastActivity || meta.date || '';
+                    if (localActivity >= serverActivity) continue; // local est plus récent
+                }
+            } catch(e) {}
+
+            // Télécharger la conversation complète depuis le serveur
+            try {
+                var convResp = await fetch('/api/conversations/' + encodeURIComponent(fn), {
+                    headers: { 'X-Cetas-User': username }
+                });
+                if (!convResp.ok) continue;
+                var convData = await convResp.json();
+                await new Promise(function(r, rj) {
+                    var req = store.put(JSON.stringify(convData), fn);
+                    req.onsuccess = function() { r(); };
+                    req.onerror = function() { rj(req.error); };
+                });
+                imported++;
+            } catch(e) {
+                console.warn('[Sync] pull conversation échoué:', fn, e.message);
+            }
+        }
+        return imported;
+    } catch(e) {
+        console.warn('[Sync] pull échoué:', e.message);
+        return 0;
+    }
+}
+
+async function syncDeleteFromServer(filename) {
+    var username = _getCetasUsername();
+    if (!username) return false;
+    try {
+        var resp = await fetch('/api/conversations/' + encodeURIComponent(filename), {
+            method: 'DELETE',
+            headers: { 'X-Cetas-User': username }
+        });
+        return resp.ok;
+    } catch(e) {
+        console.warn('[Sync] delete échoué:', e.message);
+        return false;
+    }
 }
