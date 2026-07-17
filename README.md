@@ -1,6 +1,6 @@
 # Cetas
 
-Interface de chat IA multi-modèles, privée et sécurisée. Gratuite, open-source, exécutée entièrement dans le navigateur avec un proxy backend optionnel pour la sécurité des clés API.
+*Assistant IA multi-modèles* — Interface de chat privée, sécurisée et gratuite. Entièrement exécutée dans le navigateur (Vanilla JS), avec un proxy backend optionnel pour la sécurité des clés API. Interface en français.
 
 By **Marexsoft Corporation**
 
@@ -21,11 +21,13 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 - **Mode réflexion** : toggle pour activer/désactiver le mode reasoning
 
 ### Expérience utilisateur
-- Thème **océanique** : canvas animé (bulles, plancton bioluminescent), effet glassmorphism
-- Interface 3 panneaux (sidebar, chat, panneau de configuration)
-- Thème clair / sombre / automatique, sans flash au chargement
-- Messages en markdown avec coloration syntaxique
-- Streaming temps réel — les réponses apparaissent caractère par caractère
+- **Thème océanique** : canvas animé (12 bulles montantes + 25 planctons bioluminescents en rAF), effet glassmorphism (sidebar 82% opaque + blur 14px, input 78%, modales 90%)
+- **Splash screen** : fond gradient abysses, halos bioluminescents, 4 gouttes d'eau animées
+- **Animations** : whale breathing 4s sur les logos, ripple 0.7s au clic, transitions vagues `cubic-bezier(0.23, 1, 0.32, 1)`
+- Interface 3 panneaux (sidebar 240px, chat centré max 800px, panneau configuration 280px)
+- Thème clair / sombre / automatique, sans flash au chargement (script inline `<head>`)
+- Messages en markdown avec coloration syntaxique, blocs de code
+- Streaming temps réel — rendu optimisé (debounce 80ms)
 - PWA installable, mode hors-ligne via service worker
 - Animations fluides, transitions douces, retours tactiles sur mobile
 
