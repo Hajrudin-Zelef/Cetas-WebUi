@@ -5,6 +5,7 @@ setup.py.or
 .vault/
 __pycache__/
 PriveDoc.md
+memory_session.md
 .env
 .docker-env
 proxy/server.py.back
