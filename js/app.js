@@ -3077,15 +3077,19 @@ initConfig().then(async () => {
     // de la BD potentiellement coûteuse). Le splash ne se masquera réellement
     // qu'une fois la durée minimale atteinte ET ce signal envoyé.
     refreshConvList().finally(() => {
-        if (typeof window.__kiroSplashReady === 'function') window.__kiroSplashReady();
-        renderFavList();
+        // Sync conversations depuis le serveur (multi-appareils)
+        // IMPORTANT : fait AVANT __kiroSplashReady pour que les conversations
+        // du compte utilisateur (autres appareils) soient visibles dès l'affichage.
+        var _syncPromise = typeof syncPullFromServer === 'function'
+            ? syncPullFromServer().then(function(n) {
+                if (n > 0) { refreshConvList(); renderFavList(); }
+              }).catch(function(){})
+            : Promise.resolve();
+        _syncPromise.then(function() {
+            renderFavList();
+            if (typeof window.__kiroSplashReady === 'function') window.__kiroSplashReady();
+        });
     });
-    // Sync conversations depuis le serveur (multi-appareils)
-    if (typeof syncPullFromServer === 'function') {
-        syncPullFromServer().then(function(n) {
-            if (n > 0) { refreshConvList(); renderFavList(); }
-        }).catch(function(){});
-    }
     refreshCatBar();
     await importDefaultSystemPrompts();
     refreshSpList();
