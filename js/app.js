@@ -1357,6 +1357,7 @@ const PROVIDER_LOGOS = {
     nvidia: 'images/Nvidia.svg',
     cabreras: 'images/Cabreras.svg',
     openrouter: 'images/OpenRouter.svg',
+    samagent: 'images/SamAgent.svg',
     ollama: 'images/Ollama.svg',
     lmstudio: 'images/LMStudio.svg',
     llamacpp: 'images/LlamaCpp.svg'
@@ -2671,7 +2672,7 @@ const EDITEUR_ICONS = {
     openai: 'OpenAI.svg', anthropic: 'Anthropic.svg', google: 'Google.svg',
     mistral: 'Mistral.svg', perplexity: 'Perplexity.svg',
     deepseek: 'DeepSeek.svg', grok: 'Grok.svg', zai: 'Z.ai.svg',
-    openrouter: 'OpenRouter.svg', ollama: 'Ollama.svg', lmstudio: 'LMStudio.svg'
+    openrouter: 'OpenRouter.svg', samagent: 'SamAgent.svg', ollama: 'Ollama.svg', lmstudio: 'LMStudio.svg'
 };
 function _editeurGroupHeaderHtml(editeur) {
     const icon = EDITEUR_ICONS[editeur];

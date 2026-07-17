@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <!-- 3 streams merging into 1 — Model Fusion -->
+  <circle cx="4" cy="6" r="2" fill="#f16e11" opacity="0.7"/>
+  <circle cx="12" cy="4" r="2" fill="#f16e11" opacity="0.85"/>
+  <circle cx="20" cy="6" r="2" fill="#f16e11" opacity="0.7"/>
+  <path d="M4 8 Q4 14 10 16" stroke="#192e45" stroke-width="2" stroke-linecap="round"/>
+  <path d="M12 6 L12 16" stroke="#192e45" stroke-width="2" stroke-linecap="round"/>
+  <path d="M20 8 Q20 14 14 16" stroke="#192e45" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="12" cy="19" r="3" fill="#f16e11"/>
+</svg>

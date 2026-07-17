@@ -22,6 +22,8 @@ const MODELS_DATA = {
     { "id": "gemini-3.1-flash-lite",       "label": "Gemini 3.1 Flash Lite",  "editeur": "google",    "inputPer1M": 0.25,  "outputPer1M": 1.5, "description": "Modèle ultra-rapide et économique de Google, bon rapport qualité-prix." },
     { "id": "gemini-2.5-flash",            "label": "Gemini 2.5 Flash",  "editeur": "google",    "inputPer1M": 0,     "outputPer1M": 0,   "description": "Gemini 2.5 Flash, rapide et économique." },
     { "id": "gemini-2.5-flash-lite",       "label": "Gemini 2.5 Flash Lite", "editeur": "google", "inputPer1M": 0,     "outputPer1M": 0,   "description": "Gemini 2.5 Flash Lite, ultra-rapide pour les tâches simples." },
+    { "id": "gemma-4-31b-it",              "label": "Gemma 4 31B",       "editeur": "google",    "inputPer1M": 0,     "outputPer1M": 0,   "description": "Gemma 4 31B de Google, modèle dense haute qualité, excellent pour le raisonnement." },
+    { "id": "gemma-4-26b-a4b-it",          "label": "Gemma 4 26B",       "editeur": "google",    "inputPer1M": 0,     "outputPer1M": 0,   "description": "Gemma 4 26B MoE (4B actifs), rapide et efficace, idéal pour les tâches polyvalentes." },
 
     // --- SamAgent (Model Fusion — routeur intelligent) ---
     { "id": "samagent-nano",             "label": "SamAgent Nano",    "editeur": "samagent",  "inputPer1M": 0,     "outputPer1M": 0,   "description": "Routeur intelligent — modèle rapide pour les requêtes simples (score 0-33)." },

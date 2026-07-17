@@ -99,11 +99,11 @@ var ROUTER_CONFIG = {
 // Si l'un est down, le suivant prend le relais — Cetas ne bloque jamais.
 // C'est l'identité même de SamAgent : Model Fusion sans point de défaillance unique.
 var ROUTER_LLM_POOL = [
-    { model: 'deepseek-chat',                       provider: 'deepseek',   label: 'DeepSeek V3.2',           type: 'openai' },
-    { model: 'llama-3.1-8b-instant',                provider: 'groq',       label: 'Llama 3.1 8B (Groq)',     type: 'openai' },
-    { model: 'nvidia/nemotron-3-nano-30b-a3b',      provider: 'nvidia',     label: 'Nemotron Nano 30B (NV)',  type: 'openai' },
-    { model: 'google/gemini-2.5-flash-lite',        provider: 'openrouter', label: 'Gemini Flash Lite (OR)',  type: 'openai' },
-    { model: 'gemini-2.5-flash-lite',               provider: 'google',     label: 'Gemini Flash Lite (G)',   type: 'google' }
+    { model: 'deepseek-chat',                       provider: 'deepseek',   label: 'DeepSeek V3.2',           type: 'openai',  path: '/v1/chat/completions' },
+    { model: 'llama-3.1-8b-instant',                provider: 'groq',       label: 'Llama 3.1 8B (Groq)',     type: 'openai',  path: '/openai/v1/chat/completions' },
+    { model: 'nvidia/nemotron-3-nano-30b-a3b',      provider: 'nvidia',     label: 'Nemotron Nano 30B (NV)',  type: 'openai',  path: '/v1/chat/completions' },
+    { model: 'google/gemini-2.5-flash-lite',        provider: 'openrouter', label: 'Gemini Flash Lite (OR)',  type: 'openai',  path: '/api/v1/chat/completions' },
+    { model: 'gemini-3.1-flash-lite',               provider: 'google',     label: 'Gemini 3.1 Flash Lite (G)', type: 'google', path: '/v1beta/models/gemini-3.1-flash-lite:generateContent' }
 ];
 
 // Prompt système pour le routeur LLM — doit retourner du JSON pur
@@ -204,10 +204,10 @@ async function callRouterLLM(prompt, targetPool) {
 async function _fetchRouterLLM(routerModel, userMessage) {
     var isGoogle = routerModel.type === 'google';
 
-    var body, path;
+    var body, upstreamPath;
     if (isGoogle) {
         // Google: format Gemini
-        path = '/api/proxy/google/v1beta/models/' + routerModel.model + ':generateContent';
+        upstreamPath = routerModel.path || ('/v1beta/models/' + routerModel.model + ':generateContent');
         body = {
             systemInstruction: {
                 parts: [{ text: ROUTER_LLM_SYSTEM_PROMPT }]
@@ -223,7 +223,7 @@ async function _fetchRouterLLM(routerModel, userMessage) {
         };
     } else {
         // OpenAI-compatible: DeepSeek, Groq, Nvidia, OpenRouter
-        path = '/api/proxy/' + routerModel.provider + '/v1/chat/completions';
+        upstreamPath = routerModel.path || '/v1/chat/completions';
         body = {
             model: routerModel.model,
             messages: [
@@ -236,7 +236,8 @@ async function _fetchRouterLLM(routerModel, userMessage) {
         };
     }
 
-    var resp = await fetch(path, {
+    var proxyPath = '/api/proxy/' + routerModel.provider + upstreamPath;
+    var resp = await fetch(proxyPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)

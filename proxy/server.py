@@ -191,6 +191,11 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
     host = parsed.hostname
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
 
+    # Préfixer avec le chemin du base_url (ex: /openai pour Groq)
+    base_path = parsed.path.rstrip("/")
+    if base_path:
+        url_path = base_path + url_path
+
     conn = http.client.HTTPSConnection(host, port, timeout=300)
     try:
         conn.request(method, url_path, body=body, headers=headers)
