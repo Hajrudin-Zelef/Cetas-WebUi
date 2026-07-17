@@ -1836,12 +1836,65 @@ function buildCanvasParserIfActive() {
     return null;
 }
 
+// Prompt système injecté pour les modèles SamAgent (routeur intelligent)
+const SAMAGENT_BOOST_PROMPT = `Tu es SamAgent, un assistant IA ultra-efficace et concis. Tes règles :
+
+1. CLARIFICATION proactive : si la demande de l'utilisateur est vague ou incomplète (ex: "salut", "aide-moi", "j'ai un problème"), pose exactement 3 questions courtes et ciblées pour cerner son besoin réel avant de répondre.
+
+2. COMPÉTENCE active : si un rôle système (compétence) est défini ci-dessus, applique-le avec une précision chirurgicale. Tu excelles dans cet exercice — c'est ta signature. Réponds de manière experte, structurée, sans blabla.
+
+3. EFFICACITÉ maximale : va droit au but. Pas de formules de politesse superflues, pas de répétitions. Chaque mot compte.
+
+4. ADAPTATION : l'utilisateur peut soit répondre à tes questions, soit sélectionner une compétence dans le menu "+" — adapte-toi immédiatement.`;
+
 function effectiveSystemPrompt(spContent) {
     let sp = spContent || '';
+    // Injecter le prompt SamAgent si un modèle SamAgent est actif
+    const activeModel = STATE.currentModel || STATE.currentSearchModel || '';
+    if (activeModel.indexOf('samagent-') === 0) {
+        sp = (sp ? sp + '\n\n' : '') + SAMAGENT_BOOST_PROMPT;
+    }
     if (window.Canvas && window.Canvas.isActive()) {
         sp = (sp ? sp + '\n\n' : '') + window.Canvas.buildSystemPromptSuffix();
     }
     return sp;
+}
+
+// ── Indicateur furtif du routeur SamAgent ──────────────────────────────
+// Affiche un message animé dans la bulle assistant pendant l'analyse.
+// L'utilisateur voit une activité sans savoir qu'un routeur LLM tourne.
+var ROUTER_THINKING_MESSAGES = [
+    '✨ Analyse de votre requête',
+    '🔍 Exploration du contexte',
+    '💡 Recherche du meilleur angle',
+    '🎯 Calibration de la réponse',
+    '⚡ Optimisation en cours',
+    '🧠 Réflexion approfondie',
+    '🌟 Préparation d\'une réponse experte',
+    '📐 Structuration de la pensée',
+    '🔬 Examen minutieux du sujet',
+    '🌊 Plongée dans le contexte',
+    '💎 Extraction des points clés',
+    '🧩 Assemblage des connaissances',
+    '🎨 Façonnage de la réponse',
+    '🚀 Accélération neuronale',
+    '👁️ Lecture entre les lignes'
+];
+
+function _showRouterThinking(assistantDiv) {
+    var msg = ROUTER_THINKING_MESSAGES[Math.floor(Math.random() * ROUTER_THINKING_MESSAGES.length)];
+    var el = document.createElement('div');
+    el.className = 'router-thinking';
+    el.innerHTML = '<span class="router-thinking-text">' + msg + '</span><span class="router-thinking-dots"><span>.</span><span>.</span><span>.</span></span>';
+    assistantDiv.appendChild(el);
+}
+
+function _hideRouterThinking(assistantDiv) {
+    var el = assistantDiv.querySelector('.router-thinking');
+    if (el) {
+        el.classList.add('router-thinking-fade');
+        setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
+    }
 }
 
 /**
@@ -2589,7 +2642,7 @@ const EDITEUR_LABELS = {
     openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google',
     mistral: 'Mistral', perplexity: 'Perplexity',
     deepseek: 'DeepSeek', grok: 'Grok (xAI)', zai: 'Z.ai (GLM)',
-    openrouter: 'OpenRouter', ollama: 'Ollama', lmstudio: 'LM Studio'
+    openrouter: 'OpenRouter', samagent: 'SamAgent (Fusion)', ollama: 'Ollama', lmstudio: 'LM Studio'
 };
 // Mapping slug → libellé pour les fournisseurs réels d'OpenRouter (issus de l'id : "editeur/modele").
 // Fallback : title-case du slug si absent de la table.
@@ -2613,7 +2666,7 @@ function _modelMakerLabel(m) {
     }
     return EDITEUR_LABELS[m.editeur] || m.editeur || '';
 }
-const EDITEUR_ORDER = ['openai', 'anthropic', 'google', 'mistral', 'perplexity', 'deepseek', 'grok', 'zai', 'openrouter', 'ollama', 'lmstudio'];
+const EDITEUR_ORDER = ['openai', 'anthropic', 'google', 'mistral', 'perplexity', 'deepseek', 'grok', 'zai', 'openrouter', 'samagent', 'ollama', 'lmstudio'];
 const EDITEUR_ICONS = {
     openai: 'OpenAI.svg', anthropic: 'Anthropic.svg', google: 'Google.svg',
     mistral: 'Mistral.svg', perplexity: 'Perplexity.svg',
@@ -2634,7 +2687,7 @@ const HIDDEN_EDITEURS = new Set();
 // afin que la liste des modèles reflète immédiatement les saisies de l'utilisateur.
 function hasProviderKey(editeur) {
     if (!editeur) return false;
-    if (editeur === 'system') return true;
+    if (editeur === 'system' || editeur === 'samagent') return true;
     const overlay = document.getElementById('apikeys-modal-overlay');
     if (overlay && overlay.style.display && overlay.style.display !== 'none') {
         const input = document.getElementById('apikey-' + editeur);
@@ -3043,9 +3096,10 @@ initConfig().then(async () => {
         updateTriggerDisplay(modelSelect);
         updateEffortMandatory(lastModel);
     }
-    // Fallback : si aucun modèle sélectionné, prendre le premier disponible
+    // Fallback : si aucun modèle sélectionné, prendre SamAgent N4 par défaut
     if (!STATE.currentModel) {
-        const firstAvailable = MODELS.find(m => hasProviderKey(m.editeur));
+        const firstAvailable = MODELS.find(m => m.id === 'samagent-n4' && hasProviderKey(m.editeur))
+                            || MODELS.find(m => hasProviderKey(m.editeur));
         if (firstAvailable) {
             modelSelect._customValue = firstAvailable.id;
             modelSelect._activeCategory = 'text';
@@ -3358,7 +3412,7 @@ function populateModelSelect() {
 // --- Sélecteurs mutuellement exclusifs ---
 function checkApiKeyForModel(modelId, lookupFn) {
     const editeur = lookupFn(modelId);
-    if (editeur && !API_KEYS[editeur]) {
+    if (editeur && !API_KEYS[editeur] && editeur !== 'samagent') {
         if (isLocalEditeur(editeur)) {
             const name = editeur === 'ollama' ? 'Ollama' : 'LM Studio';
             showModelAlert(`URL du serveur ${name} manquante. Renseignez-la dans Configuration.`);
@@ -5375,7 +5429,19 @@ function startEditMessage(wrapper, msgDiv) {
         assistantDiv.classList.add('streaming');
         const editGenStart = Date.now();
 
-        const activeTextModel = STATE.currentModel || STATE.currentSearchModel;
+        var activeTextModel = STATE.currentModel || STATE.currentSearchModel;
+
+        // ── Model Fusion Router (regen) ──────────────────────────
+        var _routedBy = null;
+        if (activeTextModel && activeTextModel.indexOf('samagent-') === 0) {
+            _showRouterThinking(assistantDiv);
+            var _routeRegen = await routeModel(newText, activeTextModel);
+            _hideRouterThinking(assistantDiv);
+            _routedBy = _routeRegen.label;
+            activeTextModel = _routeRegen.modelId;
+            STATE._routerForceThinking = _routeRegen.thinking;
+        }
+
         const spContent = spTextarea.value.trim() || null;
 
         // Branche modèle image : re-générer l'image avec generateImage au lieu de streamModel
@@ -5548,6 +5614,12 @@ function startEditMessage(wrapper, msgDiv) {
                         addCostForModel(activeTextModel, usage.input_tokens || 0, usage.output_tokens || 0, segCost);
                     }
                     updateTokenDisplay(); saveConversation(); addRegenBtn();
+                    if (_routedBy && assistantDiv) {
+                        var _ind2 = document.createElement('div');
+                        _ind2.className = 'model-fusion-indicator';
+                        _ind2.textContent = _routedBy;
+                        assistantDiv.appendChild(_ind2);
+                    }
                     STATE.isStreaming = false; STATE.currentAbortController = null; updateSendButton(); promptInput.focus();
                 } else {
                     _saveConvById(_streamConvId, _streamHistory, {
@@ -5572,7 +5644,15 @@ function startEditMessage(wrapper, msgDiv) {
                 thinkSr.add(thinkChunk);
             },
             STATE.currentAbortController.signal,
-            getModelParams()
+            (function() {
+                var mp = getModelParams();
+                if (STATE._routerForceThinking) {
+                    mp = mp || {};
+                    mp.reasoning_effort = mp.reasoning_effort || 'medium';
+                    STATE._routerForceThinking = false;
+                }
+                return mp;
+            })()
         );
     });
 }
@@ -5666,7 +5746,7 @@ function applyErrorStyle(msgDiv) {
 }
 
 // --- Envoyer le message ---
-function sendMessage() {
+async function sendMessage() {
     const text = promptInput.value.trim();
     if ((!text && STATE.pendingImages.length === 0 && STATE.pendingFiles.length === 0) || STATE.isStreaming) return;
     if (STATE.pendingLoadingFiles.length > 0) {
@@ -5803,7 +5883,18 @@ function sendMessage() {
         STATE.currentImageModel = null;
     }
 
-    const activeTextModel = STATE.currentModel || STATE.currentSearchModel;
+    var activeTextModel = STATE.currentModel || STATE.currentSearchModel;
+
+    // ── Model Fusion Router ──────────────────────────────────────
+    var _routedBy = null;
+    if (activeTextModel && activeTextModel.indexOf('samagent-') === 0) {
+        _showRouterThinking(assistantDiv);
+        var _route = await routeModel(text, activeTextModel);
+        _hideRouterThinking(assistantDiv);
+        _routedBy = _route.label;
+        activeTextModel = _route.modelId;
+        STATE._routerForceThinking = _route.thinking;
+    }
 
     if (STATE.currentImageModel) {
         // --- Mode génération d'image ---
@@ -6063,6 +6154,13 @@ function sendMessage() {
                     updateTokenDisplay();
                     saveConversation();
                     addRegenBtn();
+                    // Indicateur Model Fusion
+                    if (_routedBy && _streamCtx.assistantDiv) {
+                        var _ind = document.createElement('div');
+                        _ind.className = 'model-fusion-indicator';
+                        _ind.textContent = _routedBy;
+                        _streamCtx.assistantDiv.appendChild(_ind);
+                    }
                     if (!_streamCtx.titleEarlyDone) maybeGenerateTitle();
                     STATE.isStreaming = false;
                     STATE.currentAbortController = null;
@@ -6101,7 +6199,15 @@ function sendMessage() {
                 if (_streamCtx.thinkSr) _streamCtx.thinkSr.add(thinkChunk);
             },
             STATE.currentAbortController.signal,
-            getModelParams()
+            (function() {
+                var mp = getModelParams();
+                if (STATE._routerForceThinking) {
+                    mp = mp || {};
+                    mp.reasoning_effort = mp.reasoning_effort || 'medium';
+                    STATE._routerForceThinking = false;
+                }
+                return mp;
+            })()
         );
     }
 }

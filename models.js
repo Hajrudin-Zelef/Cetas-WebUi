@@ -22,6 +22,11 @@ const MODELS_DATA = {
     { "id": "gemini-3.1-flash-lite",       "label": "Gemini 3.1 Flash Lite",  "editeur": "google",    "inputPer1M": 0.25,  "outputPer1M": 1.5, "description": "Modèle ultra-rapide et économique de Google, bon rapport qualité-prix." },
     { "id": "gemini-2.5-flash",            "label": "Gemini 2.5 Flash",  "editeur": "google",    "inputPer1M": 0,     "outputPer1M": 0,   "description": "Gemini 2.5 Flash, rapide et économique." },
     { "id": "gemini-2.5-flash-lite",       "label": "Gemini 2.5 Flash Lite", "editeur": "google", "inputPer1M": 0,     "outputPer1M": 0,   "description": "Gemini 2.5 Flash Lite, ultra-rapide pour les tâches simples." },
+
+    // --- SamAgent (Model Fusion — routeur intelligent) ---
+    { "id": "samagent-nano",             "label": "SamAgent Nano",    "editeur": "samagent",  "inputPer1M": 0,     "outputPer1M": 0,   "description": "Routeur intelligent — modèle rapide pour les requêtes simples (score 0-33)." },
+    { "id": "samagent-n4",               "label": "SamAgent N4",      "editeur": "samagent",  "inputPer1M": 0,     "outputPer1M": 0,   "description": "Routeur intelligent — modèle équilibré pour les tâches complexes (score 34-66)." },
+    { "id": "samagent-n8",               "label": "SamAgent N8",      "editeur": "samagent",  "inputPer1M": 0,     "outputPer1M": 0,   "description": "Routeur intelligent — modèle premium pour le codage et le raisonnement avancé (score 67-100)." },
     { "id": "mistral-medium-3-5",         "label": "Mistral Medium 3.5", "editeur": "mistral",   "inputPer1M": 1.5,   "outputPer1M": 7.5,"description": "Le modèle multimodal de pointe avec raisonnement. Actuellement le modèle le plus performant de Mistral." },
     { "id": "mistral-large-latest",        "label": "Mistral Large 3",   "editeur": "mistral",   "inputPer1M": 0.5,   "outputPer1M": 1.5,  "description": "Le modèle phare et le performant de Mistral. Cocorico." },
     { "id": "mistral-small-latest",        "label": "Mistral Small 4",   "editeur": "mistral",   "inputPer1M": 0.15,  "outputPer1M": 0.6,"description": "Petit modèle économique, très rapide, avec raisonnement, parfait pour les tâches simples." },
