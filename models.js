@@ -17,10 +17,11 @@ const MODELS_DATA = {
     { "id": "claude-sonnet-4-5-20250929",  "label": "Claude Sonnet 4.5", "editeur": "anthropic", "inputPer1M": 3,     "outputPer1M": 15, "description": "Équilibre optimal entre performance et coût, très bon en rédaction et codage." },
     { "id": "claude-haiku-4-5-20251001",   "label": "Claude Haiku 4.5",  "editeur": "anthropic", "inputPer1M": 1,     "outputPer1M": 5,  "description": "Modèle rapide et abordable, parfait pour les réponses courtes et le traitement en masse." },
     { "id": "gemini-3.5-flash",            "label": "Gemini 3.5 Flash",  "editeur": "google",    "inputPer1M": 1.5,   "outputPer1M": 9,  "description": "Le modèle le plus intelligent de Google, performances de pointe en codage et tâches agentiques." },
-    { "id": "gemini-3.1-pro-preview",      "label": "Gemini 3.1 Pro",    "editeur": "google",    "inputPer1M": 2,     "outputPer1M": 12, "description": "Dernier modèle Pro de Google, performant en raisonnement multimodal et long contexte." },
-    { "id": "gemini-3-flash-preview",      "label": "Gemini 3 Flash",    "editeur": "google",    "inputPer1M": 0.5,   "outputPer1M": 3.0, "description": "Dernier modèle FLash, combinant rapidité et une intelligence de pointe." },
+    { "id": "gemini-3.1-pro",              "label": "Gemini 3.1 Pro",    "editeur": "google",    "inputPer1M": 2,     "outputPer1M": 12, "description": "Dernier modèle Pro de Google, performant en raisonnement multimodal et long contexte." },
+    { "id": "gemini-3-flash",              "label": "Gemini 3 Flash",    "editeur": "google",    "inputPer1M": 0.5,   "outputPer1M": 3.0, "description": "Gemini 3 Flash, combinant rapidité et intelligence de pointe." },
     { "id": "gemini-3.1-flash-lite",       "label": "Gemini 3.1 Flash Lite",  "editeur": "google",    "inputPer1M": 0.25,  "outputPer1M": 1.5, "description": "Modèle ultra-rapide et économique de Google, bon rapport qualité-prix." },
-    { "id": "gemma-4-31b-it",             "label": "Gemma 4 (31b)",      "editeur": "google",   "inputPer1M": 0,      "outputPer1M": 0,"description": "Le modèle dense de Google, conçu pour une qualité maximale à un prix dérisoire. Temporairement gratuit." },
+    { "id": "gemini-2.5-flash",            "label": "Gemini 2.5 Flash",  "editeur": "google",    "inputPer1M": 0,     "outputPer1M": 0,   "description": "Gemini 2.5 Flash, rapide et économique." },
+    { "id": "gemini-2.5-flash-lite",       "label": "Gemini 2.5 Flash Lite", "editeur": "google", "inputPer1M": 0,     "outputPer1M": 0,   "description": "Gemini 2.5 Flash Lite, ultra-rapide pour les tâches simples." },
     { "id": "mistral-medium-3-5",         "label": "Mistral Medium 3.5", "editeur": "mistral",   "inputPer1M": 1.5,   "outputPer1M": 7.5,"description": "Le modèle multimodal de pointe avec raisonnement. Actuellement le modèle le plus performant de Mistral." },
     { "id": "mistral-large-latest",        "label": "Mistral Large 3",   "editeur": "mistral",   "inputPer1M": 0.5,   "outputPer1M": 1.5,  "description": "Le modèle phare et le performant de Mistral. Cocorico." },
     { "id": "mistral-small-latest",        "label": "Mistral Small 4",   "editeur": "mistral",   "inputPer1M": 0.15,  "outputPer1M": 0.6,"description": "Petit modèle économique, très rapide, avec raisonnement, parfait pour les tâches simples." },
@@ -39,17 +40,27 @@ const MODELS_DATA = {
     { "id": "glm-4.7-flash",               "label": "GLM-4.7 Flash",     "editeur": "zai",       "inputPer1M": 0,     "outputPer1M": 0,    "description": "Modèle ultra-rapide de Zhipu, gratuit, bon pour les tâches simples." },
 
     // --- Groq (API OpenAI-compatible) ---
-    { "id": "llama-3.3-70b-versatile",     "label": "Llama 3.3 70B",     "editeur": "groq",      "inputPer1M": 0.59,  "outputPer1M": 0.79, "description": "Modèle phare Meta Llama 3.3 70B, excellent rapport qualite/vitesse." },
-    { "id": "llama-3.1-8b-instant",        "label": "Llama 3.1 8B",      "editeur": "groq",      "inputPer1M": 0.05,  "outputPer1M": 0.08, "description": "Llama 3.1 8B ultra-rapide et economique, ideal pour les taches simples." },
-    { "id": "mixtral-8x7b-32768",          "label": "Mixtral 8x7B",      "editeur": "groq",      "inputPer1M": 0.24,  "outputPer1M": 0.24, "description": "Mistral Mixtral 8x7B, bon equilibre performance/cout." },
-    { "id": "gemma2-9b-it",                "label": "Gemma 2 9B",        "editeur": "groq",      "inputPer1M": 0.06,  "outputPer1M": 0.06, "description": "Gemma 2 9B de Google, compact et performant." },
-    { "id": "deepseek-r1-distill-llama-70b","label": "DeepSeek R1 70B",  "editeur": "groq",      "inputPer1M": 0.75,  "outputPer1M": 0.99, "description": "DeepSeek R1 distillee via Llama 70B, raisonnement avance sur Groq." },
+    { "id": "openai/gpt-oss-20b",          "label": "GPT-OSS 20B",       "editeur": "groq",      "inputPer1M": 0,     "outputPer1M": 0,   "description": "GPT-OSS 20B d'OpenAI via Groq, modèle open-source compact." },
+    { "id": "openai/gpt-oss-120b",         "label": "GPT-OSS 120B",      "editeur": "groq",      "inputPer1M": 0,     "outputPer1M": 0,   "description": "GPT-OSS 120B d'OpenAI via Groq, modèle open-source puissant." },
+    { "id": "meta-llama/llama-4-scout-17b-16e-instruct", "label": "Llama 4 Scout 17B", "editeur": "groq", "inputPer1M": 0, "outputPer1M": 0, "description": "Llama 4 Scout 17B de Meta, compact et performant." },
+    { "id": "qwen/qwen3-32b",              "label": "Qwen 3 32B",        "editeur": "groq",      "inputPer1M": 0,     "outputPer1M": 0,   "description": "Qwen 3 32B d'Alibaba, excellent rapport qualité/performance." },
+    { "id": "llama-3.1-8b-instant",        "label": "Llama 3.1 8B",      "editeur": "groq",      "inputPer1M": 0.05,  "outputPer1M": 0.08, "description": "Llama 3.1 8B ultra-rapide et économique, idéal pour les tâches simples." },
+    { "id": "qwen/qwen3.6-27b",            "label": "Qwen 3.6 27B",      "editeur": "groq",      "inputPer1M": 0,     "outputPer1M": 0,   "description": "Qwen 3.6 27B d'Alibaba, dernière génération." },
 
     // --- Nvidia NIM (API OpenAI-compatible) ---
-    { "id": "nvidia/llama-3.1-nemotron-70b-instruct", "label": "Nemotron 70B", "editeur": "nvidia", "inputPer1M": 0.5, "outputPer1M": 0.5, "description": "Llama Nemotron 70B de Nvidia, optimise pour le codage et le raisonnement." },
-    { "id": "meta/llama-3.1-405b-instruct",            "label": "Llama 3.1 405B", "editeur": "nvidia", "inputPer1M": 2.0, "outputPer1M": 2.0, "description": "Llama 3.1 405B, le plus grand modele Meta, via Nvidia NIM." },
-    { "id": "mistralai/mixtral-8x22b-instruct-v0.1",   "label": "Mixtral 8x22B", "editeur": "nvidia", "inputPer1M": 0.9, "outputPer1M": 0.9, "description": "Mistral Mixtral 8x22B, contexte long et performances elevees." },
-    { "id": "google/gemma-2-27b-it",                   "label": "Gemma 2 27B", "editeur": "nvidia", "inputPer1M": 0.4, "outputPer1M": 0.4, "description": "Gemma 2 27B de Google, bon compromis qualite/cout." }
+    { "id": "z-ai/glm-5.2",                         "label": "GLM-5.2",              "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "GLM-5.2 de Zhipu AI, excellent en codage." },
+    { "id": "minimaxai/minimax-m3",                  "label": "MiniMax M3",           "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "MiniMax M3, modèle polyvalent." },
+    { "id": "google/diffusiongemma-26b-a4b-it",      "label": "DiffusionGemma 26B",  "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "DiffusionGemma 26B de Google, modèle de diffusion texte." },
+    { "id": "stepfun-ai/step-3.7-flash",             "label": "Step 3.7 Flash",      "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Step 3.7 Flash de StepFun, rapide et efficace." },
+    { "id": "mistralai/mistral-medium-3.5-128b",     "label": "Mistral Medium 3.5 128B", "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Mistral Medium 3.5 128B, performances élevées." },
+    { "id": "google/gemma-4-31b-it",                 "label": "Gemma 4 31B",         "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Gemma 4 31B de Google, modèle dense haute qualité." },
+    { "id": "nvidia/nemotron-3-super-120b-a12b",     "label": "Nemotron 3 Super 120B", "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Nemotron 3 Super 120B de Nvidia, MoE ultra-puissant." },
+    { "id": "nvidia/nemotron-3-nano-30b-a3b",        "label": "Nemotron 3 Nano 30B", "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Nemotron 3 Nano 30B, compact et performant." },
+    { "id": "openai/gpt-oss-120b",                   "label": "GPT-OSS 120B",        "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "GPT-OSS 120B d'OpenAI via Nvidia NIM." },
+    { "id": "meta/llama-3.3-70b-instruct",           "label": "Llama 3.3 70B",       "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Llama 3.3 70B de Meta, excellent rapport qualité/prix." },
+    { "id": "moonshotai/kimi-k2.6",                  "label": "Kimi K2.6",            "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Kimi K2.6 de Moonshot AI, vision et langage." },
+    { "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning", "label": "Nemotron 3 Nano Omni 30B", "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Nemotron 3 Nano Omni 30B avec raisonnement, multimodal." },
+    { "id": "nvidia/nemotron-nano-12b-v2-vl",        "label": "Nemotron Nano 12B VL", "editeur": "nvidia", "inputPer1M": 0, "outputPer1M": 0, "description": "Nemotron Nano 12B vision-langage, compact et multimodal." }
   ],
   "image": [
     { "id": "gemini-3-pro-image",            "label": "Nano Banana Pro", "editeur": "google", "inputPer1M": 2,   "outputPer1M": 12, "imageOutput": 0.134, "imagePricing": { "1K": 0.134, "2K": 0.134, "4K": 0.24 }, "description": "Génération d'images via Gemini Pro, haute qualité et bonne compréhension des prompts." },
@@ -66,10 +77,11 @@ const MODELS_DATA = {
   ],
   "tts": [
     { "id": "gpt-4o-mini-tts",                  "label": "OpenAI (gpt-4o-mini-tts)",          "editeur": "openai",  "prix": "$12/1M car.",  "description": "Synthèse vocale rapide et expressive d'OpenAI." },
-    { "id": "gemini-3.1-flash-tts-preview",      "label": "Google (Gemini 3.1 Flash TTS)",     "editeur": "google",  "prix": "$1 / $20",      "description": "Dernière génération TTS de Google — 70+ langues, dialogue multi-voix, contrôle expressif via tags audio." },
-    { "id": "gemini-2.5-flash-preview-tts",      "label": "Google (Gemini 2.5 Flash TTS)",     "editeur": "google",  "prix": "$0.50 / $10",   "description": "Synthèse vocale de Google via Gemini, voix naturelles multilingues." },
+    { "id": "gemini-3.1-flash-tts",              "label": "Google (Gemini 3.1 Flash TTS)",     "editeur": "google",  "prix": "$1 / $20",      "description": "Dernière génération TTS de Google — 70+ langues, dialogue multi-voix, contrôle expressif via tags audio." },
+    { "id": "gemini-2.5-flash-tts",              "label": "Google (Gemini 2.5 Flash TTS)",     "editeur": "google",  "prix": "$0.50 / $10",   "description": "Synthèse vocale de Google via Gemini, voix naturelles multilingues." },
     { "id": "voxtral-mini-tts-2603",             "label": "Mistral (Voxtral Mini TTS)",        "editeur": "mistral", "prix": "$16/1M car.", "description": "Synthèse vocale légère et rapide par Mistral." },
-    { "id": "system-tts",                        "label": "Système (navigateur)",              "editeur": "system",  "prix": "Gratuit",       "description": "Synthèse vocale native du navigateur (voix du système)." }
+    { "id": "system-tts",                        "label": "Système (navigateur)",              "editeur": "system",  "prix": "Gratuit",       "description": "Synthèse vocale native du navigateur (voix du système)." },
+    { "id": "nvidia/nemotron-voicechat",         "label": "Nvidia (Nemotron VoiceChat)",       "editeur": "nvidia",  "prix": "",             "description": "Synthèse vocale de Nvidia via Nemotron, voix naturelles." }
   ],
   "stt": [
     { "id": "whisper-1",              "label": "OpenAI (Whisper)",           "editeur": "openai",  "prix": "$0.006/min",  "description": "Transcription audio précise et multilingue par OpenAI." },
