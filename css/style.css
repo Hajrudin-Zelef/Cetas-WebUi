@@ -2611,6 +2611,55 @@ body.dark .web-search-toggle.active {
     animation: streaming-shimmer 3s ease-in-out infinite;
 }
 
+/* ── Indicateur furtif du routeur SamAgent ──────────────────── */
+.router-thinking {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #888);
+    animation: router-thinking-in 0.3s ease-out;
+}
+
+.router-thinking-text {
+    font-style: italic;
+}
+
+.router-thinking-dots {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.router-thinking-dots span {
+    animation: router-dot-bounce 1.2s infinite;
+    font-weight: bold;
+    color: var(--accent, #6c63ff);
+}
+
+.router-thinking-dots span:nth-child(1) { animation-delay: 0s; }
+.router-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.router-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes router-dot-bounce {
+    0%, 60%, 100% { opacity: 0.2; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+}
+
+@keyframes router-thinking-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.router-thinking-fade {
+    animation: router-thinking-out 0.35s ease-in forwards;
+}
+
+@keyframes router-thinking-out {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(6px); }
+}
+
 .message-assistant.streaming-done {
     --_stream-color: var(--active-cat-color, var(--accent));
     background:
@@ -6482,6 +6531,16 @@ body.dark .thinking-content th {
 
 .send-btn.stop-mode:hover {
     opacity: 0.85;
+}
+
+/* --- Indicateur Model Fusion --- */
+.model-fusion-indicator {
+    font-size: 0.62rem;
+    color: var(--text-secondary);
+    opacity: 0.45;
+    margin-top: 6px;
+    font-style: italic;
+    text-align: right;
 }
 
 /* --- Bouton copier sur les blocs de code --- */
