@@ -16,7 +16,7 @@ var ROUTER_CONFIG = {
         chat: [
             { model: 'deepseek-chat',                        provider: 'deepseek', thinking: false },
             { model: 'llama-3.1-8b-instant',                 provider: 'groq',     thinking: false },
-            { model: 'gemini-2.5-flash-lite',                provider: 'google',   thinking: false },
+            { model: 'gemini-3.1-flash-lite',                provider: 'google',   thinking: false },
             { model: 'stepfun-ai/step-3.7-flash',            provider: 'nvidia',   thinking: false },
             { model: 'qwen/qwen3-32b',                       provider: 'groq',     thinking: false },
             { model: 'gemini-2.5-flash',                     provider: 'google',   thinking: false }
@@ -41,7 +41,7 @@ var ROUTER_CONFIG = {
     // ── Score 34-66 : explications, analyse, code intermédiaire ─
     n4: {
         chat: [
-            { model: 'gemini-3-flash',                       provider: 'google',   thinking: false },
+            { model: 'gemini-3-flash-preview',                       provider: 'google',   thinking: false },
             { model: 'deepseek-v4-flash',                    provider: 'deepseek', thinking: false },
             { model: 'openai/gpt-oss-120b',                  provider: 'groq',     thinking: false },
             { model: 'mistralai/mistral-medium-3.5-128b',    provider: 'nvidia',   thinking: false },
@@ -49,7 +49,7 @@ var ROUTER_CONFIG = {
             { model: 'meta/llama-3.3-70b-instruct',          provider: 'nvidia',   thinking: false }
         ],
         coder: [
-            { model: 'gemini-3-flash',                       provider: 'google',   thinking: false },
+            { model: 'gemini-3-flash-preview',                       provider: 'google',   thinking: false },
             { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: false },
             { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
             { model: 'nvidia/nemotron-3-super-120b-a12b',    provider: 'nvidia',   thinking: false },
@@ -57,11 +57,11 @@ var ROUTER_CONFIG = {
             { model: 'deepseek-chat',                        provider: 'deepseek', thinking: false }
         ],
         raisonnement: [
-            { model: 'gemini-3-flash',                       provider: 'google',   thinking: true  },
+            { model: 'gemini-3-flash-preview',                       provider: 'google',   thinking: true  },
             { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: true  },
             { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
             { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', provider: 'nvidia', thinking: true },
-            { model: 'gemini-3.1-pro',                       provider: 'google',   thinking: true  },
+            { model: 'gemini-3.1-pro-preview',                       provider: 'google',   thinking: true  },
             { model: 'deepseek-chat',                        provider: 'deepseek', thinking: false }
         ]
     },
@@ -72,7 +72,7 @@ var ROUTER_CONFIG = {
             { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: false },
             { model: 'openai/gpt-oss-120b',                  provider: 'groq',     thinking: false },
             { model: 'nvidia/nemotron-3-super-120b-a12b',    provider: 'nvidia',   thinking: false },
-            { model: 'gemini-3.1-pro',                       provider: 'google',   thinking: false },
+            { model: 'gemini-3.1-pro-preview',                       provider: 'google',   thinking: false },
             { model: 'meta-llama/llama-4-scout-17b-16e-instruct', provider: 'groq', thinking: false }
         ],
         coder: [
@@ -80,14 +80,14 @@ var ROUTER_CONFIG = {
             { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: false },
             { model: 'nvidia/nemotron-3-super-120b-a12b',    provider: 'nvidia',   thinking: false },
             { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
-            { model: 'gemini-3.1-pro',                       provider: 'google',   thinking: false },
+            { model: 'gemini-3.1-pro-preview',                       provider: 'google',   thinking: false },
             { model: 'openai/gpt-oss-120b',                  provider: 'groq',     thinking: false }
         ],
         raisonnement: [
             { model: 'gemini-3.5-flash',                     provider: 'google',   thinking: true  },
             { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: true  },
             { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', provider: 'nvidia', thinking: true },
-            { model: 'gemini-3.1-pro',                       provider: 'google',   thinking: true  },
+            { model: 'gemini-3.1-pro-preview',                       provider: 'google',   thinking: true  },
             { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
             { model: 'z-ai/glm-5.2',                         provider: 'nvidia',   thinking: false }
         ]

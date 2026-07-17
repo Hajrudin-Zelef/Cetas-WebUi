@@ -51,6 +51,7 @@ const Auth = (() => {
       loginTime: Date.now()
     };
     sessionStorage.setItem(SS_SESSION, JSON.stringify(session));
+    localStorage.setItem('cetas-user', user.username);
     _currentUser = session;
   }
 

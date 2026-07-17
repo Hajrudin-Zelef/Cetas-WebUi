@@ -3080,6 +3080,12 @@ initConfig().then(async () => {
         if (typeof window.__kiroSplashReady === 'function') window.__kiroSplashReady();
         renderFavList();
     });
+    // Sync conversations depuis le serveur (multi-appareils)
+    if (typeof syncPullFromServer === 'function') {
+        syncPullFromServer().then(function(n) {
+            if (n > 0) { refreshConvList(); renderFavList(); }
+        }).catch(function(){});
+    }
     refreshCatBar();
     await importDefaultSystemPrompts();
     refreshSpList();
@@ -4022,13 +4028,13 @@ function saveConversation() {
     const filename = STATE.conversationId.replace(/[<>:"/\\|?*]/g, '_') + '.json';
     const content = formatConversationFile(data);
     writeConversationFile(filename, content).then(() => {
-        // Le manifeste vient d'être mis à jour par le write : on tente une MAJ
-        // incrémentale de l'item dans la sidebar (zéro IDB read, zéro DOM rebuild).
-        // Fallback sur un refresh complet uniquement si l'item n'existe pas encore
-        // (cas du tout premier save d'une nouvelle conv).
         if (!refreshConvListItem(filename)) refreshConvList();
         checkBudgetAlert();
     });
+    // Sync serveur (multi-appareils) — non bloquant
+    if (typeof syncPushToServer === 'function') {
+        syncPushToServer(filename, content).catch(function(){});
+    }
     updateExportMdBtn();
 }
 

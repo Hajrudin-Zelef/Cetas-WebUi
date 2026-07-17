@@ -161,6 +161,65 @@ def load_api_keys():
         log.error("Aucune clé chargée — vérifiez .env et le vault.")
         sys.exit(1)
 
+# ── Stockage conversations (sync multi-appareils) ──────────────────
+CONV_DIR = os.path.join(BASE_DIR, "conversations")
+os.makedirs(CONV_DIR, exist_ok=True)
+
+# Cache RAM : {username: {filename: data_json}} pour accès rapide
+_conv_cache: dict[str, dict[str, dict]] = {}
+
+def _conv_user_dir(username: str) -> str:
+    """Répertoire des conversations d'un utilisateur."""
+    safe = username.replace("/", "_").replace("\\", "_").strip()
+    if not safe:
+        raise ValueError("username invalide")
+    d = os.path.join(CONV_DIR, safe)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+def _conv_file_path(username: str, filename: str) -> str:
+    safe_fn = filename.replace("/", "_").replace("\\", "_")
+    return os.path.join(_conv_user_dir(username), safe_fn)
+
+def _conv_cache_get(username: str) -> dict[str, dict]:
+    if username not in _conv_cache:
+        _conv_cache[username] = {}
+    return _conv_cache[username]
+
+def load_user_conversations(username: str) -> dict[str, dict]:
+    """Charge toutes les conversations d'un utilisateur (depuis disque ou cache)."""
+    cache = _conv_cache_get(username)
+    if cache:
+        return cache
+    user_dir = _conv_user_dir(username)
+    for fn in os.listdir(user_dir):
+        if fn.endswith(".json"):
+            try:
+                with open(os.path.join(user_dir, fn), "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                cache[fn] = data
+            except Exception:
+                pass
+    return cache
+
+def save_user_conversation(username: str, filename: str, data: dict) -> None:
+    """Sauvegarde une conversation (disque + cache RAM)."""
+    cache = _conv_cache_get(username)
+    cache[filename] = data
+    fp = _conv_file_path(username, filename)
+    with open(fp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+
+def delete_user_conversation(username: str, filename: str) -> bool:
+    """Supprime une conversation. Retourne True si supprimée."""
+    cache = _conv_cache_get(username)
+    cache.pop(filename, None)
+    fp = _conv_file_path(username, filename)
+    if os.path.exists(fp):
+        os.unlink(fp)
+        return True
+    return False
+
 
 def _build_upstream(method: str, provider: str, path: str, body: bytes, content_type: str | None):
     """Construit et envoie la requête upstream.
@@ -221,6 +280,79 @@ class ProxyHandler(BaseHTTPRequestHandler):
         'nvidia': 'nvidia',
     }
 
+    def _get_username(self):
+        """Extrait le username depuis le header X-Cetas-User."""
+        return self.headers.get("X-Cetas-User", "").strip()
+
+    def _conv_list(self):
+        username = self._get_username()
+        if not username:
+            self._respond_json({"error": "Non authentifié"}, 401)
+            return
+        try:
+            convs = load_user_conversations(username)
+            meta = []
+            for fn, data in convs.items():
+                meta.append({
+                    "filename": fn,
+                    "id": data.get("id", ""),
+                    "title": data.get("title") or data.get("titre") or "",
+                    "date": data.get("date", ""),
+                    "lastActivity": data.get("lastActivity", data.get("date", "")),
+                    "model": data.get("model") or data.get("modele", ""),
+                    "category": data.get("category", None),
+                    "tokens_entree": data.get("tokens_entree", 0),
+                    "tokens_sortie": data.get("tokens_sortie", 0),
+                    "cout_estime_usd": data.get("cout_estime_usd", 0)
+                })
+            meta.sort(key=lambda m: m.get("lastActivity") or m.get("date") or "", reverse=True)
+            self._respond_json(meta)
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+
+    def _conv_get(self, filename: str):
+        username = self._get_username()
+        if not username:
+            self._respond_json({"error": "Non authentifié"}, 401)
+            return
+        try:
+            convs = load_user_conversations(username)
+            data = convs.get(filename)
+            if not data:
+                self._respond_json({"error": "Conversation introuvable"}, 404)
+                return
+            self._respond_json(data)
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+
+    def _conv_save(self, filename: str):
+        username = self._get_username()
+        if not username:
+            self._respond_json({"error": "Non authentifié"}, 401)
+            return
+        try:
+            content_len = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+            data = json.loads(body)
+            save_user_conversation(username, filename, data)
+            self._respond_json({"ok": True, "filename": filename})
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+
+    def _conv_delete(self, filename: str):
+        username = self._get_username()
+        if not username:
+            self._respond_json({"error": "Non authentifié"}, 401)
+            return
+        try:
+            deleted = delete_user_conversation(username, filename)
+            if deleted:
+                self._respond_json({"ok": True})
+            else:
+                self._respond_json({"error": "Conversation introuvable"}, 404)
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+
     def _respond_json(self, data: dict, status: int = 200):
         body = json.dumps(data).encode()
         self.send_response(status)
@@ -230,13 +362,17 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Cetas-User")
+        self.end_headers()
+
     def do_GET(self):
         if self.path in ("/health", "/api/health"):
             self._respond_json({"status": "ok", "keys_loaded": len(api_keys)})
             return
-
-        # Endpoint : renvoie les clés API déchiffrées au frontend
-        # (uniquement accessible depuis localhost)
         if self.path == "/api/keys":
             mapped = {}
             for k, v in api_keys.items():
@@ -244,18 +380,40 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 mapped[frontend_key] = v
             self._respond_json(mapped)
             return
-
-        # Support GET proxy pour catalogue OpenRouter
+        # Conversations
+        if self.path == "/api/conversations":
+            self._conv_list()
+            return
+        if self.path.startswith("/api/conversations/"):
+            filename = self.path[len("/api/conversations/"):]
+            self._conv_get(filename)
+            return
+        # Proxy
         if self.path.startswith("/api/proxy/"):
             self._proxy_request("GET")
             return
-
         self.send_response(404)
         self.end_headers()
 
     def do_POST(self):
         if self.path.startswith("/api/proxy/"):
             self._proxy_request("POST")
+            return
+        self.send_response(404)
+        self.end_headers()
+
+    def do_PUT(self):
+        if self.path.startswith("/api/conversations/"):
+            filename = self.path[len("/api/conversations/"):]
+            self._conv_save(filename)
+            return
+        self.send_response(404)
+        self.end_headers()
+
+    def do_DELETE(self):
+        if self.path.startswith("/api/conversations/"):
+            filename = self.path[len("/api/conversations/"):]
+            self._conv_delete(filename)
             return
         self.send_response(404)
         self.end_headers()
