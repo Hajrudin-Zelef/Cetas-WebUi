@@ -1580,9 +1580,6 @@ body.canvas-active .side-panel-toolbar {
         font-size: 0.68rem;
     }
 
-    /* --- Boutons sidebar bottom --- */
-    .sidebar-bottom-btn { font-size: 0.7rem; padding: 5px 6px; }
-
     /* --- Menu "+" --- */
     .plus-menu-dropdown {
         width: 280px;
@@ -1626,7 +1623,6 @@ body.canvas-active .side-panel-toolbar {
     .input-wrapper { padding: 4px 6px; border-radius: 14px; }
     .plus-menu-dropdown { width: 260px; left: 2px; }
     .token-bar { padding: 3px 8px; font-size: 0.62rem; }
-    .sidebar-bottom-btn { font-size: 0.65rem; padding: 4px 4px; }
 }
 
 .sidebar-title {
@@ -1688,17 +1684,16 @@ body.canvas-active .side-panel-toolbar {
     color: #fff;
 }
 
-/* Boutons bas de sidebar */
-.sidebar-bottom {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+/* Avatar utilisateur + menu dropdown (bas de sidebar) */
+.user-menu-wrapper {
     margin-top: auto;
-    margin-bottom: 0;
     position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.sidebar-bottom::before {
+.user-menu-wrapper::before {
     content: '';
     position: absolute;
     top: -40px;
@@ -1709,33 +1704,100 @@ body.canvas-active .side-panel-toolbar {
     pointer-events: none;
 }
 
-.sidebar-bottom-row {
-    display: flex;
-    gap: 6px;
-}
-
-.sidebar-bottom-row .sidebar-bottom-btn {
-    flex: 1;
-}
-
-.sidebar-bottom-btn {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 0.75rem;
-    font-family: inherit;
+.user-avatar-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border-input);
+    background: var(--accent);
+    color: #fff;
     cursor: pointer;
-    color: var(--text-secondary);
-    transition: all 0.15s;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: inherit;
+    transition: border-color 0.15s, transform 0.15s;
+    padding: 0;
+    flex-shrink: 0;
 }
 
-.sidebar-bottom-btn:hover {
-    background: var(--bg-hover);
-    color: var(--text);
-    border-color: var(--border-input);
+.user-avatar-btn:hover {
+    border-color: var(--accent);
+    transform: scale(1.05);
 }
+
+.sidebar-config-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+}
+
+.sidebar-config-btn:hover {
+    color: var(--text);
+    background: var(--bg-hover);
+}
+
+.user-avatar-initials {
+    line-height: 1;
+    pointer-events: none;
+}
+
+.user-menu-dropdown {
+    position: fixed;
+    z-index: 9999;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+    padding: 6px;
+    min-width: 180px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.user-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s;
+}
+
+.user-menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.user-menu-item-logout {
+    color: var(--danger);
+}
+
+.user-menu-item-logout:hover {
+    background: var(--danger-light);
+}
+
 
 /* Recherche de conversations — styles fusionnés dans .conv-search */
 
@@ -2006,10 +2068,10 @@ body.canvas-active .side-panel-toolbar {
 
 /* Messages */
 .message {
-    max-width: 75%;
+    max-width: 100%;
     padding: 14px 18px;
     border-radius: 16px;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     line-height: 1.6;
     word-wrap: break-word;
     position: relative;
@@ -2226,7 +2288,7 @@ body.dark .message-text th {
 }
 
 .message-wrapper .message {
-    max-width: 75%;
+    max-width: 100%;
 }
 
 .message-btn-row {

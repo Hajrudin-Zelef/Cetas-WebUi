@@ -3083,6 +3083,40 @@ initConfig().then(async () => {
         });
     });
 
+    // --- Avatar utilisateur + menu dropdown ---
+    const user = Auth.getCurrentUser();
+    const avatarInitials = document.getElementById('user-avatar-initials');
+    if (avatarInitials && user) {
+        const name = user.username || '';
+        avatarInitials.textContent = name.substring(0, 2).toUpperCase();
+    }
+
+    const avatarBtn = document.getElementById('user-avatar-btn');
+    const userMenuDropdown = document.getElementById('user-menu-dropdown');
+    if (avatarBtn && userMenuDropdown) {
+        avatarBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = userMenuDropdown.style.display === 'flex';
+            if (!isOpen) {
+                // Rendre visible temporairement pour mesurer la hauteur
+                userMenuDropdown.style.visibility = 'hidden';
+                userMenuDropdown.style.display = 'flex';
+                const rect = avatarBtn.getBoundingClientRect();
+                const h = userMenuDropdown.offsetHeight;
+                userMenuDropdown.style.visibility = '';
+                userMenuDropdown.style.left = rect.left + 'px';
+                userMenuDropdown.style.top = (rect.top - h - 8) + 'px';
+            } else {
+                userMenuDropdown.style.display = 'none';
+            }
+        });
+        document.addEventListener('click', (e) => {
+            if (!avatarBtn.contains(e.target) && !userMenuDropdown.contains(e.target)) {
+                userMenuDropdown.style.display = 'none';
+            }
+        });
+    }
+
     // --- Gestion de la déconnexion ---
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
@@ -3380,6 +3414,7 @@ function updateSendButton() {
         sendBtn.classList.add('stop-mode');
         // Micro → bouton stop pendant le streaming (sauf si en enregistrement)
         if (!micBtn.classList.contains('recording')) {
+            micBtn.style.display = '';
             micBtn.innerHTML = micIconStopStreaming;
             micBtn.classList.add('stop-mode');
             micBtn.title = 'Arrêter la génération';
