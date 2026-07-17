@@ -18,6 +18,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16.png">
 
     <link rel="stylesheet" href="css/style.css" id="main-css">
+    <link rel="stylesheet" href="css/ocean.css">
     <script>
     (function(){
         var cssLoadError = false;
@@ -57,7 +58,7 @@
     })();
     </script>
 </head>
-<body>
+<body class="ocean-theme">
     <script>
     // Application synchrone du thème AVANT le rendu du reste du body, pour
     // éviter un flash en clair quand `dark` (ou `auto` sur OS sombre) est
@@ -1222,8 +1223,7 @@
     <script src="js/auth.js"></script>
     <script src="js/router.js"></script>
     <script src="images/ee.js"></script>
-    <!-- Canvas désactivé temporairement — sera réactivé dans une future version -->
-    <!-- <script src="js/canvas.js"></script> -->
+    <script type="module" src="js/ocean.js"></script>
     <script type="module" src="js/app.js"></script>
     <!-- Notification mise à jour -->
     <div id="update-toast" class="update-toast" style="display:none" role="status" aria-live="polite">

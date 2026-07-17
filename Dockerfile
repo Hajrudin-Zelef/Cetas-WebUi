@@ -15,6 +15,7 @@ COPY . /usr/share/nginx/html
 
 # Minifier les JS (sauf libs CDN déjà minifiées)
 RUN terser /usr/share/nginx/html/js/app.js -o /usr/share/nginx/html/js/app.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/ocean.js -o /usr/share/nginx/html/js/ocean.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/api.js -o /usr/share/nginx/html/js/api.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/auth.js -o /usr/share/nginx/html/js/auth.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/state.js -o /usr/share/nginx/html/js/state.js -c -m --comments false --module
@@ -25,6 +26,7 @@ RUN terser /usr/share/nginx/html/images/ee.js -o /usr/share/nginx/html/images/ee
 
 # Minifier le CSS
 RUN cleancss /usr/share/nginx/html/css/style.css -o /usr/share/nginx/html/css/style.css
+RUN cleancss /usr/share/nginx/html/css/ocean.css -o /usr/share/nginx/html/css/ocean.css
 
 # Supprimer node_modules (plus nécessaire après minification)
 RUN npm uninstall -g terser clean-css-cli && rm -rf /root/.npm /usr/lib/node_modules

@@ -11345,6 +11345,11 @@ if (window.Canvas && typeof window.Canvas.init === 'function') {
     updateCanvasBtn();
 }
 
+// --- Initialisation du fond océanique (thème premium) ---
+if (window.Ocean && typeof window.Ocean.init === 'function') {
+    window.Ocean.init();
+}
+
 // Vérification de mise à jour au chargement (désactivée)
 
 // Pas de focus initial sur la barre de saisie
