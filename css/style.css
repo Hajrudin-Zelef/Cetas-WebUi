@@ -1510,6 +1510,16 @@ body.canvas-active .side-panel-toolbar {
     right: var(--side-toolbar-right, 464px);
 }
 
+@media (min-width: 769px) {
+    .chat-container {
+        align-items: center;
+    }
+    .chat-container > * {
+        width: 100%;
+        max-width: 800px;
+    }
+}
+
 @media (max-width: 768px) {
     /* --- Masquer les panneaux fixes --- */
     .right-panel { display: none; }
@@ -2071,8 +2081,8 @@ body.canvas-active .side-panel-toolbar {
     max-width: 100%;
     padding: 14px 18px;
     border-radius: 16px;
-    font-size: 0.8rem;
-    line-height: 1.6;
+    font-size: 1.2rem;
+    line-height: 1.8;
     word-wrap: break-word;
     position: relative;
 }
@@ -9572,4 +9582,47 @@ body.dark .plus-menu-dropdown {
     color: var(--accent);
     display: flex;
     align-items: center;
+}
+
+/* ── Rendu façon Gemini : listes à puces rondes, paragraphes aérés ── */
+.message-text p {
+    margin: 0 0 0.9em 0;
+}
+
+.message-text ul, .message-text ol {
+    margin: 0.7em 0 0.9em 0;
+    padding-left: 1.6em;
+}
+
+.message-text ul {
+    list-style: none;
+}
+
+.message-text ul li {
+    position: relative;
+    margin-bottom: 0.5em;
+}
+
+.message-text ul li::before {
+    content: "○";
+    position: absolute;
+    left: -1.3em;
+    font-size: 0.7em;
+    top: 0.35em;
+    color: var(--text-secondary);
+}
+
+.message-text ol li {
+    margin-bottom: 0.5em;
+}
+
+.message-text h1, .message-text h2, .message-text h3 {
+    margin: 1em 0 0.4em 0;
+    font-size: 1em;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.message-text strong {
+    font-weight: 700;
 }

@@ -43,11 +43,11 @@ function _createParticles() {
         bubbles.push({
             x: Math.random() * w,
             y: Math.random() * h,
-            r: 1.5 + Math.random() * 4,
+            r: 6 + Math.random() * 14,
             speed: 0.1 + Math.random() * 0.25,
             wobble: Math.random() * Math.PI * 2,
             drift: 0.01 + Math.random() * 0.03,
-            alpha: 0.03 + Math.random() * 0.04,
+            alpha: 0.04 + Math.random() * 0.05,
         });
     }
 
@@ -86,13 +86,18 @@ function _loop() {
 // --- Fond : gradient de profondeur ---
 
 function _drawBackground() {
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    const radius = Math.max(w, h) * 0.75;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
     if (isDark) {
-        grad.addColorStop(0, '#0f1a2e');
-        grad.addColorStop(1, '#0a1628');
+        grad.addColorStop(0, '#16294a');
+        grad.addColorStop(0.45, '#0d1e35');
+        grad.addColorStop(1, '#05070d');
     } else {
-        grad.addColorStop(0, '#f0f7fc');
-        grad.addColorStop(1, '#e8f2f8');
+        grad.addColorStop(0, '#eaf3fb');
+        grad.addColorStop(0.45, '#d7e7f2');
+        grad.addColorStop(1, '#f4f7fa');
     }
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
