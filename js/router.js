@@ -262,8 +262,6 @@ async function _fetchRouterLLM(routerModel, userMessage) {
     return content;
 }
 
-// Compteur de rotation par tier+intent pour équilibrer la distribution
-var _routerCounters = {};
 
 /**
  * Classifie l'intention de la requête.
@@ -349,10 +347,7 @@ function scoreComplexity(prompt) {
  * @returns {Object} L'entrée sélectionnée
  */
 function _pickFromPool(pool, key) {
-    if (!_routerCounters[key]) _routerCounters[key] = 0;
-    // Rotation : on incrémente et on prend modulo la taille du pool
-    var idx = _routerCounters[key] % pool.length;
-    _routerCounters[key]++;
+    var idx = Math.floor(Math.random() * pool.length);
     return pool[idx];
 }
 
