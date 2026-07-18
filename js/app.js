@@ -4648,49 +4648,29 @@ function addMessage(role, content, citations, generationTime, thinking, outputTo
         }
 
         ttsBtn.addEventListener('click', (e) => {
-            if (e.target.closest('.copy-menu-item')) return;
             // Si un audio est en cours, l'arrêter
             if (STATE.currentTtsAudio) {
                 if (STATE.currentTtsAudio === 'system') {
                     window.speechSynthesis.cancel();
                 } else if (typeof STATE.currentTtsAudio === 'function') {
-                    // Handle de stop exposé par un provider streaming (Mistral)
                     try { currentTtsAudio(); } catch (e) {}
                 } else {
                     STATE.currentTtsAudio.pause();
                     STATE.currentTtsAudio.currentTime = 0;
                 }
                 STATE.currentTtsAudio = null;
-                document.querySelectorAll('.tts-icon').forEach(ic => { ic.innerHTML = iconPlay; });
-                document.querySelectorAll('.message-tts-btn').forEach(b => { b.title = 'Lire à haute voix'; });
+                document.querySelectorAll('.tts-icon').forEach(function(ic) { ic.innerHTML = iconPlay; });
+                document.querySelectorAll('.message-tts-btn').forEach(function(b) { b.title = 'Lire à haute voix'; });
                 return;
             }
             if (ttsIsLoading) return;
-            // Provider non configuré : afficher l'alerte sans ouvrir le menu
             if (!AUDIO_SETTINGS.ttsProvider) {
                 showNoModelAlert('la synthèse vocale', 'audio-tts-provider');
                 return;
             }
-            // Si provider système, lire directement (pas de menu save — pas de blob à enregistrer)
-            if (getIsSystemTts()) {
-                ttsDoSpeak();
-                return;
-            }
-            closeAllMenus(ttsMenu);
-            ttsMenu.classList.toggle('open');
-            ttsBtn.classList.toggle('menu-open', ttsMenu.classList.contains('open'));
-            if (ttsMenu.classList.contains('open')) positionMenu(ttsMenu, ttsBtn);
+            // Lecture directe en un clic — toujours, quel que soit le provider
+            ttsDoSpeak();
             e.stopPropagation();
-        });
-
-        ttsMenu.addEventListener('click', (e) => {
-            const item = e.target.closest('.copy-menu-item');
-            if (!item) return;
-            e.stopPropagation();
-            ttsMenu.classList.remove('open');
-            ttsBtn.classList.remove('menu-open');
-            if (item.dataset.mode === 'save') ttsDoSave();
-            else ttsDoSpeak();
         });
 
         btnRow.appendChild(ttsBtn);
