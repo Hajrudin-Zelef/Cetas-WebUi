@@ -321,6 +321,9 @@ body {
     color: var(--text);
     background: var(--bg-hover);
 }
+.sidebar-toggle:active {
+    transform: scale(0.92);
+}
 
 .sidebar-toggle.collapsed {
     left: 8px;
@@ -1521,130 +1524,124 @@ body.canvas-active .side-panel-toolbar {
 }
 
 @media (max-width: 768px) {
-    /* --- Masquer les panneaux fixes --- */
+    /* --- Réinitialisation mobile : consistent spacing + font scale --- */
+    :root {
+        --m-font-primary: 0.88rem;
+        --m-font-secondary: 0.78rem;
+        --m-font-small: 0.72rem;
+        --m-space-sm: 6px;
+        --m-space-md: 10px;
+        --m-space-lg: 14px;
+        --m-touch-min: 40px;
+    }
+
+    /* --- Cacher les panneaux fixes --- */
     .right-panel { display: none; }
     .side-panel-toolbar { display: none; }
 
     /* --- Sidebar overlay --- */
     .sidebar {
-        position: fixed;
-        left: 0;
-        top: 0;
-        bottom: 0;
+        position: fixed; left: 0; top: 0; bottom: 0;
         z-index: 1000;
-        width: 260px;
-        min-width: 260px;
+        width: 260px; min-width: 260px;
         box-shadow: 2px 0 16px rgba(0,0,0,0.15);
     }
-    .sidebar.collapsed {
-        width: 0;
-        min-width: 0;
-    }
-    .sidebar-toggle { z-index: 1001; }
+    .sidebar.collapsed { width: 0; min-width: 0; }
+    .sidebar-toggle { z-index: 1001; padding: 8px 10px; }
     body.sidebar-open::after {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.4);
-        z-index: 999;
+        content: ''; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.4); z-index: 999;
     }
+    .sidebar .conv-item { padding: var(--m-space-md) var(--m-space-sm); }
+    .sidebar .conv-item-title { font-size: var(--m-font-secondary); }
+    .sidebar .cat-manage-btn { min-width: var(--m-touch-min); min-height: var(--m-touch-min); }
+    .sidebar .user-avatar-btn { width: var(--m-touch-min); height: var(--m-touch-min); }
+    .sidebar .sidebar-config-btn { width: var(--m-touch-min); height: var(--m-touch-min); }
+    #plus-menu-btn { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
 
-    /* --- Chat plein écran --- */
+    /* --- Chat plein ecran --- */
     .main { width: 100%; }
-    .chat-container {
-        padding: 12px 12px 80px;
-        gap: 10px;
-    }
-    body:has(#right-panel.collapsed):not(.canvas-active) .chat-container {
-        padding-right: 12px;
-    }
+    .chat-container { padding: var(--m-space-md) var(--m-space-md) 80px; gap: var(--m-space-md); }
+    body:has(#right-panel.collapsed):not(.canvas-active) .chat-container { padding-right: var(--m-space-md); }
 
     /* --- Messages --- */
-    .message {
-        max-width: 90%;
-        padding: 10px 14px;
-        font-size: 0.82rem;
-    }
+    .message { max-width: 90%; padding: var(--m-space-md) var(--m-space-lg); font-size: var(--m-font-primary); }
     .message-wrapper .message { max-width: 90%; }
     .message-images img { max-width: 260px; max-height: 260px; }
+    .message-btn-row { gap: 2px; }
+    .message-tts-btn { width: 32px; height: 32px; }
+    .generation-placeholder { font-size: var(--m-font-secondary); }
+
+    /* --- Token bar --- */
+    .token-bar { padding: 4px 12px; font-size: var(--m-font-small); }
+    .export-action-btn { padding: 3px 5px; font-size: var(--m-font-small); }
 
     /* --- Input area --- */
-    .input-area {
-        padding: 10px 8px 14px;
-        gap: 4px;
-    }
+    .input-area { padding: var(--m-space-md) var(--m-space-sm) var(--m-space-lg); gap: 4px; }
     .input-row { gap: 4px; }
-    .input-wrapper {
-        padding: 6px 8px;
-        border-radius: 18px;
-    }
-    .prompt-input { min-height: 28px; max-height: 120px; }
+    .input-wrapper { padding: 6px 8px; border-radius: 16px; }
+    .prompt-input { font-size: 16px; min-height: 28px; max-height: 120px; }
     .input-line-2 { gap: 2px; }
     .input-line-2-center { display: none; }
     .input-line-2-left { gap: 1px; }
     .input-line-2-right { gap: 1px; }
-
-    /* --- Token bar --- */
-    .token-bar {
-        padding: 4px 12px;
-        font-size: 0.68rem;
-    }
+    .input-hint { font-size: var(--m-font-small); }
+    #plus-menu-btn { width: 36px; height: 36px; }
 
     /* --- Menu "+" --- */
-    .plus-menu-dropdown {
-        width: 280px;
-        left: 8px;
-        max-height: 380px;
-    }
+    .plus-menu-dropdown { width: 280px; left: 8px; max-height: 380px; }
     .plus-model-list { max-height: 180px; }
-
-    /* --- Boutons d'action --- */
-    .export-btns-group { gap: 2px; }
-    .export-action-btn { padding: 2px 4px; }
+    .plus-model-item { padding: 8px 10px; }
+    .plus-model-item-label { font-size: var(--m-font-secondary); }
+    .plus-menu-section-title { font-size: var(--m-font-small); }
 
     /* --- Modales --- */
-    .sp-modal {
-        width: 95vw;
-        max-width: 95vw;
-        padding: 16px;
-    }
-    .apikeys-modal {
-        width: 95vw;
-        max-width: 95vw;
-    }
-    .apikeys-tab {
-        font-size: 0.68rem;
-        padding: 6px 4px;
-    }
+    .sp-modal { width: 95vw; max-width: 95vw; padding: var(--m-space-lg); }
+    .apikeys-modal { width: 95vw; max-width: 95vw; }
+    .apikeys-tab { font-size: var(--m-font-small); padding: 6px 4px; }
+    .sp-modal h3 { font-size: var(--m-font-primary); }
+    .sp-modal label { font-size: var(--m-font-secondary); }
+    .sp-modal input, .sp-modal select { font-size: 16px; }
+    .sp-modal-btn { padding: 8px 16px; font-size: var(--m-font-secondary); }
+    .sp-tip { font-size: var(--m-font-small); }
+
+    /* --- Configuration panels --- */
+    .audio-setting-row { flex-wrap: wrap; gap: 4px; }
+    .audio-setting-label { font-size: var(--m-font-secondary); }
+    .audio-setting-select { font-size: 16px; }
+    .sp-textarea { font-size: 16px; }
 
     /* --- Canvas --- */
-    .canvas-panel {
-        width: 100vw;
-        min-width: 100vw;
-    }
+    .canvas-panel { width: 100vw; min-width: 100vw; }
+
+    /* --- Lightbox --- */
+    .lightbox-close { width: var(--m-touch-min); height: var(--m-touch-min); }
+
+    /* --- Boutons generaux --- */
+    .mobile-send-btn { width: var(--m-touch-min); height: var(--m-touch-min); min-width: var(--m-touch-min); min-height: var(--m-touch-min); }
+    .conv-action-btn { padding: 4px 6px; }
+    .btn-label { font-size: var(--m-font-secondary); }
 }
 
-/* Très petits écrans (iPhone SE, etc.) */
+/* Tres petits ecrans (iPhone SE, etc.) */
 @media (max-width: 380px) {
-    .chat-container { padding: 8px 6px 70px; }
-    .message { max-width: 95%; padding: 8px 10px; font-size: 0.78rem; }
+    .chat-container { padding: var(--m-space-sm) var(--m-space-sm) 70px; }
+    .message { max-width: 95%; padding: var(--m-space-sm) var(--m-space-md); font-size: 0.82rem; }
     .message-wrapper .message { max-width: 95%; }
-    .input-area { padding: 8px 4px 10px; }
+    .input-area { padding: var(--m-space-sm) 4px var(--m-space-md); }
     .input-wrapper { padding: 4px 6px; border-radius: 14px; }
     .plus-menu-dropdown { width: 260px; left: 2px; }
-    .token-bar { padding: 3px 8px; font-size: 0.62rem; }
+    .token-bar { padding: 3px 8px; font-size: 0.68rem; }
 }
 
-/* --- Touch targets mobile --- */
+/* Touch targets mobile (complément) */
 @media (max-width: 768px) {
-    #plus-menu-btn { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
-    .mobile-send-btn { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
-    .conv-action-btn { padding: 4px 6px; }
-    .sidebar-toggle { padding: 8px 10px; }
-}
-@media (max-width: 380px) {
-    #plus-menu-btn { width: 34px; height: 34px; min-width: 34px; min-height: 34px; }
-    .mobile-send-btn { width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
+    .sidebar-config-btn { width: 40px; height: 40px; }
+    .cat-manage-btn { min-width: 40px; min-height: 40px; }
+    .save-modal-close-x { width: 40px; height: 40px; }
+    .rp-close-btn { width: 36px; height: 36px; }
+    .rp-action-btn { min-height: 36px; }
+    .lightbox-close { top: 12px; right: 12px; }
 }
 
 .sidebar-title {
@@ -2147,6 +2144,7 @@ body.canvas-active .side-panel-toolbar {
     -webkit-text-fill-color: transparent;
     color: transparent;
     animation: generation-shimmer 2.2s linear infinite;
+    will-change: background-position;
 }
 body.dark .generation-placeholder {
     --gp-highlight: color-mix(in srgb, var(--gp-color) 25%, #e8e8e8);
@@ -4074,7 +4072,6 @@ body.dark .input-action-btn.active .input-action-arrow {
 }
 .send-btn:not(:disabled):active {
     transform: scale(0.92);
-    transform: scale(1.05);
 }
 
 /* Groupe de boutons export */
