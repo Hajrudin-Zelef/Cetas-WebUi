@@ -91,6 +91,7 @@ const MODELS_DATA = {
   ],
   "stt": [
     { "id": "whisper-1",              "label": "OpenAI (Whisper)",           "editeur": "openai",  "prix": "$0.006/min",  "description": "Transcription audio précise et multilingue par OpenAI." },
+    { "id": "openai/whisper-1",       "label": "OpenRouter (Whisper)",        "editeur": "openrouter", "prix": "~$0.006/min", "description": "Whisper via OpenRouter — utilise votre crédit OpenRouter." },
     { "id": "gemini-3.1-flash-lite", "label": "Google (Gemini 3.1 Flash Lite)", "editeur": "google",  "prix": "$0.50 / $1.5",  "description": "Transcription audio via Gemini Flash Lite, rapide et polyvalent." },
     { "id": "voxtral-mini-latest",    "label": "Mistral (Voxtral Mini 2)",  "editeur": "mistral", "prix": "$0.003/min",  "description": "Modèle de transcription de pointe par Mistral, léger et rapide." }
   ]

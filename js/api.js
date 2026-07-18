@@ -2072,6 +2072,27 @@ async function transcribeAudio(audioBlob, onDone, onError) {
         return;
     }
 
+    // OpenRouter Whisper (via proxy)
+    if (sttEditeur === 'openrouter') {
+        try {
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'audio.webm');
+            formData.append('model', sttModel.id);
+            formData.append('language', 'fr');
+            const response = await fetch(proxyUrl('openrouter', 'https://openrouter.ai/api/v1/audio/transcriptions'), {
+                method: 'POST',
+                body: formData
+            });
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error(`OpenRouter STT error ${response.status}: ${err}`);
+            }
+            const data = await response.json();
+            onDone(data.text);
+        } catch (err) { onError(err); }
+        return;
+    }
+
     // OpenAI Whisper (défaut)
     try {
         const openaiSttModel = sttEditeur === 'openai' ? sttModel : MODELS_DATA.stt.find(m => m.editeur === 'openai');
