@@ -1,0 +1,2513 @@
+- generic [ref=f27e1]:
+  - button "Afficher le panneau" [ref=f27e76] [cursor=pointer]
+  - complementary:
+    - heading "Cetas Cetas v3.2" [level=1]:
+      - img "Cetas" [ref=f27e7]
+      - text: Cetas
+      - generic [ref=f27e8]: v3.2
+    - generic: By Marexsoft
+    - generic [ref=f27e10]:
+      - button "Marexcode" [ref=f27e11] [cursor=pointer]
+      - button "Agent Code" [ref=f27e12] [cursor=pointer]
+      - button "Plugins" [ref=f27e13] [cursor=pointer]
+      - button "Compétences" [ref=f27e14] [cursor=pointer]
+    - button "Nouvelle conversation" [ref=f27e15] [cursor=pointer]
+    - generic:
+      - generic [ref=f27e17]:
+        - generic [ref=f27e18] [cursor=pointer]: Toutes les catégories
+        - button "Gérer les catégories" [ref=f27e22] [cursor=pointer]
+      - textbox "Rechercher..." [ref=f27e26]
+    - generic:
+      - button "SA" [ref=f27e34] [cursor=pointer]
+      - button "Configuration" [ref=f27e35] [cursor=pointer]
+  - main [ref=f27e39]:
+    - generic [ref=f27e41]:
+      - img "Cetas" [ref=f27e42]
+      - paragraph [ref=f27e43]: Sélectionnez une conversation ou démarrez-en une nouvelle en saisissant votre message ci-dessous.
+    - generic [ref=f27e45]:
+      - generic [ref=f27e46]:
+        - generic [ref=f27e48]:
+          - textbox "Écrivez votre message..." [active] [ref=f27e50]
+          - generic [ref=f27e51]:
+            - button "Plus d'options" [ref=f27e53] [cursor=pointer]
+            - button "Insérer un prompt enregistré" [ref=f27e77] [cursor=pointer]
+            - button "Dicter" [ref=f27e62] [cursor=pointer]
+        - button "Réglages de la conversation" [ref=f27e66] [cursor=pointer]
+      - generic [ref=f27e70]: SamAgent N4
+  - generic [ref=f27e79]:
+    - generic [ref=f27e80]:
+      - button "API et Modèles" [ref=f27e81] [cursor=pointer]
+      - button "Fonctionnalités" [ref=f27e82] [cursor=pointer]
+      - button "Budget" [ref=f27e83] [cursor=pointer]
+      - button "Apparence" [ref=f27e84] [cursor=pointer]
+      - button "Stockage" [ref=f27e85] [cursor=pointer]
+      - button "Utilisateurs" [ref=f27e86] [cursor=pointer]
+      - button "Conversation" [ref=f27e88] [cursor=pointer]
+      - button "FAQ" [ref=f27e89] [cursor=pointer]
+      - button "Statistiques" [ref=f27e90] [cursor=pointer]
+      - button "Partager" [ref=f27e91] [cursor=pointer]
+    - generic [ref=f27e92]:
+      - button "×" [ref=f27e93] [cursor=pointer]
+      - generic [ref=f27e94]:
+        - heading "API et Modèles" [level=3] [ref=f27e95]
+        - paragraph [ref=f27e96]: Sélectionnez un fournisseur pour configurer sa clé API et choisir les modèles à afficher dans le sélecteur principal.
+        - generic [ref=f27e97]:
+          - generic [ref=f27e98]:
+            - button "OpenRouter OpenRouter" [ref=f27e99] [cursor=pointer]:
+              - img "OpenRouter" [ref=f27e100]
+              - generic [ref=f27e101]: OpenRouter
+            - button [ref=f27e102] [cursor=pointer]:
+              - img "OpenAI" [ref=f27e103]
+              - generic: OpenAI
+            - button [ref=f27e104] [cursor=pointer]:
+              - img "Anthropic" [ref=f27e105]
+              - generic: Anthropic
+            - button [ref=f27e106] [cursor=pointer]:
+              - img "Google" [ref=f27e107]
+              - generic: Google
+            - button [ref=f27e108] [cursor=pointer]:
+              - img "Perplexity" [ref=f27e109]
+              - generic: Perplexity
+            - button [ref=f27e110] [cursor=pointer]:
+              - img "Mistral" [ref=f27e111]
+              - generic: Mistral
+            - button [ref=f27e112] [cursor=pointer]:
+              - img "DeepSeek" [ref=f27e113]
+              - generic: DeepSeek
+            - button [ref=f27e114] [cursor=pointer]:
+              - img "Grok" [ref=f27e115]
+              - generic: Grok
+            - button [ref=f27e116] [cursor=pointer]:
+              - img "Z.ai" [ref=f27e117]
+              - generic: Z.ai
+            - button [ref=f27e118] [cursor=pointer]:
+              - img "Groq" [ref=f27e119]
+              - generic: Groq
+            - button [ref=f27e120] [cursor=pointer]:
+              - img "Nvidia NIM" [ref=f27e121]
+              - generic: Nvidia NIM
+            - button [ref=f27e122] [cursor=pointer]:
+              - img "Cabreras" [ref=f27e123]
+              - generic: Cabreras
+            - button [ref=f27e124] [cursor=pointer]:
+              - img "Ollama" [ref=f27e125]
+              - generic: Ollama
+            - button [ref=f27e126] [cursor=pointer]:
+              - img "LM Studio" [ref=f27e127]
+              - generic: LM Studio
+            - button [ref=f27e128] [cursor=pointer]:
+              - img "LLaMA.cpp" [ref=f27e129]
+              - generic: LLaMA.cpp
+          - generic [ref=f27e131]:
+            - generic [ref=f27e132]:
+              - generic [ref=f27e133]:
+                - text: Clé API OpenRouter
+                - generic [ref=f27e134]: (LLM & Images)
+              - link "Obtenir une clé API OpenRouter" [ref=f27e135] [cursor=pointer]:
+                - /url: https://openrouter.ai/settings/keys
+            - generic [ref=f27e136]:
+              - generic [ref=f27e137]: sk-or-....39
+              - button "Valider" [ref=f27e138] [cursor=pointer]
+            - generic [ref=f27e140]:
+              - textbox "Clé API OpenRouter (LLM & Images)" [ref=f27e141]:
+                - /placeholder: sk-or-...
+                - text: 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
+              - button "Afficher la clé" [ref=f27e142] [cursor=pointer]
+            - generic [ref=f27e147]:
+              - generic [ref=f27e148]:
+                - generic [ref=f27e149]: Sélectionnez les modèles à utiliser
+                - generic [ref=f27e150]:
+                  - button "Textes" [ref=f27e151] [cursor=pointer]
+                  - button "Images" [ref=f27e152] [cursor=pointer]
+              - generic [ref=f27e153]:
+                - combobox [ref=f27e155] [cursor=pointer]:
+                  - option "Toutes les catégories" [selected]
+                  - option "OpenRouter"
+                  - option "Programmation"
+                  - option "Roleplay"
+                  - option "Marketing"
+                  - option "Technologie"
+                  - option "Science"
+                  - option "Traduction"
+                  - option "Finance"
+                  - option "Santé"
+                  - option "Juridique"
+                  - option "Académique"
+                - textbox "Rechercher un modèle…" [ref=f27e156]
+                - button "Actualiser" [ref=f27e157] [cursor=pointer]
+              - generic [ref=f27e161]:
+                - generic [ref=f27e162]:
+                  - generic:
+                    - checkbox "Inkling NEW" [ref=f27e163] [cursor=pointer]
+                    - generic:
+                      - text: Inkling
+                      - generic "Modèle ajouté il y a moins de 10 jours" [ref=f27e164] [cursor=pointer]: NEW
+                  - generic [ref=f27e165]: Thinkingmachines
+                  - generic [ref=f27e166]: $1 → $4.05 /M
+                  - generic [ref=f27e167]: i
+                - generic [ref=f27e168]:
+                  - generic:
+                    - checkbox "Auto Router (Beta) NEW" [ref=f27e169] [cursor=pointer]
+                    - generic:
+                      - text: Auto Router (Beta)
+                      - generic "Modèle ajouté il y a moins de 10 jours" [ref=f27e170] [cursor=pointer]: NEW
+                  - generic [ref=f27e171]: Openrouter
+                  - generic [ref=f27e172]: $-1000000 → $-1000000 /M
+                  - generic [ref=f27e173]: i
+                - generic [ref=f27e174]:
+                  - generic:
+                    - checkbox "Kimi K3 NEW" [ref=f27e175] [cursor=pointer]
+                    - generic:
+                      - text: Kimi K3
+                      - generic "Modèle ajouté il y a moins de 10 jours" [ref=f27e176] [cursor=pointer]: NEW
+                  - generic [ref=f27e177]: Moonshot
+                  - generic [ref=f27e178]: $3 → $15 /M
+                  - generic [ref=f27e179]: i
+                - generic [ref=f27e180]:
+                  - generic:
+                    - checkbox "Muse Spark 1.1 NEW" [ref=f27e181] [cursor=pointer]
+                    - generic:
+                      - text: Muse Spark 1.1
+                      - generic "Modèle ajouté il y a moins de 10 jours" [ref=f27e182] [cursor=pointer]: NEW
+                  - generic [ref=f27e183]: Meta
+                  - generic [ref=f27e184]: $1.25 → $4.25 /M
+                  - generic [ref=f27e185]: i
+                - generic [ref=f27e186]:
+                  - generic:
+                    - checkbox "KAT-Coder-Air V2.5" [ref=f27e187] [cursor=pointer]
+                    - generic: KAT-Coder-Air V2.5
+                  - generic [ref=f27e188]: Kwaipilot
+                  - generic [ref=f27e189]: $0.15 → $0.6 /M
+                  - generic [ref=f27e190]: i
+                - generic [ref=f27e191]:
+                  - generic:
+                    - checkbox "KAT-Coder-Pro V2.5" [ref=f27e192] [cursor=pointer]
+                    - generic: KAT-Coder-Pro V2.5
+                  - generic [ref=f27e193]: Kwaipilot
+                  - generic [ref=f27e194]: $0.74 → $2.96 /M
+                  - generic [ref=f27e195]: i
+                - generic [ref=f27e196]:
+                  - generic:
+                    - checkbox "GPT-5.6 Luna Pro" [ref=f27e197] [cursor=pointer]
+                    - generic: GPT-5.6 Luna Pro
+                  - generic [ref=f27e198]: OpenAI
+                  - generic [ref=f27e199]: $1 → $6 /M
+                  - generic [ref=f27e200]: i
+                - generic [ref=f27e201]:
+                  - generic:
+                    - checkbox "GPT-5.6 Luna" [ref=f27e202] [cursor=pointer]
+                    - generic: GPT-5.6 Luna
+                  - generic [ref=f27e203]: OpenAI
+                  - generic [ref=f27e204]: $1 → $6 /M
+                  - generic [ref=f27e205]: i
+                - generic [ref=f27e206]:
+                  - generic:
+                    - checkbox "GPT-5.6 Terra Pro" [ref=f27e207] [cursor=pointer]
+                    - generic: GPT-5.6 Terra Pro
+                  - generic [ref=f27e208]: OpenAI
+                  - generic [ref=f27e209]: $2.5 → $15 /M
+                  - generic [ref=f27e210]: i
+                - generic [ref=f27e211]:
+                  - generic:
+                    - checkbox "GPT-5.6 Terra" [ref=f27e212] [cursor=pointer]
+                    - generic: GPT-5.6 Terra
+                  - generic [ref=f27e213]: OpenAI
+                  - generic [ref=f27e214]: $2.5 → $15 /M
+                  - generic [ref=f27e215]: i
+                - generic [ref=f27e216]:
+                  - generic:
+                    - checkbox "GPT-5.6 Sol Pro" [ref=f27e217] [cursor=pointer]
+                    - generic: GPT-5.6 Sol Pro
+                  - generic [ref=f27e218]: OpenAI
+                  - generic [ref=f27e219]: $5 → $30 /M
+                  - generic [ref=f27e220]: i
+                - generic [ref=f27e221]:
+                  - generic:
+                    - checkbox "GPT-5.6 Sol" [ref=f27e222] [cursor=pointer]
+                    - generic: GPT-5.6 Sol
+                  - generic [ref=f27e223]: OpenAI
+                  - generic [ref=f27e224]: $5 → $30 /M
+                  - generic [ref=f27e225]: i
+                - generic [ref=f27e226]:
+                  - generic:
+                    - checkbox "Grok 4.5" [ref=f27e227] [cursor=pointer]
+                    - generic: Grok 4.5
+                  - generic [ref=f27e228]: xAI
+                  - generic [ref=f27e229]: $2 → $6 /M
+                  - generic [ref=f27e230]: i
+                - generic [ref=f27e231]:
+                  - generic:
+                    - checkbox "Grok Latest" [ref=f27e232] [cursor=pointer]
+                    - generic: Grok Latest
+                  - generic [ref=f27e233]: xAI
+                  - generic [ref=f27e234]: $2 → $6 /M
+                  - generic [ref=f27e235]: i
+                - generic [ref=f27e236]:
+                  - generic:
+                    - checkbox "Aion-3.0-Mini" [ref=f27e237] [cursor=pointer]
+                    - generic: Aion-3.0-Mini
+                  - generic [ref=f27e238]: Aion Labs
+                  - generic [ref=f27e239]: $0.7 → $1.4 /M
+                  - generic [ref=f27e240]: i
+                - generic [ref=f27e241]:
+                  - generic:
+                    - checkbox "Aion-3.0" [ref=f27e242] [cursor=pointer]
+                    - generic: Aion-3.0
+                  - generic [ref=f27e243]: Aion Labs
+                  - generic [ref=f27e244]: $3 → $6 /M
+                  - generic [ref=f27e245]: i
+                - generic [ref=f27e246]:
+                  - generic:
+                    - checkbox "Hy3" [ref=f27e247] [cursor=pointer]
+                    - generic: Hy3
+                  - generic [ref=f27e248]: Tencent
+                  - generic [ref=f27e249]: $0.2 → $0.8 /M
+                  - generic [ref=f27e250]: i
+                - generic [ref=f27e251]:
+                  - generic:
+                    - checkbox "Hy3 (free) ⚠" [ref=f27e252] [cursor=pointer]
+                    - generic:
+                      - text: Hy3 (free)
+                      - generic "Sera retiré le 21 juillet 2026" [ref=f27e253] [cursor=pointer]: ⚠
+                  - generic [ref=f27e254]: Tencent
+                  - generic [ref=f27e255]: Gratuit
+                  - generic [ref=f27e256]: i
+                - generic [ref=f27e257]:
+                  - generic:
+                    - checkbox "Laguna XS 2.1" [ref=f27e258] [cursor=pointer]
+                    - generic: Laguna XS 2.1
+                  - generic [ref=f27e259]: Poolside
+                  - generic [ref=f27e260]: $0.06 → $0.12 /M
+                  - generic [ref=f27e261]: i
+                - generic [ref=f27e262]:
+                  - generic:
+                    - checkbox "Laguna XS 2.1 (free)" [ref=f27e263] [cursor=pointer]
+                    - generic: Laguna XS 2.1 (free)
+                  - generic [ref=f27e264]: Poolside
+                  - generic [ref=f27e265]: Gratuit
+                  - generic [ref=f27e266]: i
+                - generic [ref=f27e267]:
+                  - generic:
+                    - checkbox "Claude Sonnet 5" [ref=f27e268] [cursor=pointer]
+                    - generic: Claude Sonnet 5
+                  - generic [ref=f27e269]: Anthropic
+                  - generic [ref=f27e270]: $2 → $10 /M
+                  - generic [ref=f27e271]: i
+                - generic [ref=f27e272]:
+                  - generic:
+                    - checkbox "Nex-N2-Mini" [ref=f27e273] [cursor=pointer]
+                    - generic: Nex-N2-Mini
+                  - generic [ref=f27e274]: Nex Agi
+                  - generic [ref=f27e275]: $0.03 → $0.1 /M
+                  - generic [ref=f27e276]: i
+                - generic [ref=f27e277]:
+                  - generic:
+                    - checkbox "Fugu Ultra" [ref=f27e278] [cursor=pointer]
+                    - generic: Fugu Ultra
+                  - generic [ref=f27e279]: Sakana
+                  - generic [ref=f27e280]: $5 → $30 /M
+                  - generic [ref=f27e281]: i
+                - generic [ref=f27e282]:
+                  - generic:
+                    - checkbox "North Mini Code (free)" [ref=f27e283] [cursor=pointer]
+                    - generic: North Mini Code (free)
+                  - generic [ref=f27e284]: Cohere
+                  - generic [ref=f27e285]: Gratuit
+                  - generic [ref=f27e286]: i
+                - generic [ref=f27e287]:
+                  - generic:
+                    - checkbox "GLM 5.2" [ref=f27e288] [cursor=pointer]
+                    - generic: GLM 5.2
+                  - generic [ref=f27e289]: Z.ai
+                  - generic [ref=f27e290]: $0.3 → $0.95 /M
+                  - generic [ref=f27e291]: i
+                - generic [ref=f27e292]:
+                  - generic:
+                    - checkbox "Fusion" [ref=f27e293] [cursor=pointer]
+                    - generic: Fusion
+                  - generic [ref=f27e294]: Openrouter
+                  - generic [ref=f27e295]: $-1000000 → $-1000000 /M
+                  - generic [ref=f27e296]: i
+                - generic [ref=f27e297]:
+                  - generic:
+                    - checkbox "Kimi K2.7 Code" [ref=f27e298] [cursor=pointer]
+                    - generic: Kimi K2.7 Code
+                  - generic [ref=f27e299]: Moonshot
+                  - generic [ref=f27e300]: $1 → $4.4 /M
+                  - generic [ref=f27e301]: i
+                - generic [ref=f27e302]:
+                  - generic:
+                    - checkbox "Claude Fable Latest" [ref=f27e303] [cursor=pointer]
+                    - generic: Claude Fable Latest
+                  - generic [ref=f27e304]: Anthropic
+                  - generic [ref=f27e305]: $10 → $50 /M
+                  - generic [ref=f27e306]: i
+                - generic [ref=f27e307]:
+                  - generic:
+                    - checkbox "Claude Fable 5" [ref=f27e308] [cursor=pointer]
+                    - generic: Claude Fable 5
+                  - generic [ref=f27e309]: Anthropic
+                  - generic [ref=f27e310]: $10 → $50 /M
+                  - generic [ref=f27e311]: i
+                - generic [ref=f27e312]:
+                  - generic:
+                    - checkbox "Nex-N2-Pro" [ref=f27e313] [cursor=pointer]
+                    - generic: Nex-N2-Pro
+                  - generic [ref=f27e314]: Nex Agi
+                  - generic [ref=f27e315]: $0.25 → $1 /M
+                  - generic [ref=f27e316]: i
+                - generic [ref=f27e317]:
+                  - generic:
+                    - checkbox "Nemotron 3.5 Content Safety (free)" [ref=f27e318] [cursor=pointer]
+                    - generic: Nemotron 3.5 Content Safety (free)
+                  - generic [ref=f27e319]: NVIDIA
+                  - generic [ref=f27e320]: Gratuit
+                  - generic [ref=f27e321]: i
+                - generic [ref=f27e322]:
+                  - generic:
+                    - checkbox "Nemotron 3 Ultra" [ref=f27e323] [cursor=pointer]
+                    - generic: Nemotron 3 Ultra
+                  - generic [ref=f27e324]: NVIDIA
+                  - generic [ref=f27e325]: $0.6 → $3.6 /M
+                  - generic [ref=f27e326]: i
+                - generic [ref=f27e327]:
+                  - generic:
+                    - checkbox "Nemotron 3 Ultra (free)" [ref=f27e328] [cursor=pointer]
+                    - generic: Nemotron 3 Ultra (free)
+                  - generic [ref=f27e329]: NVIDIA
+                  - generic [ref=f27e330]: Gratuit
+                  - generic [ref=f27e331]: i
+                - generic [ref=f27e332]:
+                  - generic:
+                    - checkbox "Qwen3.7 Plus" [ref=f27e333] [cursor=pointer]
+                    - generic: Qwen3.7 Plus
+                  - generic [ref=f27e334]: Qwen
+                  - generic [ref=f27e335]: $0.32 → $1.28 /M
+                  - generic [ref=f27e336]: i
+                - generic [ref=f27e337]:
+                  - generic:
+                    - checkbox "MiniMax M3" [ref=f27e338] [cursor=pointer]
+                    - generic: MiniMax M3
+                  - generic [ref=f27e339]: MiniMax
+                  - generic [ref=f27e340]: $0.3 → $1.2 /M
+                  - generic [ref=f27e341]: i
+                - generic [ref=f27e342]:
+                  - generic:
+                    - checkbox "Step 3.7 Flash" [ref=f27e343] [cursor=pointer]
+                    - generic: Step 3.7 Flash
+                  - generic [ref=f27e344]: Stepfun
+                  - generic [ref=f27e345]: $0.2 → $1.15 /M
+                  - generic [ref=f27e346]: i
+                - generic [ref=f27e347]:
+                  - generic:
+                    - checkbox "Claude Opus 4.8 (Fast)" [ref=f27e348] [cursor=pointer]
+                    - generic: Claude Opus 4.8 (Fast)
+                  - generic [ref=f27e349]: Anthropic
+                  - generic [ref=f27e350]: $10 → $50 /M
+                  - generic [ref=f27e351]: i
+                - generic [ref=f27e352]:
+                  - generic:
+                    - checkbox "Claude Opus 4.8" [ref=f27e353] [cursor=pointer]
+                    - generic: Claude Opus 4.8
+                  - generic [ref=f27e354]: Anthropic
+                  - generic [ref=f27e355]: $5 → $25 /M
+                  - generic [ref=f27e356]: i
+                - generic [ref=f27e357]:
+                  - generic:
+                    - checkbox "Qwen3.7 Max" [ref=f27e358] [cursor=pointer]
+                    - generic: Qwen3.7 Max
+                  - generic [ref=f27e359]: Qwen
+                  - generic [ref=f27e360]: $1.48 → $4.43 /M
+                  - generic [ref=f27e361]: i
+                - generic [ref=f27e362]:
+                  - generic:
+                    - checkbox "Grok Build 0.1" [ref=f27e363] [cursor=pointer]
+                    - generic: Grok Build 0.1
+                  - generic [ref=f27e364]: xAI
+                  - generic [ref=f27e365]: $1 → $2 /M
+                  - generic [ref=f27e366]: i
+                - generic [ref=f27e367]:
+                  - generic:
+                    - checkbox "Gemini 3.5 Flash" [ref=f27e368] [cursor=pointer]
+                    - generic: Gemini 3.5 Flash
+                  - generic [ref=f27e369]: Google
+                  - generic [ref=f27e370]: $1.5 → $9 /M
+                  - generic [ref=f27e371]: i
+                - generic [ref=f27e372]:
+                  - generic:
+                    - checkbox "Claude Opus 4.7 (Fast)" [ref=f27e373] [cursor=pointer]
+                    - generic: Claude Opus 4.7 (Fast)
+                  - generic [ref=f27e374]: Anthropic
+                  - generic [ref=f27e375]: $30 → $150 /M
+                  - generic [ref=f27e376]: i
+                - generic [ref=f27e377]:
+                  - generic:
+                    - checkbox "Perceptron Mk1" [ref=f27e378] [cursor=pointer]
+                    - generic: Perceptron Mk1
+                  - generic [ref=f27e379]: Perceptron
+                  - generic [ref=f27e380]: $0.15 → $1.5 /M
+                  - generic [ref=f27e381]: i
+                - generic [ref=f27e382]:
+                  - generic:
+                    - checkbox "Ring-2.6-1T" [ref=f27e383] [cursor=pointer]
+                    - generic: Ring-2.6-1T
+                  - generic [ref=f27e384]: Inclusionai
+                  - generic [ref=f27e385]: $0.08 → $0.63 /M
+                  - generic [ref=f27e386]: i
+                - generic [ref=f27e387]:
+                  - generic:
+                    - checkbox "Gemini 3.1 Flash Lite" [ref=f27e388] [cursor=pointer]
+                    - generic: Gemini 3.1 Flash Lite
+                  - generic [ref=f27e389]: Google
+                  - generic [ref=f27e390]: $0.25 → $1.5 /M
+                  - generic [ref=f27e391]: i
+                - generic [ref=f27e392]:
+                  - generic:
+                    - checkbox "GPT Chat Latest" [ref=f27e393] [cursor=pointer]
+                    - generic: GPT Chat Latest
+                  - generic [ref=f27e394]: OpenAI
+                  - generic [ref=f27e395]: $5 → $30 /M
+                  - generic [ref=f27e396]: i
+                - generic [ref=f27e397]:
+                  - generic:
+                    - checkbox "Grok 4.3" [ref=f27e398] [cursor=pointer]
+                    - generic: Grok 4.3
+                  - generic [ref=f27e399]: xAI
+                  - generic [ref=f27e400]: $1.25 → $2.5 /M
+                  - generic [ref=f27e401]: i
+                - generic [ref=f27e402]:
+                  - generic:
+                    - checkbox "Granite 4.1 8B" [ref=f27e403] [cursor=pointer]
+                    - generic: Granite 4.1 8B
+                  - generic [ref=f27e404]: Ibm Granite
+                  - generic [ref=f27e405]: $0.05 → $0.1 /M
+                  - generic [ref=f27e406]: i
+                - generic [ref=f27e407]:
+                  - generic:
+                    - checkbox "Mistral Medium 3.5" [ref=f27e408] [cursor=pointer]
+                    - generic: Mistral Medium 3.5
+                  - generic [ref=f27e409]: Mistral
+                  - generic [ref=f27e410]: $1.5 → $7.5 /M
+                  - generic [ref=f27e411]: i
+                - generic [ref=f27e412]:
+                  - generic:
+                    - checkbox "Nemotron 3 Nano Omni (free)" [ref=f27e413] [cursor=pointer]
+                    - generic: Nemotron 3 Nano Omni (free)
+                  - generic [ref=f27e414]: NVIDIA
+                  - generic [ref=f27e415]: Gratuit
+                  - generic [ref=f27e416]: i
+                - generic [ref=f27e417]:
+                  - generic:
+                    - checkbox "Laguna M.1 ⚠" [ref=f27e418] [cursor=pointer]
+                    - generic:
+                      - text: Laguna M.1
+                      - generic "Sera retiré le 28 juillet 2026" [ref=f27e419] [cursor=pointer]: ⚠
+                  - generic [ref=f27e420]: Poolside
+                  - generic [ref=f27e421]: $0.2 → $0.4 /M
+                  - generic [ref=f27e422]: i
+                - generic [ref=f27e423]:
+                  - generic:
+                    - checkbox "Laguna M.1 (free) ⚠" [ref=f27e424] [cursor=pointer]
+                    - generic:
+                      - text: Laguna M.1 (free)
+                      - generic "Sera retiré le 28 juillet 2026" [ref=f27e425] [cursor=pointer]: ⚠
+                  - generic [ref=f27e426]: Poolside
+                  - generic [ref=f27e427]: Gratuit
+                  - generic [ref=f27e428]: i
+                - generic [ref=f27e429]:
+                  - generic:
+                    - checkbox "Claude Haiku Latest" [ref=f27e430] [cursor=pointer]
+                    - generic: Claude Haiku Latest
+                  - generic [ref=f27e431]: Anthropic
+                  - generic [ref=f27e432]: $1 → $5 /M
+                  - generic [ref=f27e433]: i
+                - generic [ref=f27e434]:
+                  - generic:
+                    - checkbox "GPT Mini Latest" [ref=f27e435] [cursor=pointer]
+                    - generic: GPT Mini Latest
+                  - generic [ref=f27e436]: OpenAI
+                  - generic [ref=f27e437]: $0.75 → $4.5 /M
+                  - generic [ref=f27e438]: i
+                - generic [ref=f27e439]:
+                  - generic:
+                    - checkbox "Gemini Pro Latest" [ref=f27e440] [cursor=pointer]
+                    - generic: Gemini Pro Latest
+                  - generic [ref=f27e441]: Google
+                  - generic [ref=f27e442]: $2 → $12 /M
+                  - generic [ref=f27e443]: i
+                - generic [ref=f27e444]:
+                  - generic:
+                    - checkbox "Kimi Latest" [ref=f27e445] [cursor=pointer]
+                    - generic: Kimi Latest
+                  - generic [ref=f27e446]: Moonshot
+                  - generic [ref=f27e447]: $3 → $15 /M
+                  - generic [ref=f27e448]: i
+                - generic [ref=f27e449]:
+                  - generic:
+                    - checkbox "Gemini Flash Latest" [ref=f27e450] [cursor=pointer]
+                    - generic: Gemini Flash Latest
+                  - generic [ref=f27e451]: Google
+                  - generic [ref=f27e452]: $1.5 → $9 /M
+                  - generic [ref=f27e453]: i
+                - generic [ref=f27e454]:
+                  - generic:
+                    - checkbox "Claude Sonnet Latest" [ref=f27e455] [cursor=pointer]
+                    - generic: Claude Sonnet Latest
+                  - generic [ref=f27e456]: Anthropic
+                  - generic [ref=f27e457]: $2 → $10 /M
+                  - generic [ref=f27e458]: i
+                - generic [ref=f27e459]:
+                  - generic:
+                    - checkbox "GPT Latest" [ref=f27e460] [cursor=pointer]
+                    - generic: GPT Latest
+                  - generic [ref=f27e461]: OpenAI
+                  - generic [ref=f27e462]: $5 → $30 /M
+                  - generic [ref=f27e463]: i
+                - generic [ref=f27e464]:
+                  - generic:
+                    - checkbox "Qwen3.5 Plus 2026-04-20" [ref=f27e465] [cursor=pointer]
+                    - generic: Qwen3.5 Plus 2026-04-20
+                  - generic [ref=f27e466]: Qwen
+                  - generic [ref=f27e467]: $0.3 → $1.8 /M
+                  - generic [ref=f27e468]: i
+                - generic [ref=f27e469]:
+                  - generic:
+                    - checkbox "Qwen3.6 Flash" [ref=f27e470] [cursor=pointer]
+                    - generic: Qwen3.6 Flash
+                  - generic [ref=f27e471]: Qwen
+                  - generic [ref=f27e472]: $0.19 → $1.13 /M
+                  - generic [ref=f27e473]: i
+                - generic [ref=f27e474]:
+                  - generic:
+                    - checkbox "Qwen3.6 35B A3B" [ref=f27e475] [cursor=pointer]
+                    - generic: Qwen3.6 35B A3B
+                  - generic [ref=f27e476]: Qwen
+                  - generic [ref=f27e477]: $0.14 → $1 /M
+                  - generic [ref=f27e478]: i
+                - generic [ref=f27e479]:
+                  - generic:
+                    - checkbox "Qwen3.6 Max Preview" [ref=f27e480] [cursor=pointer]
+                    - generic: Qwen3.6 Max Preview
+                  - generic [ref=f27e481]: Qwen
+                  - generic [ref=f27e482]: $1.04 → $6.24 /M
+                  - generic [ref=f27e483]: i
+                - generic [ref=f27e484]:
+                  - generic:
+                    - checkbox "Qwen3.6 27B" [ref=f27e485] [cursor=pointer]
+                    - generic: Qwen3.6 27B
+                  - generic [ref=f27e486]: Qwen
+                  - generic [ref=f27e487]: $0.45 → $2.7 /M
+                  - generic [ref=f27e488]: i
+                - generic [ref=f27e489]:
+                  - generic:
+                    - checkbox "GPT-5.5 Pro" [ref=f27e490] [cursor=pointer]
+                    - generic: GPT-5.5 Pro
+                  - generic [ref=f27e491]: OpenAI
+                  - generic [ref=f27e492]: $30 → $180 /M
+                  - generic [ref=f27e493]: i
+                - generic [ref=f27e494]:
+                  - generic:
+                    - checkbox "GPT-5.5" [ref=f27e495] [cursor=pointer]
+                    - generic: GPT-5.5
+                  - generic [ref=f27e496]: OpenAI
+                  - generic [ref=f27e497]: $5 → $30 /M
+                  - generic [ref=f27e498]: i
+                - generic [ref=f27e499]:
+                  - generic:
+                    - checkbox "DeepSeek V4 Pro" [ref=f27e500] [cursor=pointer]
+                    - generic: DeepSeek V4 Pro
+                  - generic [ref=f27e501]: DeepSeek
+                  - generic [ref=f27e502]: $0.44 → $0.87 /M
+                  - generic [ref=f27e503]: i
+                - generic [ref=f27e504]:
+                  - generic:
+                    - checkbox "DeepSeek V4 Flash" [ref=f27e505] [cursor=pointer]
+                    - generic: DeepSeek V4 Flash
+                  - generic [ref=f27e506]: DeepSeek
+                  - generic [ref=f27e507]: $0.1 → $0.2 /M
+                  - generic [ref=f27e508]: i
+                - generic [ref=f27e509]:
+                  - generic:
+                    - checkbox "Ling-2.6-1T" [ref=f27e510] [cursor=pointer]
+                    - generic: Ling-2.6-1T
+                  - generic [ref=f27e511]: Inclusionai
+                  - generic [ref=f27e512]: $0.08 → $0.63 /M
+                  - generic [ref=f27e513]: i
+                - generic [ref=f27e514]:
+                  - generic:
+                    - checkbox "Hy3 preview" [ref=f27e515] [cursor=pointer]
+                    - generic: Hy3 preview
+                  - generic [ref=f27e516]: Tencent
+                  - generic [ref=f27e517]: $0.06 → $0.21 /M
+                  - generic [ref=f27e518]: i
+                - generic [ref=f27e519]:
+                  - generic:
+                    - checkbox "MiMo-V2.5-Pro" [ref=f27e520] [cursor=pointer]
+                    - generic: MiMo-V2.5-Pro
+                  - generic [ref=f27e521]: Xiaomi
+                  - generic [ref=f27e522]: $0.44 → $0.87 /M
+                  - generic [ref=f27e523]: i
+                - generic [ref=f27e524]:
+                  - generic:
+                    - checkbox "MiMo-V2.5" [ref=f27e525] [cursor=pointer]
+                    - generic: MiMo-V2.5
+                  - generic [ref=f27e526]: Xiaomi
+                  - generic [ref=f27e527]: $0.14 → $0.28 /M
+                  - generic [ref=f27e528]: i
+                - generic [ref=f27e529]:
+                  - generic:
+                    - checkbox "Ling-2.6-flash" [ref=f27e530] [cursor=pointer]
+                    - generic: Ling-2.6-flash
+                  - generic [ref=f27e531]: Inclusionai
+                  - generic [ref=f27e532]: $0.01 → $0.03 /M
+                  - generic [ref=f27e533]: i
+                - generic [ref=f27e534]:
+                  - generic:
+                    - checkbox "Claude Opus Latest" [ref=f27e535] [cursor=pointer]
+                    - generic: Claude Opus Latest
+                  - generic [ref=f27e536]: Anthropic
+                  - generic [ref=f27e537]: $5 → $25 /M
+                  - generic [ref=f27e538]: i
+                - generic [ref=f27e539]:
+                  - generic:
+                    - checkbox "Pareto Code Router" [ref=f27e540] [cursor=pointer]
+                    - generic: Pareto Code Router
+                  - generic [ref=f27e541]: Openrouter
+                  - generic [ref=f27e542]: $-1000000 → $-1000000 /M
+                  - generic [ref=f27e543]: i
+                - generic [ref=f27e544]:
+                  - generic:
+                    - checkbox "Kimi K2.6" [ref=f27e545] [cursor=pointer]
+                    - generic: Kimi K2.6
+                  - generic [ref=f27e546]: Moonshot
+                  - generic [ref=f27e547]: $0.95 → $4 /M
+                  - generic [ref=f27e548]: i
+                - generic [ref=f27e549]:
+                  - generic:
+                    - checkbox "Claude Opus 4.7" [ref=f27e550] [cursor=pointer]
+                    - generic: Claude Opus 4.7
+                  - generic [ref=f27e551]: Anthropic
+                  - generic [ref=f27e552]: $5 → $25 /M
+                  - generic [ref=f27e553]: i
+                - generic [ref=f27e554]:
+                  - generic:
+                    - checkbox "GLM 5.1" [ref=f27e555] [cursor=pointer]
+                    - generic: GLM 5.1
+                  - generic [ref=f27e556]: Z.ai
+                  - generic [ref=f27e557]: $0.97 → $3.04 /M
+                  - generic [ref=f27e558]: i
+                - generic [ref=f27e559]:
+                  - generic:
+                    - checkbox "Gemma 4 26B A4B" [ref=f27e560] [cursor=pointer]
+                    - generic: Gemma 4 26B A4B
+                  - generic [ref=f27e561]: Google
+                  - generic [ref=f27e562]: $0.1 → $0.3 /M
+                  - generic [ref=f27e563]: i
+                - generic [ref=f27e564]:
+                  - generic:
+                    - checkbox "Gemma 4 26B A4B (free)" [ref=f27e565] [cursor=pointer]
+                    - generic: Gemma 4 26B A4B (free)
+                  - generic [ref=f27e566]: Google
+                  - generic [ref=f27e567]: Gratuit
+                  - generic [ref=f27e568]: i
+                - generic [ref=f27e569]:
+                  - generic:
+                    - checkbox "Gemma 4 31B" [ref=f27e570] [cursor=pointer]
+                    - generic: Gemma 4 31B
+                  - generic [ref=f27e571]: Google
+                  - generic [ref=f27e572]: $0.12 → $0.37 /M
+                  - generic [ref=f27e573]: i
+                - generic [ref=f27e574]:
+                  - generic:
+                    - checkbox "Gemma 4 31B (free)" [ref=f27e575] [cursor=pointer]
+                    - generic: Gemma 4 31B (free)
+                  - generic [ref=f27e576]: Google
+                  - generic [ref=f27e577]: Gratuit
+                  - generic [ref=f27e578]: i
+                - generic [ref=f27e579]:
+                  - generic:
+                    - checkbox "Qwen3.6 Plus" [ref=f27e580] [cursor=pointer]
+                    - generic: Qwen3.6 Plus
+                  - generic [ref=f27e581]: Qwen
+                  - generic [ref=f27e582]: $0.33 → $1.95 /M
+                  - generic [ref=f27e583]: i
+                - generic [ref=f27e584]:
+                  - generic:
+                    - checkbox "GLM 5V Turbo" [ref=f27e585] [cursor=pointer]
+                    - generic: GLM 5V Turbo
+                  - generic [ref=f27e586]: Z.ai
+                  - generic [ref=f27e587]: $1.2 → $4 /M
+                  - generic [ref=f27e588]: i
+                - generic [ref=f27e589]:
+                  - generic:
+                    - checkbox "Trinity Large Thinking" [ref=f27e590] [cursor=pointer]
+                    - generic: Trinity Large Thinking
+                  - generic [ref=f27e591]: Arcee Ai
+                  - generic [ref=f27e592]: $0.25 → $0.8 /M
+                  - generic [ref=f27e593]: i
+                - generic [ref=f27e594]:
+                  - generic:
+                    - checkbox "Grok 4.20 Multi-Agent" [ref=f27e595] [cursor=pointer]
+                    - generic: Grok 4.20 Multi-Agent
+                  - generic [ref=f27e596]: xAI
+                  - generic [ref=f27e597]: $1.25 → $2.5 /M
+                  - generic [ref=f27e598]: i
+                - generic [ref=f27e599]:
+                  - generic:
+                    - checkbox "Grok 4.20" [ref=f27e600] [cursor=pointer]
+                    - generic: Grok 4.20
+                  - generic [ref=f27e601]: xAI
+                  - generic [ref=f27e602]: $1.25 → $2.5 /M
+                  - generic [ref=f27e603]: i
+                - generic [ref=f27e604]:
+                  - generic:
+                    - checkbox "Lyria 3 Pro Preview" [ref=f27e605] [cursor=pointer]
+                    - generic: Lyria 3 Pro Preview
+                  - generic [ref=f27e606]: Google
+                  - generic [ref=f27e607]: Gratuit
+                  - generic [ref=f27e608]: i
+                - generic [ref=f27e609]:
+                  - generic:
+                    - checkbox "Lyria 3 Clip Preview" [ref=f27e610] [cursor=pointer]
+                    - generic: Lyria 3 Clip Preview
+                  - generic [ref=f27e611]: Google
+                  - generic [ref=f27e612]: Gratuit
+                  - generic [ref=f27e613]: i
+                - generic [ref=f27e614]:
+                  - generic:
+                    - checkbox "KAT-Coder-Pro V2" [ref=f27e615] [cursor=pointer]
+                    - generic: KAT-Coder-Pro V2
+                  - generic [ref=f27e616]: Kwaipilot
+                  - generic [ref=f27e617]: $0.3 → $1.2 /M
+                  - generic [ref=f27e618]: i
+                - generic [ref=f27e619]:
+                  - generic:
+                    - checkbox "Reka Edge" [ref=f27e620] [cursor=pointer]
+                    - generic: Reka Edge
+                  - generic [ref=f27e621]: Rekaai
+                  - generic [ref=f27e622]: $0.1 → $0.1 /M
+                  - generic [ref=f27e623]: i
+                - generic [ref=f27e624]:
+                  - generic:
+                    - checkbox "MiniMax M2.7" [ref=f27e625] [cursor=pointer]
+                    - generic: MiniMax M2.7
+                  - generic [ref=f27e626]: MiniMax
+                  - generic [ref=f27e627]: $0.25 → $1 /M
+                  - generic [ref=f27e628]: i
+                - generic [ref=f27e629]:
+                  - generic:
+                    - checkbox "GPT-5.4 Nano" [ref=f27e630] [cursor=pointer]
+                    - generic: GPT-5.4 Nano
+                  - generic [ref=f27e631]: OpenAI
+                  - generic [ref=f27e632]: $0.2 → $1.25 /M
+                  - generic [ref=f27e633]: i
+                - generic [ref=f27e634]:
+                  - generic:
+                    - checkbox "GPT-5.4 Mini" [ref=f27e635] [cursor=pointer]
+                    - generic: GPT-5.4 Mini
+                  - generic [ref=f27e636]: OpenAI
+                  - generic [ref=f27e637]: $0.75 → $4.5 /M
+                  - generic [ref=f27e638]: i
+                - generic [ref=f27e639]:
+                  - generic:
+                    - checkbox "Mistral Small 4" [ref=f27e640] [cursor=pointer]
+                    - generic: Mistral Small 4
+                  - generic [ref=f27e641]: Mistral
+                  - generic [ref=f27e642]: $0.15 → $0.6 /M
+                  - generic [ref=f27e643]: i
+                - generic [ref=f27e644]:
+                  - generic:
+                    - checkbox "GLM 5 Turbo" [ref=f27e645] [cursor=pointer]
+                    - generic: GLM 5 Turbo
+                  - generic [ref=f27e646]: Z.ai
+                  - generic [ref=f27e647]: $1.2 → $4 /M
+                  - generic [ref=f27e648]: i
+                - generic [ref=f27e649]:
+                  - generic:
+                    - checkbox "Nemotron 3 Super" [ref=f27e650] [cursor=pointer]
+                    - generic: Nemotron 3 Super
+                  - generic [ref=f27e651]: NVIDIA
+                  - generic [ref=f27e652]: $0.21 → $0.45 /M
+                  - generic [ref=f27e653]: i
+                - generic [ref=f27e654]:
+                  - generic:
+                    - checkbox "Nemotron 3 Super (free)" [ref=f27e655] [cursor=pointer]
+                    - generic: Nemotron 3 Super (free)
+                  - generic [ref=f27e656]: NVIDIA
+                  - generic [ref=f27e657]: Gratuit
+                  - generic [ref=f27e658]: i
+                - generic [ref=f27e659]:
+                  - generic:
+                    - checkbox "Seed-2.0-Lite" [ref=f27e660] [cursor=pointer]
+                    - generic: Seed-2.0-Lite
+                  - generic [ref=f27e661]: Bytedance Seed
+                  - generic [ref=f27e662]: $0.25 → $2 /M
+                  - generic [ref=f27e663]: i
+                - generic [ref=f27e664]:
+                  - generic:
+                    - checkbox "Qwen3.5-9B" [ref=f27e665] [cursor=pointer]
+                    - generic: Qwen3.5-9B
+                  - generic [ref=f27e666]: Qwen
+                  - generic [ref=f27e667]: $0.1 → $0.15 /M
+                  - generic [ref=f27e668]: i
+                - generic [ref=f27e669]:
+                  - generic:
+                    - checkbox "GPT-5.4 Pro" [ref=f27e670] [cursor=pointer]
+                    - generic: GPT-5.4 Pro
+                  - generic [ref=f27e671]: OpenAI
+                  - generic [ref=f27e672]: $30 → $180 /M
+                  - generic [ref=f27e673]: i
+                - generic [ref=f27e674]:
+                  - generic:
+                    - checkbox "GPT-5.4" [ref=f27e675] [cursor=pointer]
+                    - generic: GPT-5.4
+                  - generic [ref=f27e676]: OpenAI
+                  - generic [ref=f27e677]: $2.5 → $15 /M
+                  - generic [ref=f27e678]: i
+                - generic [ref=f27e679]:
+                  - generic:
+                    - checkbox "Mercury 2" [ref=f27e680] [cursor=pointer]
+                    - generic: Mercury 2
+                  - generic [ref=f27e681]: Inception
+                  - generic [ref=f27e682]: $0.25 → $0.75 /M
+                  - generic [ref=f27e683]: i
+                - generic [ref=f27e684]:
+                  - generic:
+                    - checkbox "GPT-5.3 Chat ⚠" [ref=f27e685] [cursor=pointer]
+                    - generic:
+                      - text: GPT-5.3 Chat
+                      - generic "Sera retiré le 10 août 2026" [ref=f27e686] [cursor=pointer]: ⚠
+                  - generic [ref=f27e687]: OpenAI
+                  - generic [ref=f27e688]: $1.75 → $14 /M
+                  - generic [ref=f27e689]: i
+                - generic [ref=f27e690]:
+                  - generic:
+                    - checkbox "Gemini 3.1 Flash Lite Preview" [ref=f27e691] [cursor=pointer]
+                    - generic: Gemini 3.1 Flash Lite Preview
+                  - generic [ref=f27e692]: Google
+                  - generic [ref=f27e693]: $0.25 → $1.5 /M
+                  - generic [ref=f27e694]: i
+                - generic [ref=f27e695]:
+                  - generic:
+                    - checkbox "Seed-2.0-Mini" [ref=f27e696] [cursor=pointer]
+                    - generic: Seed-2.0-Mini
+                  - generic [ref=f27e697]: Bytedance Seed
+                  - generic [ref=f27e698]: $0.1 → $0.4 /M
+                  - generic [ref=f27e699]: i
+                - generic [ref=f27e700]:
+                  - generic:
+                    - checkbox "Qwen3.5-35B-A3B" [ref=f27e701] [cursor=pointer]
+                    - generic: Qwen3.5-35B-A3B
+                  - generic [ref=f27e702]: Qwen
+                  - generic [ref=f27e703]: $0.14 → $1 /M
+                  - generic [ref=f27e704]: i
+                - generic [ref=f27e705]:
+                  - generic:
+                    - checkbox "Qwen3.5-27B" [ref=f27e706] [cursor=pointer]
+                    - generic: Qwen3.5-27B
+                  - generic [ref=f27e707]: Qwen
+                  - generic [ref=f27e708]: $0.26 → $2.6 /M
+                  - generic [ref=f27e709]: i
+                - generic [ref=f27e710]:
+                  - generic:
+                    - checkbox "Qwen3.5-122B-A10B" [ref=f27e711] [cursor=pointer]
+                    - generic: Qwen3.5-122B-A10B
+                  - generic [ref=f27e712]: Qwen
+                  - generic [ref=f27e713]: $0.26 → $2.08 /M
+                  - generic [ref=f27e714]: i
+                - generic [ref=f27e715]:
+                  - generic:
+                    - checkbox "Qwen3.5-Flash" [ref=f27e716] [cursor=pointer]
+                    - generic: Qwen3.5-Flash
+                  - generic [ref=f27e717]: Qwen
+                  - generic [ref=f27e718]: $0.07 → $0.26 /M
+                  - generic [ref=f27e719]: i
+                - generic [ref=f27e720]:
+                  - generic:
+                    - checkbox "Gemini 3.1 Pro Preview Custom Tools" [ref=f27e721] [cursor=pointer]
+                    - generic: Gemini 3.1 Pro Preview Custom Tools
+                  - generic [ref=f27e722]: Google
+                  - generic [ref=f27e723]: $2 → $12 /M
+                  - generic [ref=f27e724]: i
+                - generic [ref=f27e725]:
+                  - generic:
+                    - checkbox "GPT-5.3-Codex" [ref=f27e726] [cursor=pointer]
+                    - generic: GPT-5.3-Codex
+                  - generic [ref=f27e727]: OpenAI
+                  - generic [ref=f27e728]: $1.75 → $14 /M
+                  - generic [ref=f27e729]: i
+                - generic [ref=f27e730]:
+                  - generic:
+                    - checkbox "Aion-2.0" [ref=f27e731] [cursor=pointer]
+                    - generic: Aion-2.0
+                  - generic [ref=f27e732]: Aion Labs
+                  - generic [ref=f27e733]: $0.8 → $1.6 /M
+                  - generic [ref=f27e734]: i
+                - generic [ref=f27e735]:
+                  - generic:
+                    - checkbox "Gemini 3.1 Pro Preview" [ref=f27e736] [cursor=pointer]
+                    - generic: Gemini 3.1 Pro Preview
+                  - generic [ref=f27e737]: Google
+                  - generic [ref=f27e738]: $2 → $12 /M
+                  - generic [ref=f27e739]: i
+                - generic [ref=f27e740]:
+                  - generic:
+                    - checkbox "Claude Sonnet 4.6" [ref=f27e741] [cursor=pointer]
+                    - generic: Claude Sonnet 4.6
+                  - generic [ref=f27e742]: Anthropic
+                  - generic [ref=f27e743]: $3 → $15 /M
+                  - generic [ref=f27e744]: i
+                - generic [ref=f27e745]:
+                  - generic:
+                    - checkbox "Qwen3.5 Plus 2026-02-15" [ref=f27e746] [cursor=pointer]
+                    - generic: Qwen3.5 Plus 2026-02-15
+                  - generic [ref=f27e747]: Qwen
+                  - generic [ref=f27e748]: $0.26 → $1.56 /M
+                  - generic [ref=f27e749]: i
+                - generic [ref=f27e750]:
+                  - generic:
+                    - checkbox "Qwen3.5 397B A17B" [ref=f27e751] [cursor=pointer]
+                    - generic: Qwen3.5 397B A17B
+                  - generic [ref=f27e752]: Qwen
+                  - generic [ref=f27e753]: $0.39 → $2.34 /M
+                  - generic [ref=f27e754]: i
+                - generic [ref=f27e755]:
+                  - generic:
+                    - checkbox "MiniMax M2.5" [ref=f27e756] [cursor=pointer]
+                    - generic: MiniMax M2.5
+                  - generic [ref=f27e757]: MiniMax
+                  - generic [ref=f27e758]: $0.15 → $0.9 /M
+                  - generic [ref=f27e759]: i
+                - generic [ref=f27e760]:
+                  - generic:
+                    - checkbox "GLM 5" [ref=f27e761] [cursor=pointer]
+                    - generic: GLM 5
+                  - generic [ref=f27e762]: Z.ai
+                  - generic [ref=f27e763]: $0.95 → $3.15 /M
+                  - generic [ref=f27e764]: i
+                - generic [ref=f27e765]:
+                  - generic:
+                    - checkbox "Qwen3 Max Thinking" [ref=f27e766] [cursor=pointer]
+                    - generic: Qwen3 Max Thinking
+                  - generic [ref=f27e767]: Qwen
+                  - generic [ref=f27e768]: $0.78 → $3.9 /M
+                  - generic [ref=f27e769]: i
+                - generic [ref=f27e770]:
+                  - generic:
+                    - checkbox "Claude Opus 4.6" [ref=f27e771] [cursor=pointer]
+                    - generic: Claude Opus 4.6
+                  - generic [ref=f27e772]: Anthropic
+                  - generic [ref=f27e773]: $5 → $25 /M
+                  - generic [ref=f27e774]: i
+                - generic [ref=f27e775]:
+                  - generic:
+                    - checkbox "Qwen3 Coder Next" [ref=f27e776] [cursor=pointer]
+                    - generic: Qwen3 Coder Next
+                  - generic [ref=f27e777]: Qwen
+                  - generic [ref=f27e778]: $0.11 → $0.8 /M
+                  - generic [ref=f27e779]: i
+                - generic [ref=f27e780]:
+                  - generic:
+                    - checkbox "Free Models Router" [ref=f27e781] [cursor=pointer]
+                    - generic: Free Models Router
+                  - generic [ref=f27e782]: Openrouter
+                  - generic [ref=f27e783]: Gratuit
+                  - generic [ref=f27e784]: i
+                - generic [ref=f27e785]:
+                  - generic:
+                    - checkbox "Step 3.5 Flash" [ref=f27e786] [cursor=pointer]
+                    - generic: Step 3.5 Flash
+                  - generic [ref=f27e787]: Stepfun
+                  - generic [ref=f27e788]: $0.1 → $0.3 /M
+                  - generic [ref=f27e789]: i
+                - generic [ref=f27e790]:
+                  - generic:
+                    - checkbox "Kimi K2.5" [ref=f27e791] [cursor=pointer]
+                    - generic: Kimi K2.5
+                  - generic [ref=f27e792]: Moonshot
+                  - generic [ref=f27e793]: $0.57 → $2.85 /M
+                  - generic [ref=f27e794]: i
+                - generic [ref=f27e795]:
+                  - generic:
+                    - checkbox "Solar Pro 3" [ref=f27e796] [cursor=pointer]
+                    - generic: Solar Pro 3
+                  - generic [ref=f27e797]: Upstage
+                  - generic [ref=f27e798]: $0.15 → $0.6 /M
+                  - generic [ref=f27e799]: i
+                - generic [ref=f27e800]:
+                  - generic:
+                    - checkbox "MiniMax M2-her" [ref=f27e801] [cursor=pointer]
+                    - generic: MiniMax M2-her
+                  - generic [ref=f27e802]: MiniMax
+                  - generic [ref=f27e803]: $0.3 → $1.2 /M
+                  - generic [ref=f27e804]: i
+                - generic [ref=f27e805]:
+                  - generic:
+                    - checkbox "Palmyra X5" [ref=f27e806] [cursor=pointer]
+                    - generic: Palmyra X5
+                  - generic [ref=f27e807]: Writer
+                  - generic [ref=f27e808]: $0.6 → $6 /M
+                  - generic [ref=f27e809]: i
+                - generic [ref=f27e810]:
+                  - generic:
+                    - checkbox "GPT Audio" [ref=f27e811] [cursor=pointer]
+                    - generic: GPT Audio
+                  - generic [ref=f27e812]: OpenAI
+                  - generic [ref=f27e813]: $2.5 → $10 /M
+                  - generic [ref=f27e814]: i
+                - generic [ref=f27e815]:
+                  - generic:
+                    - checkbox "GPT Audio Mini" [ref=f27e816] [cursor=pointer]
+                    - generic: GPT Audio Mini
+                  - generic [ref=f27e817]: OpenAI
+                  - generic [ref=f27e818]: $0.6 → $2.4 /M
+                  - generic [ref=f27e819]: i
+                - generic [ref=f27e820]:
+                  - generic:
+                    - checkbox "GLM 4.7 Flash" [ref=f27e821] [cursor=pointer]
+                    - generic: GLM 4.7 Flash
+                  - generic [ref=f27e822]: Z.ai
+                  - generic [ref=f27e823]: $0.06 → $0.4 /M
+                  - generic [ref=f27e824]: i
+                - generic [ref=f27e825]:
+                  - generic:
+                    - checkbox "GPT-5.2-Codex" [ref=f27e826] [cursor=pointer]
+                    - generic: GPT-5.2-Codex
+                  - generic [ref=f27e827]: OpenAI
+                  - generic [ref=f27e828]: $1.75 → $14 /M
+                  - generic [ref=f27e829]: i
+                - generic [ref=f27e830]:
+                  - generic:
+                    - checkbox "Seed 1.6 Flash" [ref=f27e831] [cursor=pointer]
+                    - generic: Seed 1.6 Flash
+                  - generic [ref=f27e832]: Bytedance Seed
+                  - generic [ref=f27e833]: $0.08 → $0.3 /M
+                  - generic [ref=f27e834]: i
+                - generic [ref=f27e835]:
+                  - generic:
+                    - checkbox "Seed 1.6" [ref=f27e836] [cursor=pointer]
+                    - generic: Seed 1.6
+                  - generic [ref=f27e837]: Bytedance Seed
+                  - generic [ref=f27e838]: $0.25 → $2 /M
+                  - generic [ref=f27e839]: i
+                - generic [ref=f27e840]:
+                  - generic:
+                    - checkbox "MiniMax M2.1" [ref=f27e841] [cursor=pointer]
+                    - generic: MiniMax M2.1
+                  - generic [ref=f27e842]: MiniMax
+                  - generic [ref=f27e843]: $0.3 → $1.2 /M
+                  - generic [ref=f27e844]: i
+                - generic [ref=f27e845]:
+                  - generic:
+                    - checkbox "GLM 4.7" [ref=f27e846] [cursor=pointer]
+                    - generic: GLM 4.7
+                  - generic [ref=f27e847]: Z.ai
+                  - generic [ref=f27e848]: $0.4 → $1.75 /M
+                  - generic [ref=f27e849]: i
+                - generic [ref=f27e850]:
+                  - generic:
+                    - checkbox "Gemini 3 Flash Preview" [ref=f27e851] [cursor=pointer]
+                    - generic: Gemini 3 Flash Preview
+                  - generic [ref=f27e852]: Google
+                  - generic [ref=f27e853]: $0.5 → $3 /M
+                  - generic [ref=f27e854]: i
+                - generic [ref=f27e855]:
+                  - generic:
+                    - checkbox "Nemotron 3 Nano 30B A3B" [ref=f27e856] [cursor=pointer]
+                    - generic: Nemotron 3 Nano 30B A3B
+                  - generic [ref=f27e857]: NVIDIA
+                  - generic [ref=f27e858]: $0.05 → $0.2 /M
+                  - generic [ref=f27e859]: i
+                - generic [ref=f27e860]:
+                  - generic:
+                    - checkbox "Nemotron 3 Nano 30B A3B (free)" [ref=f27e861] [cursor=pointer]
+                    - generic: Nemotron 3 Nano 30B A3B (free)
+                  - generic [ref=f27e862]: NVIDIA
+                  - generic [ref=f27e863]: Gratuit
+                  - generic [ref=f27e864]: i
+                - generic [ref=f27e865]:
+                  - generic:
+                    - checkbox "GPT-5.2 Chat ⚠" [ref=f27e866] [cursor=pointer]
+                    - generic:
+                      - text: GPT-5.2 Chat
+                      - generic "Sera retiré le 10 août 2026" [ref=f27e867] [cursor=pointer]: ⚠
+                  - generic [ref=f27e868]: OpenAI
+                  - generic [ref=f27e869]: $1.75 → $14 /M
+                  - generic [ref=f27e870]: i
+                - generic [ref=f27e871]:
+                  - generic:
+                    - checkbox "GPT-5.2 Pro" [ref=f27e872] [cursor=pointer]
+                    - generic: GPT-5.2 Pro
+                  - generic [ref=f27e873]: OpenAI
+                  - generic [ref=f27e874]: $21 → $168 /M
+                  - generic [ref=f27e875]: i
+                - generic [ref=f27e876]:
+                  - generic:
+                    - checkbox "GPT-5.2" [ref=f27e877] [cursor=pointer]
+                    - generic: GPT-5.2
+                  - generic [ref=f27e878]: OpenAI
+                  - generic [ref=f27e879]: $1.75 → $14 /M
+                  - generic [ref=f27e880]: i
+                - generic [ref=f27e881]:
+                  - generic:
+                    - checkbox "Devstral 2 2512" [ref=f27e882] [cursor=pointer]
+                    - generic: Devstral 2 2512
+                  - generic [ref=f27e883]: Mistral
+                  - generic [ref=f27e884]: $0.4 → $2 /M
+                  - generic [ref=f27e885]: i
+                - generic [ref=f27e886]:
+                  - generic:
+                    - checkbox "Relace Search" [ref=f27e887] [cursor=pointer]
+                    - generic: Relace Search
+                  - generic [ref=f27e888]: Relace
+                  - generic [ref=f27e889]: $1 → $3 /M
+                  - generic [ref=f27e890]: i
+                - generic [ref=f27e891]:
+                  - generic:
+                    - checkbox "GLM 4.6V" [ref=f27e892] [cursor=pointer]
+                    - generic: GLM 4.6V
+                  - generic [ref=f27e893]: Z.ai
+                  - generic [ref=f27e894]: $0.3 → $0.9 /M
+                  - generic [ref=f27e895]: i
+                - generic [ref=f27e896]:
+                  - generic:
+                    - checkbox "Body Builder (beta)" [ref=f27e897] [cursor=pointer]
+                    - generic: Body Builder (beta)
+                  - generic [ref=f27e898]: Openrouter
+                  - generic [ref=f27e899]: $-1000000 → $-1000000 /M
+                  - generic [ref=f27e900]: i
+                - generic [ref=f27e901]:
+                  - generic:
+                    - checkbox "GPT-5.1-Codex-Max" [ref=f27e902] [cursor=pointer]
+                    - generic: GPT-5.1-Codex-Max
+                  - generic [ref=f27e903]: OpenAI
+                  - generic [ref=f27e904]: $1.25 → $10 /M
+                  - generic [ref=f27e905]: i
+                - generic [ref=f27e906]:
+                  - generic:
+                    - checkbox "Nova 2 Lite" [ref=f27e907] [cursor=pointer]
+                    - generic: Nova 2 Lite
+                  - generic [ref=f27e908]: Amazon
+                  - generic [ref=f27e909]: $0.3 → $2.5 /M
+                  - generic [ref=f27e910]: i
+                - generic [ref=f27e911]:
+                  - generic:
+                    - checkbox "Ministral 3 14B 2512" [ref=f27e912] [cursor=pointer]
+                    - generic: Ministral 3 14B 2512
+                  - generic [ref=f27e913]: Mistral
+                  - generic [ref=f27e914]: $0.2 → $0.2 /M
+                  - generic [ref=f27e915]: i
+                - generic [ref=f27e916]:
+                  - generic:
+                    - checkbox "Ministral 3 8B 2512" [ref=f27e917] [cursor=pointer]
+                    - generic: Ministral 3 8B 2512
+                  - generic [ref=f27e918]: Mistral
+                  - generic [ref=f27e919]: $0.15 → $0.15 /M
+                  - generic [ref=f27e920]: i
+                - generic [ref=f27e921]:
+                  - generic:
+                    - checkbox "Ministral 3 3B 2512" [ref=f27e922] [cursor=pointer]
+                    - generic: Ministral 3 3B 2512
+                  - generic [ref=f27e923]: Mistral
+                  - generic [ref=f27e924]: $0.1 → $0.1 /M
+                  - generic [ref=f27e925]: i
+                - generic [ref=f27e926]:
+                  - generic:
+                    - checkbox "Mistral Large 3 2512" [ref=f27e927] [cursor=pointer]
+                    - generic: Mistral Large 3 2512
+                  - generic [ref=f27e928]: Mistral
+                  - generic [ref=f27e929]: $0.5 → $1.5 /M
+                  - generic [ref=f27e930]: i
+                - generic [ref=f27e931]:
+                  - generic:
+                    - checkbox "DeepSeek V3.2" [ref=f27e932] [cursor=pointer]
+                    - generic: DeepSeek V3.2
+                  - generic [ref=f27e933]: DeepSeek
+                  - generic [ref=f27e934]: $0.27 → $0.4 /M
+                  - generic [ref=f27e935]: i
+                - generic [ref=f27e936]:
+                  - generic:
+                    - checkbox "Claude Opus 4.5" [ref=f27e937] [cursor=pointer]
+                    - generic: Claude Opus 4.5
+                  - generic [ref=f27e938]: Anthropic
+                  - generic [ref=f27e939]: $5 → $25 /M
+                  - generic [ref=f27e940]: i
+                - generic [ref=f27e941]:
+                  - generic:
+                    - checkbox "Olmo 3 32B Think" [ref=f27e942] [cursor=pointer]
+                    - generic: Olmo 3 32B Think
+                  - generic [ref=f27e943]: Allenai
+                  - generic [ref=f27e944]: $0.15 → $0.5 /M
+                  - generic [ref=f27e945]: i
+                - generic [ref=f27e946]:
+                  - generic:
+                    - checkbox "Cogito v2.1 671B" [ref=f27e947] [cursor=pointer]
+                    - generic: Cogito v2.1 671B
+                  - generic [ref=f27e948]: Deepcogito
+                  - generic [ref=f27e949]: $1.25 → $1.25 /M
+                  - generic [ref=f27e950]: i
+                - generic [ref=f27e951]:
+                  - generic:
+                    - checkbox "GPT-5.1" [ref=f27e952] [cursor=pointer]
+                    - generic: GPT-5.1
+                  - generic [ref=f27e953]: OpenAI
+                  - generic [ref=f27e954]: $1.25 → $10 /M
+                  - generic [ref=f27e955]: i
+                - generic [ref=f27e956]:
+                  - generic:
+                    - checkbox "GPT-5.1 Chat" [ref=f27e957] [cursor=pointer]
+                    - generic: GPT-5.1 Chat
+                  - generic [ref=f27e958]: OpenAI
+                  - generic [ref=f27e959]: $1.25 → $10 /M
+                  - generic [ref=f27e960]: i
+                - generic [ref=f27e961]:
+                  - generic:
+                    - checkbox "GPT-5.1-Codex" [ref=f27e962] [cursor=pointer]
+                    - generic: GPT-5.1-Codex
+                  - generic [ref=f27e963]: OpenAI
+                  - generic [ref=f27e964]: $1.25 → $10 /M
+                  - generic [ref=f27e965]: i
+                - generic [ref=f27e966]:
+                  - generic:
+                    - checkbox "GPT-5.1-Codex-Mini" [ref=f27e967] [cursor=pointer]
+                    - generic: GPT-5.1-Codex-Mini
+                  - generic [ref=f27e968]: OpenAI
+                  - generic [ref=f27e969]: $0.25 → $2 /M
+                  - generic [ref=f27e970]: i
+                - generic [ref=f27e971]:
+                  - generic:
+                    - checkbox "Kimi K2 Thinking" [ref=f27e972] [cursor=pointer]
+                    - generic: Kimi K2 Thinking
+                  - generic [ref=f27e973]: Moonshot
+                  - generic [ref=f27e974]: $0.6 → $2.5 /M
+                  - generic [ref=f27e975]: i
+                - generic [ref=f27e976]:
+                  - generic:
+                    - checkbox "Nova Premier 1.0" [ref=f27e977] [cursor=pointer]
+                    - generic: Nova Premier 1.0
+                  - generic [ref=f27e978]: Amazon
+                  - generic [ref=f27e979]: $2.5 → $12.5 /M
+                  - generic [ref=f27e980]: i
+                - generic [ref=f27e981]:
+                  - generic:
+                    - checkbox "Sonar Pro Search" [ref=f27e982] [cursor=pointer]
+                    - generic: Sonar Pro Search
+                  - generic [ref=f27e983]: Perplexity
+                  - generic [ref=f27e984]: $3 → $15 /M
+                  - generic [ref=f27e985]: i
+                - generic [ref=f27e986]:
+                  - generic:
+                    - checkbox "Voxtral Small 24B 2507" [ref=f27e987] [cursor=pointer]
+                    - generic: Voxtral Small 24B 2507
+                  - generic [ref=f27e988]: Mistral
+                  - generic [ref=f27e989]: $0.1 → $0.3 /M
+                  - generic [ref=f27e990]: i
+                - generic [ref=f27e991]:
+                  - generic:
+                    - checkbox "gpt-oss-safeguard-20b" [ref=f27e992] [cursor=pointer]
+                    - generic: gpt-oss-safeguard-20b
+                  - generic [ref=f27e993]: OpenAI
+                  - generic [ref=f27e994]: $0.08 → $0.3 /M
+                  - generic [ref=f27e995]: i
+                - generic [ref=f27e996]:
+                  - generic:
+                    - checkbox "Nemotron Nano 12B 2 VL (free)" [ref=f27e997] [cursor=pointer]
+                    - generic: Nemotron Nano 12B 2 VL (free)
+                  - generic [ref=f27e998]: NVIDIA
+                  - generic [ref=f27e999]: Gratuit
+                  - generic [ref=f27e1000]: i
+                - generic [ref=f27e1001]:
+                  - generic:
+                    - checkbox "MiniMax M2" [ref=f27e1002] [cursor=pointer]
+                    - generic: MiniMax M2
+                  - generic [ref=f27e1003]: MiniMax
+                  - generic [ref=f27e1004]: $0.26 → $1.02 /M
+                  - generic [ref=f27e1005]: i
+                - generic [ref=f27e1006]:
+                  - generic:
+                    - checkbox "Qwen3 VL 32B Instruct" [ref=f27e1007] [cursor=pointer]
+                    - generic: Qwen3 VL 32B Instruct
+                  - generic [ref=f27e1008]: Qwen
+                  - generic [ref=f27e1009]: $0.1 → $0.42 /M
+                  - generic [ref=f27e1010]: i
+                - generic [ref=f27e1011]:
+                  - generic:
+                    - checkbox "Granite 4.0 Micro" [ref=f27e1012] [cursor=pointer]
+                    - generic: Granite 4.0 Micro
+                  - generic [ref=f27e1013]: Ibm Granite
+                  - generic [ref=f27e1014]: $0.02 → $0.11 /M
+                  - generic [ref=f27e1015]: i
+                - generic [ref=f27e1016]:
+                  - generic:
+                    - checkbox "Claude Haiku 4.5" [ref=f27e1017] [cursor=pointer]
+                    - generic: Claude Haiku 4.5
+                  - generic [ref=f27e1018]: Anthropic
+                  - generic [ref=f27e1019]: $1 → $5 /M
+                  - generic [ref=f27e1020]: i
+                - generic [ref=f27e1021]:
+                  - generic:
+                    - checkbox "Qwen3 VL 8B Thinking" [ref=f27e1022] [cursor=pointer]
+                    - generic: Qwen3 VL 8B Thinking
+                  - generic [ref=f27e1023]: Qwen
+                  - generic [ref=f27e1024]: $0.12 → $1.37 /M
+                  - generic [ref=f27e1025]: i
+                - generic [ref=f27e1026]:
+                  - generic:
+                    - checkbox "Qwen3 VL 8B Instruct" [ref=f27e1027] [cursor=pointer]
+                    - generic: Qwen3 VL 8B Instruct
+                  - generic [ref=f27e1028]: Qwen
+                  - generic [ref=f27e1029]: $0.12 → $0.45 /M
+                  - generic [ref=f27e1030]: i
+                - generic [ref=f27e1031]:
+                  - generic:
+                    - checkbox "o3 Deep Research" [ref=f27e1032] [cursor=pointer]
+                    - generic: o3 Deep Research
+                  - generic [ref=f27e1033]: OpenAI
+                  - generic [ref=f27e1034]: $10 → $40 /M
+                  - generic [ref=f27e1035]: i
+                - generic [ref=f27e1036]:
+                  - generic:
+                    - checkbox "o4 Mini Deep Research" [ref=f27e1037] [cursor=pointer]
+                    - generic: o4 Mini Deep Research
+                  - generic [ref=f27e1038]: OpenAI
+                  - generic [ref=f27e1039]: $2 → $8 /M
+                  - generic [ref=f27e1040]: i
+                - generic [ref=f27e1041]:
+                  - generic:
+                    - checkbox "Qwen3 VL 30B A3B Thinking" [ref=f27e1042] [cursor=pointer]
+                    - generic: Qwen3 VL 30B A3B Thinking
+                  - generic [ref=f27e1043]: Qwen
+                  - generic [ref=f27e1044]: $0.13 → $1.56 /M
+                  - generic [ref=f27e1045]: i
+                - generic [ref=f27e1046]:
+                  - generic:
+                    - checkbox "Qwen3 VL 30B A3B Instruct" [ref=f27e1047] [cursor=pointer]
+                    - generic: Qwen3 VL 30B A3B Instruct
+                  - generic [ref=f27e1048]: Qwen
+                  - generic [ref=f27e1049]: $0.13 → $0.52 /M
+                  - generic [ref=f27e1050]: i
+                - generic [ref=f27e1051]:
+                  - generic:
+                    - checkbox "GPT-5 Pro" [ref=f27e1052] [cursor=pointer]
+                    - generic: GPT-5 Pro
+                  - generic [ref=f27e1053]: OpenAI
+                  - generic [ref=f27e1054]: $15 → $120 /M
+                  - generic [ref=f27e1055]: i
+                - generic [ref=f27e1056]:
+                  - generic:
+                    - checkbox "GLM 4.6" [ref=f27e1057] [cursor=pointer]
+                    - generic: GLM 4.6
+                  - generic [ref=f27e1058]: Z.ai
+                  - generic [ref=f27e1059]: $0.5 → $2 /M
+                  - generic [ref=f27e1060]: i
+                - generic [ref=f27e1061]:
+                  - generic:
+                    - checkbox "Claude Sonnet 4.5" [ref=f27e1062] [cursor=pointer]
+                    - generic: Claude Sonnet 4.5
+                  - generic [ref=f27e1063]: Anthropic
+                  - generic [ref=f27e1064]: $3 → $15 /M
+                  - generic [ref=f27e1065]: i
+                - generic [ref=f27e1066]:
+                  - generic:
+                    - checkbox "DeepSeek V3.2 Exp" [ref=f27e1067] [cursor=pointer]
+                    - generic: DeepSeek V3.2 Exp
+                  - generic [ref=f27e1068]: DeepSeek
+                  - generic [ref=f27e1069]: $0.27 → $0.41 /M
+                  - generic [ref=f27e1070]: i
+                - generic [ref=f27e1071]:
+                  - generic:
+                    - checkbox "Cydonia 24B V4.1" [ref=f27e1072] [cursor=pointer]
+                    - generic: Cydonia 24B V4.1
+                  - generic [ref=f27e1073]: Thedrummer
+                  - generic [ref=f27e1074]: $0.3 → $0.5 /M
+                  - generic [ref=f27e1075]: i
+                - generic [ref=f27e1076]:
+                  - generic:
+                    - checkbox "Relace Apply 3" [ref=f27e1077] [cursor=pointer]
+                    - generic: Relace Apply 3
+                  - generic [ref=f27e1078]: Relace
+                  - generic [ref=f27e1079]: $0.85 → $1.25 /M
+                  - generic [ref=f27e1080]: i
+                - generic [ref=f27e1081]:
+                  - generic:
+                    - checkbox "Qwen3 VL 235B A22B Thinking" [ref=f27e1082] [cursor=pointer]
+                    - generic: Qwen3 VL 235B A22B Thinking
+                  - generic [ref=f27e1083]: Qwen
+                  - generic [ref=f27e1084]: $0.26 → $2.6 /M
+                  - generic [ref=f27e1085]: i
+                - generic [ref=f27e1086]:
+                  - generic:
+                    - checkbox "Qwen3 VL 235B A22B Instruct" [ref=f27e1087] [cursor=pointer]
+                    - generic: Qwen3 VL 235B A22B Instruct
+                  - generic [ref=f27e1088]: Qwen
+                  - generic [ref=f27e1089]: $0.21 → $1.9 /M
+                  - generic [ref=f27e1090]: i
+                - generic [ref=f27e1091]:
+                  - generic:
+                    - checkbox "Qwen3 Max" [ref=f27e1092] [cursor=pointer]
+                    - generic: Qwen3 Max
+                  - generic [ref=f27e1093]: Qwen
+                  - generic [ref=f27e1094]: $0.78 → $3.9 /M
+                  - generic [ref=f27e1095]: i
+                - generic [ref=f27e1096]:
+                  - generic:
+                    - checkbox "Qwen3 Coder Plus" [ref=f27e1097] [cursor=pointer]
+                    - generic: Qwen3 Coder Plus
+                  - generic [ref=f27e1098]: Qwen
+                  - generic [ref=f27e1099]: $0.65 → $3.25 /M
+                  - generic [ref=f27e1100]: i
+                - generic [ref=f27e1101]:
+                  - generic:
+                    - checkbox "GPT-5 Codex" [ref=f27e1102] [cursor=pointer]
+                    - generic: GPT-5 Codex
+                  - generic [ref=f27e1103]: OpenAI
+                  - generic [ref=f27e1104]: $1.25 → $10 /M
+                  - generic [ref=f27e1105]: i
+                - generic [ref=f27e1106]:
+                  - generic:
+                    - checkbox "DeepSeek V3.1 Terminus" [ref=f27e1107] [cursor=pointer]
+                    - generic: DeepSeek V3.1 Terminus
+                  - generic [ref=f27e1108]: DeepSeek
+                  - generic [ref=f27e1109]: $0.27 → $1 /M
+                  - generic [ref=f27e1110]: i
+                - generic [ref=f27e1111]:
+                  - generic:
+                    - checkbox "Qwen3 Coder Flash" [ref=f27e1112] [cursor=pointer]
+                    - generic: Qwen3 Coder Flash
+                  - generic [ref=f27e1113]: Qwen
+                  - generic [ref=f27e1114]: $0.2 → $0.98 /M
+                  - generic [ref=f27e1115]: i
+                - generic [ref=f27e1116]:
+                  - generic:
+                    - checkbox "Qwen3 Next 80B A3B Thinking" [ref=f27e1117] [cursor=pointer]
+                    - generic: Qwen3 Next 80B A3B Thinking
+                  - generic [ref=f27e1118]: Qwen
+                  - generic [ref=f27e1119]: $0.1 → $0.78 /M
+                  - generic [ref=f27e1120]: i
+                - generic [ref=f27e1121]:
+                  - generic:
+                    - checkbox "Qwen3 Next 80B A3B Instruct" [ref=f27e1122] [cursor=pointer]
+                    - generic: Qwen3 Next 80B A3B Instruct
+                  - generic [ref=f27e1123]: Qwen
+                  - generic [ref=f27e1124]: $0.1 → $1.1 /M
+                  - generic [ref=f27e1125]: i
+                - generic [ref=f27e1126]:
+                  - generic:
+                    - checkbox "Qwen3 Next 80B A3B Instruct (free) ⚠" [ref=f27e1127] [cursor=pointer]
+                    - generic:
+                      - text: Qwen3 Next 80B A3B Instruct (free)
+                      - generic "Sera retiré le 19 juillet 2026" [ref=f27e1128] [cursor=pointer]: ⚠
+                  - generic [ref=f27e1129]: Qwen
+                  - generic [ref=f27e1130]: Gratuit
+                  - generic [ref=f27e1131]: i
+                - generic [ref=f27e1132]:
+                  - generic:
+                    - checkbox "Qwen Plus 0728" [ref=f27e1133] [cursor=pointer]
+                    - generic: Qwen Plus 0728
+                  - generic [ref=f27e1134]: Qwen
+                  - generic [ref=f27e1135]: $0.26 → $0.78 /M
+                  - generic [ref=f27e1136]: i
+                - generic [ref=f27e1137]:
+                  - generic:
+                    - checkbox "Qwen Plus 0728 (thinking)" [ref=f27e1138] [cursor=pointer]
+                    - generic: Qwen Plus 0728 (thinking)
+                  - generic [ref=f27e1139]: Qwen
+                  - generic [ref=f27e1140]: $0.26 → $0.78 /M
+                  - generic [ref=f27e1141]: i
+                - generic [ref=f27e1142]:
+                  - generic:
+                    - checkbox "Nemotron Nano 9B V2 (free)" [ref=f27e1143] [cursor=pointer]
+                    - generic: Nemotron Nano 9B V2 (free)
+                  - generic [ref=f27e1144]: NVIDIA
+                  - generic [ref=f27e1145]: Gratuit
+                  - generic [ref=f27e1146]: i
+                - generic [ref=f27e1147]:
+                  - generic:
+                    - checkbox "Kimi K2 0905" [ref=f27e1148] [cursor=pointer]
+                    - generic: Kimi K2 0905
+                  - generic [ref=f27e1149]: Moonshot
+                  - generic [ref=f27e1150]: $0.6 → $2.5 /M
+                  - generic [ref=f27e1151]: i
+                - generic [ref=f27e1152]:
+                  - generic:
+                    - checkbox "Qwen3 30B A3B Thinking 2507" [ref=f27e1153] [cursor=pointer]
+                    - generic: Qwen3 30B A3B Thinking 2507
+                  - generic [ref=f27e1154]: Qwen
+                  - generic [ref=f27e1155]: $0.13 → $1.56 /M
+                  - generic [ref=f27e1156]: i
+                - generic [ref=f27e1157]:
+                  - generic:
+                    - checkbox "Hermes 4 70B" [ref=f27e1158] [cursor=pointer]
+                    - generic: Hermes 4 70B
+                  - generic [ref=f27e1159]: Nousresearch
+                  - generic [ref=f27e1160]: $0.13 → $0.4 /M
+                  - generic [ref=f27e1161]: i
+                - generic [ref=f27e1162]:
+                  - generic:
+                    - checkbox "Hermes 4 405B" [ref=f27e1163] [cursor=pointer]
+                    - generic: Hermes 4 405B
+                  - generic [ref=f27e1164]: Nousresearch
+                  - generic [ref=f27e1165]: $1 → $3 /M
+                  - generic [ref=f27e1166]: i
+                - generic [ref=f27e1167]:
+                  - generic:
+                    - checkbox "DeepSeek V3.1" [ref=f27e1168] [cursor=pointer]
+                    - generic: DeepSeek V3.1
+                  - generic [ref=f27e1169]: DeepSeek
+                  - generic [ref=f27e1170]: $0.25 → $0.95 /M
+                  - generic [ref=f27e1171]: i
+                - generic [ref=f27e1172]:
+                  - generic:
+                    - checkbox "Mistral Medium 3.1" [ref=f27e1173] [cursor=pointer]
+                    - generic: Mistral Medium 3.1
+                  - generic [ref=f27e1174]: Mistral
+                  - generic [ref=f27e1175]: $0.4 → $2 /M
+                  - generic [ref=f27e1176]: i
+                - generic [ref=f27e1177]:
+                  - generic:
+                    - checkbox "GLM 4.5V" [ref=f27e1178] [cursor=pointer]
+                    - generic: GLM 4.5V
+                  - generic [ref=f27e1179]: Z.ai
+                  - generic [ref=f27e1180]: $0.6 → $1.8 /M
+                  - generic [ref=f27e1181]: i
+                - generic [ref=f27e1182]:
+                  - generic:
+                    - checkbox "Jamba Large 1.7" [ref=f27e1183] [cursor=pointer]
+                    - generic: Jamba Large 1.7
+                  - generic [ref=f27e1184]: Ai21
+                  - generic [ref=f27e1185]: $2 → $8 /M
+                  - generic [ref=f27e1186]: i
+                - generic [ref=f27e1187]:
+                  - generic:
+                    - checkbox "GPT-5 Chat" [ref=f27e1188] [cursor=pointer]
+                    - generic: GPT-5 Chat
+                  - generic [ref=f27e1189]: OpenAI
+                  - generic [ref=f27e1190]: $1.25 → $10 /M
+                  - generic [ref=f27e1191]: i
+                - generic [ref=f27e1192]:
+                  - generic:
+                    - checkbox "GPT-5" [ref=f27e1193] [cursor=pointer]
+                    - generic: GPT-5
+                  - generic [ref=f27e1194]: OpenAI
+                  - generic [ref=f27e1195]: $1.25 → $10 /M
+                  - generic [ref=f27e1196]: i
+                - generic [ref=f27e1197]:
+                  - generic:
+                    - checkbox "GPT-5 Mini" [ref=f27e1198] [cursor=pointer]
+                    - generic: GPT-5 Mini
+                  - generic [ref=f27e1199]: OpenAI
+                  - generic [ref=f27e1200]: $0.25 → $2 /M
+                  - generic [ref=f27e1201]: i
+                - generic [ref=f27e1202]:
+                  - generic:
+                    - checkbox "GPT-5 Nano" [ref=f27e1203] [cursor=pointer]
+                    - generic: GPT-5 Nano
+                  - generic [ref=f27e1204]: OpenAI
+                  - generic [ref=f27e1205]: $0.05 → $0.4 /M
+                  - generic [ref=f27e1206]: i
+                - generic [ref=f27e1207]:
+                  - generic:
+                    - checkbox "gpt-oss-120b" [ref=f27e1208] [cursor=pointer]
+                    - generic: gpt-oss-120b
+                  - generic [ref=f27e1209]: OpenAI
+                  - generic [ref=f27e1210]: $0.04 → $0.17 /M
+                  - generic [ref=f27e1211]: i
+                - generic [ref=f27e1212]:
+                  - generic:
+                    - checkbox "gpt-oss-20b" [ref=f27e1213] [cursor=pointer]
+                    - generic: gpt-oss-20b
+                  - generic [ref=f27e1214]: OpenAI
+                  - generic [ref=f27e1215]: $0.03 → $0.13 /M
+                  - generic [ref=f27e1216]: i
+                - generic [ref=f27e1217]:
+                  - generic:
+                    - checkbox "gpt-oss-20b (free)" [ref=f27e1218] [cursor=pointer]
+                    - generic: gpt-oss-20b (free)
+                  - generic [ref=f27e1219]: OpenAI
+                  - generic [ref=f27e1220]: Gratuit
+                  - generic [ref=f27e1221]: i
+                - generic [ref=f27e1222]:
+                  - generic:
+                    - checkbox "Claude Opus 4.1" [ref=f27e1223] [cursor=pointer]
+                    - generic: Claude Opus 4.1
+                  - generic [ref=f27e1224]: Anthropic
+                  - generic [ref=f27e1225]: $15 → $75 /M
+                  - generic [ref=f27e1226]: i
+                - generic [ref=f27e1227]:
+                  - generic:
+                    - checkbox "Codestral 2508" [ref=f27e1228] [cursor=pointer]
+                    - generic: Codestral 2508
+                  - generic [ref=f27e1229]: Mistral
+                  - generic [ref=f27e1230]: $0.3 → $0.9 /M
+                  - generic [ref=f27e1231]: i
+                - generic [ref=f27e1232]:
+                  - generic:
+                    - checkbox "Qwen3 Coder 30B A3B Instruct" [ref=f27e1233] [cursor=pointer]
+                    - generic: Qwen3 Coder 30B A3B Instruct
+                  - generic [ref=f27e1234]: Qwen
+                  - generic [ref=f27e1235]: $0.07 → $0.27 /M
+                  - generic [ref=f27e1236]: i
+                - generic [ref=f27e1237]:
+                  - generic:
+                    - checkbox "Qwen3 30B A3B Instruct 2507" [ref=f27e1238] [cursor=pointer]
+                    - generic: Qwen3 30B A3B Instruct 2507
+                  - generic [ref=f27e1239]: Qwen
+                  - generic [ref=f27e1240]: $0.1 → $0.3 /M
+                  - generic [ref=f27e1241]: i
+                - generic [ref=f27e1242]:
+                  - generic:
+                    - checkbox "GLM 4.5" [ref=f27e1243] [cursor=pointer]
+                    - generic: GLM 4.5
+                  - generic [ref=f27e1244]: Z.ai
+                  - generic [ref=f27e1245]: $0.6 → $2.2 /M
+                  - generic [ref=f27e1246]: i
+                - generic [ref=f27e1247]:
+                  - generic:
+                    - checkbox "GLM 4.5 Air" [ref=f27e1248] [cursor=pointer]
+                    - generic: GLM 4.5 Air
+                  - generic [ref=f27e1249]: Z.ai
+                  - generic [ref=f27e1250]: $0.13 → $0.85 /M
+                  - generic [ref=f27e1251]: i
+                - generic [ref=f27e1252]:
+                  - generic:
+                    - checkbox "Qwen3 235B A22B Thinking 2507" [ref=f27e1253] [cursor=pointer]
+                    - generic: Qwen3 235B A22B Thinking 2507
+                  - generic [ref=f27e1254]: Qwen
+                  - generic [ref=f27e1255]: $0.15 → $1.5 /M
+                  - generic [ref=f27e1256]: i
+                - generic [ref=f27e1257]:
+                  - generic:
+                    - checkbox "Qwen3 Coder 480B A35B" [ref=f27e1258] [cursor=pointer]
+                    - generic: Qwen3 Coder 480B A35B
+                  - generic [ref=f27e1259]: Qwen
+                  - generic [ref=f27e1260]: $0.3 → $1 /M
+                  - generic [ref=f27e1261]: i
+                - generic [ref=f27e1262]:
+                  - generic:
+                    - checkbox "Qwen3 Coder 480B A35B (free) ⚠" [ref=f27e1263] [cursor=pointer]
+                    - generic:
+                      - text: Qwen3 Coder 480B A35B (free)
+                      - generic "Sera retiré le 19 juillet 2026" [ref=f27e1264] [cursor=pointer]: ⚠
+                  - generic [ref=f27e1265]: Qwen
+                  - generic [ref=f27e1266]: Gratuit
+                  - generic [ref=f27e1267]: i
+                - generic [ref=f27e1268]:
+                  - generic:
+                    - checkbox "UI-TARS 7B" [ref=f27e1269] [cursor=pointer]
+                    - generic: UI-TARS 7B
+                  - generic [ref=f27e1270]: ByteDance
+                  - generic [ref=f27e1271]: $0.1 → $0.2 /M
+                  - generic [ref=f27e1272]: i
+                - generic [ref=f27e1273]:
+                  - generic:
+                    - checkbox "Gemini 2.5 Flash Lite" [ref=f27e1274] [cursor=pointer]
+                    - generic: Gemini 2.5 Flash Lite
+                  - generic [ref=f27e1275]: Google
+                  - generic [ref=f27e1276]: $0.1 → $0.4 /M
+                  - generic [ref=f27e1277]: i
+                - generic [ref=f27e1278]:
+                  - generic:
+                    - checkbox "Qwen3 235B A22B Instruct 2507" [ref=f27e1279] [cursor=pointer]
+                    - generic: Qwen3 235B A22B Instruct 2507
+                  - generic [ref=f27e1280]: Qwen
+                  - generic [ref=f27e1281]: $0.09 → $0.55 /M
+                  - generic [ref=f27e1282]: i
+                - generic [ref=f27e1283]:
+                  - generic:
+                    - checkbox "Kimi K2 0711" [ref=f27e1284] [cursor=pointer]
+                    - generic: Kimi K2 0711
+                  - generic [ref=f27e1285]: Moonshot
+                  - generic [ref=f27e1286]: $0.57 → $2.3 /M
+                  - generic [ref=f27e1287]: i
+                - generic [ref=f27e1288]:
+                  - generic:
+                    - checkbox "Uncensored" [ref=f27e1289] [cursor=pointer]
+                    - generic: Uncensored
+                  - generic [ref=f27e1290]: Cognitivecomputations
+                  - generic [ref=f27e1291]: $0.2 → $0.9 /M
+                  - generic [ref=f27e1292]: i
+                - generic [ref=f27e1293]:
+                  - generic:
+                    - checkbox "Uncensored (free) ⚠" [ref=f27e1294] [cursor=pointer]
+                    - generic:
+                      - text: Uncensored (free)
+                      - generic "Sera retiré le 19 juillet 2026" [ref=f27e1295] [cursor=pointer]: ⚠
+                  - generic [ref=f27e1296]: Cognitivecomputations
+                  - generic [ref=f27e1297]: Gratuit
+                  - generic [ref=f27e1298]: i
+                - generic [ref=f27e1299]:
+                  - generic:
+                    - checkbox "Hunyuan A13B Instruct" [ref=f27e1300] [cursor=pointer]
+                    - generic: Hunyuan A13B Instruct
+                  - generic [ref=f27e1301]: Tencent
+                  - generic [ref=f27e1302]: $0.14 → $0.57 /M
+                  - generic [ref=f27e1303]: i
+                - generic [ref=f27e1304]:
+                  - generic:
+                    - checkbox "Morph V3 Large" [ref=f27e1305] [cursor=pointer]
+                    - generic: Morph V3 Large
+                  - generic [ref=f27e1306]: Morph
+                  - generic [ref=f27e1307]: $0.9 → $1.9 /M
+                  - generic [ref=f27e1308]: i
+                - generic [ref=f27e1309]:
+                  - generic:
+                    - checkbox "Morph V3 Fast" [ref=f27e1310] [cursor=pointer]
+                    - generic: Morph V3 Fast
+                  - generic [ref=f27e1311]: Morph
+                  - generic [ref=f27e1312]: $0.8 → $1.2 /M
+                  - generic [ref=f27e1313]: i
+                - generic [ref=f27e1314]:
+                  - generic:
+                    - checkbox "ERNIE 4.5 VL 424B A47B" [ref=f27e1315] [cursor=pointer]
+                    - generic: ERNIE 4.5 VL 424B A47B
+                  - generic [ref=f27e1316]: Baidu
+                  - generic [ref=f27e1317]: $0.42 → $1.25 /M
+                  - generic [ref=f27e1318]: i
+                - generic [ref=f27e1319]:
+                  - generic:
+                    - checkbox "Mistral Small 3.2 24B" [ref=f27e1320] [cursor=pointer]
+                    - generic: Mistral Small 3.2 24B
+                  - generic [ref=f27e1321]: Mistral
+                  - generic [ref=f27e1322]: $0.1 → $0.3 /M
+                  - generic [ref=f27e1323]: i
+                - generic [ref=f27e1324]:
+                  - generic:
+                    - checkbox "MiniMax M1" [ref=f27e1325] [cursor=pointer]
+                    - generic: MiniMax M1
+                  - generic [ref=f27e1326]: MiniMax
+                  - generic [ref=f27e1327]: $0.55 → $2.2 /M
+                  - generic [ref=f27e1328]: i
+                - generic [ref=f27e1329]:
+                  - generic:
+                    - checkbox "Gemini 2.5 Flash" [ref=f27e1330] [cursor=pointer]
+                    - generic: Gemini 2.5 Flash
+                  - generic [ref=f27e1331]: Google
+                  - generic [ref=f27e1332]: $0.3 → $2.5 /M
+                  - generic [ref=f27e1333]: i
+                - generic [ref=f27e1334]:
+                  - generic:
+                    - checkbox "Gemini 2.5 Pro" [ref=f27e1335] [cursor=pointer]
+                    - generic: Gemini 2.5 Pro
+                  - generic [ref=f27e1336]: Google
+                  - generic [ref=f27e1337]: $1.25 → $10 /M
+                  - generic [ref=f27e1338]: i
+                - generic [ref=f27e1339]:
+                  - generic:
+                    - checkbox "o3 Pro" [ref=f27e1340] [cursor=pointer]
+                    - generic: o3 Pro
+                  - generic [ref=f27e1341]: OpenAI
+                  - generic [ref=f27e1342]: $20 → $80 /M
+                  - generic [ref=f27e1343]: i
+                - generic [ref=f27e1344]:
+                  - generic:
+                    - checkbox "Gemini 2.5 Pro Preview 06-05" [ref=f27e1345] [cursor=pointer]
+                    - generic: Gemini 2.5 Pro Preview 06-05
+                  - generic [ref=f27e1346]: Google
+                  - generic [ref=f27e1347]: $1.25 → $10 /M
+                  - generic [ref=f27e1348]: i
+                - generic [ref=f27e1349]:
+                  - generic:
+                    - checkbox "R1 0528" [ref=f27e1350] [cursor=pointer]
+                    - generic: R1 0528
+                  - generic [ref=f27e1351]: DeepSeek
+                  - generic [ref=f27e1352]: $0.5 → $2.15 /M
+                  - generic [ref=f27e1353]: i
+                - generic [ref=f27e1354]:
+                  - generic:
+                    - checkbox "Claude Opus 4" [ref=f27e1355] [cursor=pointer]
+                    - generic: Claude Opus 4
+                  - generic [ref=f27e1356]: Anthropic
+                  - generic [ref=f27e1357]: $15 → $75 /M
+                  - generic [ref=f27e1358]: i
+                - generic [ref=f27e1359]:
+                  - generic:
+                    - checkbox "Claude Sonnet 4" [ref=f27e1360] [cursor=pointer]
+                    - generic: Claude Sonnet 4
+                  - generic [ref=f27e1361]: Anthropic
+                  - generic [ref=f27e1362]: $3 → $15 /M
+                  - generic [ref=f27e1363]: i
+                - generic [ref=f27e1364]:
+                  - generic:
+                    - checkbox "Gemma 3n 4B" [ref=f27e1365] [cursor=pointer]
+                    - generic: Gemma 3n 4B
+                  - generic [ref=f27e1366]: Google
+                  - generic [ref=f27e1367]: $0.06 → $0.12 /M
+                  - generic [ref=f27e1368]: i
+                - generic [ref=f27e1369]:
+                  - generic:
+                    - checkbox "Mistral Medium 3" [ref=f27e1370] [cursor=pointer]
+                    - generic: Mistral Medium 3
+                  - generic [ref=f27e1371]: Mistral
+                  - generic [ref=f27e1372]: $0.4 → $2 /M
+                  - generic [ref=f27e1373]: i
+                - generic [ref=f27e1374]:
+                  - generic:
+                    - checkbox "Gemini 2.5 Pro Preview 05-06" [ref=f27e1375] [cursor=pointer]
+                    - generic: Gemini 2.5 Pro Preview 05-06
+                  - generic [ref=f27e1376]: Google
+                  - generic [ref=f27e1377]: $1.25 → $10 /M
+                  - generic [ref=f27e1378]: i
+                - generic [ref=f27e1379]:
+                  - generic:
+                    - checkbox "Virtuoso Large" [ref=f27e1380] [cursor=pointer]
+                    - generic: Virtuoso Large
+                  - generic [ref=f27e1381]: Arcee Ai
+                  - generic [ref=f27e1382]: $0.75 → $1.2 /M
+                  - generic [ref=f27e1383]: i
+                - generic [ref=f27e1384]:
+                  - generic:
+                    - checkbox "Llama Guard 4 12B" [ref=f27e1385] [cursor=pointer]
+                    - generic: Llama Guard 4 12B
+                  - generic [ref=f27e1386]: Meta
+                  - generic [ref=f27e1387]: $0.18 → $0.18 /M
+                  - generic [ref=f27e1388]: i
+                - generic [ref=f27e1389]:
+                  - generic:
+                    - checkbox "Qwen3 30B A3B" [ref=f27e1390] [cursor=pointer]
+                    - generic: Qwen3 30B A3B
+                  - generic [ref=f27e1391]: Qwen
+                  - generic [ref=f27e1392]: $0.13 → $0.52 /M
+                  - generic [ref=f27e1393]: i
+                - generic [ref=f27e1394]:
+                  - generic:
+                    - checkbox "Qwen3 8B" [ref=f27e1395] [cursor=pointer]
+                    - generic: Qwen3 8B
+                  - generic [ref=f27e1396]: Qwen
+                  - generic [ref=f27e1397]: $0.12 → $0.45 /M
+                  - generic [ref=f27e1398]: i
+                - generic [ref=f27e1399]:
+                  - generic:
+                    - checkbox "Qwen3 14B" [ref=f27e1400] [cursor=pointer]
+                    - generic: Qwen3 14B
+                  - generic [ref=f27e1401]: Qwen
+                  - generic [ref=f27e1402]: $0.23 → $0.91 /M
+                  - generic [ref=f27e1403]: i
+                - generic [ref=f27e1404]:
+                  - generic:
+                    - checkbox "Qwen3 32B" [ref=f27e1405] [cursor=pointer]
+                    - generic: Qwen3 32B
+                  - generic [ref=f27e1406]: Qwen
+                  - generic [ref=f27e1407]: $0.08 → $0.28 /M
+                  - generic [ref=f27e1408]: i
+                - generic [ref=f27e1409]:
+                  - generic:
+                    - checkbox "Qwen3 235B A22B" [ref=f27e1410] [cursor=pointer]
+                    - generic: Qwen3 235B A22B
+                  - generic [ref=f27e1411]: Qwen
+                  - generic [ref=f27e1412]: $0.45 → $1.82 /M
+                  - generic [ref=f27e1413]: i
+                - generic [ref=f27e1414]:
+                  - generic:
+                    - checkbox "o4 Mini High" [ref=f27e1415] [cursor=pointer]
+                    - generic: o4 Mini High
+                  - generic [ref=f27e1416]: OpenAI
+                  - generic [ref=f27e1417]: $1.1 → $4.4 /M
+                  - generic [ref=f27e1418]: i
+                - generic [ref=f27e1419]:
+                  - generic:
+                    - checkbox "o3" [ref=f27e1420] [cursor=pointer]
+                    - generic: o3
+                  - generic [ref=f27e1421]: OpenAI
+                  - generic [ref=f27e1422]: $2 → $8 /M
+                  - generic [ref=f27e1423]: i
+                - generic [ref=f27e1424]:
+                  - generic:
+                    - checkbox "o4 Mini" [ref=f27e1425] [cursor=pointer]
+                    - generic: o4 Mini
+                  - generic [ref=f27e1426]: OpenAI
+                  - generic [ref=f27e1427]: $1.1 → $4.4 /M
+                  - generic [ref=f27e1428]: i
+                - generic [ref=f27e1429]:
+                  - generic:
+                    - checkbox "GPT-4.1" [ref=f27e1430] [cursor=pointer]
+                    - generic: GPT-4.1
+                  - generic [ref=f27e1431]: OpenAI
+                  - generic [ref=f27e1432]: $2 → $8 /M
+                  - generic [ref=f27e1433]: i
+                - generic [ref=f27e1434]:
+                  - generic:
+                    - checkbox "GPT-4.1 Mini" [ref=f27e1435] [cursor=pointer]
+                    - generic: GPT-4.1 Mini
+                  - generic [ref=f27e1436]: OpenAI
+                  - generic [ref=f27e1437]: $0.4 → $1.6 /M
+                  - generic [ref=f27e1438]: i
+                - generic [ref=f27e1439]:
+                  - generic:
+                    - checkbox "GPT-4.1 Nano" [ref=f27e1440] [cursor=pointer]
+                    - generic: GPT-4.1 Nano
+                  - generic [ref=f27e1441]: OpenAI
+                  - generic [ref=f27e1442]: $0.1 → $0.4 /M
+                  - generic [ref=f27e1443]: i
+                - generic [ref=f27e1444]:
+                  - generic:
+                    - checkbox "Llama 4 Maverick" [ref=f27e1445] [cursor=pointer]
+                    - generic: Llama 4 Maverick
+                  - generic [ref=f27e1446]: Meta
+                  - generic [ref=f27e1447]: $0.2 → $0.8 /M
+                  - generic [ref=f27e1448]: i
+                - generic [ref=f27e1449]:
+                  - generic:
+                    - checkbox "Llama 4 Scout" [ref=f27e1450] [cursor=pointer]
+                    - generic: Llama 4 Scout
+                  - generic [ref=f27e1451]: Meta
+                  - generic [ref=f27e1452]: $0.1 → $0.3 /M
+                  - generic [ref=f27e1453]: i
+                - generic [ref=f27e1454]:
+                  - generic:
+                    - checkbox "DeepSeek V3 0324" [ref=f27e1455] [cursor=pointer]
+                    - generic: DeepSeek V3 0324
+                  - generic [ref=f27e1456]: DeepSeek
+                  - generic [ref=f27e1457]: $0.27 → $1.12 /M
+                  - generic [ref=f27e1458]: i
+                - generic [ref=f27e1459]:
+                  - generic:
+                    - checkbox "o1-pro" [ref=f27e1460] [cursor=pointer]
+                    - generic: o1-pro
+                  - generic [ref=f27e1461]: OpenAI
+                  - generic [ref=f27e1462]: $150 → $600 /M
+                  - generic [ref=f27e1463]: i
+                - generic [ref=f27e1464]:
+                  - generic:
+                    - checkbox "Mistral Small 3.1 24B" [ref=f27e1465] [cursor=pointer]
+                    - generic: Mistral Small 3.1 24B
+                  - generic [ref=f27e1466]: Mistral
+                  - generic [ref=f27e1467]: $0.35 → $0.55 /M
+                  - generic [ref=f27e1468]: i
+                - generic [ref=f27e1469]:
+                  - generic:
+                    - checkbox "Gemma 3 4B" [ref=f27e1470] [cursor=pointer]
+                    - generic: Gemma 3 4B
+                  - generic [ref=f27e1471]: Google
+                  - generic [ref=f27e1472]: $0.05 → $0.1 /M
+                  - generic [ref=f27e1473]: i
+                - generic [ref=f27e1474]:
+                  - generic:
+                    - checkbox "Gemma 3 12B" [ref=f27e1475] [cursor=pointer]
+                    - generic: Gemma 3 12B
+                  - generic [ref=f27e1476]: Google
+                  - generic [ref=f27e1477]: $0.05 → $0.15 /M
+                  - generic [ref=f27e1478]: i
+                - generic [ref=f27e1479]:
+                  - generic:
+                    - checkbox "Command A" [ref=f27e1480] [cursor=pointer]
+                    - generic: Command A
+                  - generic [ref=f27e1481]: Cohere
+                  - generic [ref=f27e1482]: $2.5 → $10 /M
+                  - generic [ref=f27e1483]: i
+                - generic [ref=f27e1484]:
+                  - generic:
+                    - checkbox "GPT-4o-mini Search Preview" [ref=f27e1485] [cursor=pointer]
+                    - generic: GPT-4o-mini Search Preview
+                  - generic [ref=f27e1486]: OpenAI
+                  - generic [ref=f27e1487]: $0.15 → $0.6 /M
+                  - generic [ref=f27e1488]: i
+                - generic [ref=f27e1489]:
+                  - generic:
+                    - checkbox "GPT-4o Search Preview" [ref=f27e1490] [cursor=pointer]
+                    - generic: GPT-4o Search Preview
+                  - generic [ref=f27e1491]: OpenAI
+                  - generic [ref=f27e1492]: $2.5 → $10 /M
+                  - generic [ref=f27e1493]: i
+                - generic [ref=f27e1494]:
+                  - generic:
+                    - checkbox "Reka Flash 3" [ref=f27e1495] [cursor=pointer]
+                    - generic: Reka Flash 3
+                  - generic [ref=f27e1496]: Rekaai
+                  - generic [ref=f27e1497]: $0.1 → $0.2 /M
+                  - generic [ref=f27e1498]: i
+                - generic [ref=f27e1499]:
+                  - generic:
+                    - checkbox "Gemma 3 27B" [ref=f27e1500] [cursor=pointer]
+                    - generic: Gemma 3 27B
+                  - generic [ref=f27e1501]: Google
+                  - generic [ref=f27e1502]: $0.1 → $0.3 /M
+                  - generic [ref=f27e1503]: i
+                - generic [ref=f27e1504]:
+                  - generic:
+                    - checkbox "Skyfall 36B V2" [ref=f27e1505] [cursor=pointer]
+                    - generic: Skyfall 36B V2
+                  - generic [ref=f27e1506]: Thedrummer
+                  - generic [ref=f27e1507]: $0.55 → $0.8 /M
+                  - generic [ref=f27e1508]: i
+                - generic [ref=f27e1509]:
+                  - generic:
+                    - checkbox "Sonar Reasoning Pro" [ref=f27e1510] [cursor=pointer]
+                    - generic: Sonar Reasoning Pro
+                  - generic [ref=f27e1511]: Perplexity
+                  - generic [ref=f27e1512]: $2 → $8 /M
+                  - generic [ref=f27e1513]: i
+                - generic [ref=f27e1514]:
+                  - generic:
+                    - checkbox "Sonar Pro" [ref=f27e1515] [cursor=pointer]
+                    - generic: Sonar Pro
+                  - generic [ref=f27e1516]: Perplexity
+                  - generic [ref=f27e1517]: $3 → $15 /M
+                  - generic [ref=f27e1518]: i
+                - generic [ref=f27e1519]:
+                  - generic:
+                    - checkbox "Sonar Deep Research" [ref=f27e1520] [cursor=pointer]
+                    - generic: Sonar Deep Research
+                  - generic [ref=f27e1521]: Perplexity
+                  - generic [ref=f27e1522]: $2 → $8 /M
+                  - generic [ref=f27e1523]: i
+                - generic [ref=f27e1524]:
+                  - generic:
+                    - checkbox "Saba" [ref=f27e1525] [cursor=pointer]
+                    - generic: Saba
+                  - generic [ref=f27e1526]: Mistral
+                  - generic [ref=f27e1527]: $0.2 → $0.6 /M
+                  - generic [ref=f27e1528]: i
+                - generic [ref=f27e1529]:
+                  - generic:
+                    - checkbox "o3 Mini High" [ref=f27e1530] [cursor=pointer]
+                    - generic: o3 Mini High
+                  - generic [ref=f27e1531]: OpenAI
+                  - generic [ref=f27e1532]: $1.1 → $4.4 /M
+                  - generic [ref=f27e1533]: i
+                - generic [ref=f27e1534]:
+                  - generic:
+                    - checkbox "Aion-RP 1.0 (8B)" [ref=f27e1535] [cursor=pointer]
+                    - generic: Aion-RP 1.0 (8B)
+                  - generic [ref=f27e1536]: Aion Labs
+                  - generic [ref=f27e1537]: $0.8 → $1.6 /M
+                  - generic [ref=f27e1538]: i
+                - generic [ref=f27e1539]:
+                  - generic:
+                    - checkbox "Qwen2.5 VL 72B Instruct" [ref=f27e1540] [cursor=pointer]
+                    - generic: Qwen2.5 VL 72B Instruct
+                  - generic [ref=f27e1541]: Qwen
+                  - generic [ref=f27e1542]: $0.8 → $1 /M
+                  - generic [ref=f27e1543]: i
+                - generic [ref=f27e1544]:
+                  - generic:
+                    - checkbox "Qwen-Plus" [ref=f27e1545] [cursor=pointer]
+                    - generic: Qwen-Plus
+                  - generic [ref=f27e1546]: Qwen
+                  - generic [ref=f27e1547]: $0.26 → $0.78 /M
+                  - generic [ref=f27e1548]: i
+                - generic [ref=f27e1549]:
+                  - generic:
+                    - checkbox "o3 Mini" [ref=f27e1550] [cursor=pointer]
+                    - generic: o3 Mini
+                  - generic [ref=f27e1551]: OpenAI
+                  - generic [ref=f27e1552]: $1.1 → $4.4 /M
+                  - generic [ref=f27e1553]: i
+                - generic [ref=f27e1554]:
+                  - generic:
+                    - checkbox "Mistral Small 3" [ref=f27e1555] [cursor=pointer]
+                    - generic: Mistral Small 3
+                  - generic [ref=f27e1556]: Mistral
+                  - generic [ref=f27e1557]: $0.05 → $0.08 /M
+                  - generic [ref=f27e1558]: i
+                - generic [ref=f27e1559]:
+                  - generic:
+                    - checkbox "Sonar" [ref=f27e1560] [cursor=pointer]
+                    - generic: Sonar
+                  - generic [ref=f27e1561]: Perplexity
+                  - generic [ref=f27e1562]: $1 → $1 /M
+                  - generic [ref=f27e1563]: i
+                - generic [ref=f27e1564]:
+                  - generic:
+                    - checkbox "R1 Distill Llama 70B" [ref=f27e1565] [cursor=pointer]
+                    - generic: R1 Distill Llama 70B
+                  - generic [ref=f27e1566]: DeepSeek
+                  - generic [ref=f27e1567]: $0.8 → $0.8 /M
+                  - generic [ref=f27e1568]: i
+                - generic [ref=f27e1569]:
+                  - generic:
+                    - checkbox "R1" [ref=f27e1570] [cursor=pointer]
+                    - generic: R1
+                  - generic [ref=f27e1571]: DeepSeek
+                  - generic [ref=f27e1572]: $0.7 → $2.5 /M
+                  - generic [ref=f27e1573]: i
+                - generic [ref=f27e1574]:
+                  - generic:
+                    - checkbox "MiniMax-01" [ref=f27e1575] [cursor=pointer]
+                    - generic: MiniMax-01
+                  - generic [ref=f27e1576]: MiniMax
+                  - generic [ref=f27e1577]: $0.2 → $1.1 /M
+                  - generic [ref=f27e1578]: i
+                - generic [ref=f27e1579]:
+                  - generic:
+                    - checkbox "Phi 4" [ref=f27e1580] [cursor=pointer]
+                    - generic: Phi 4
+                  - generic [ref=f27e1581]: Microsoft
+                  - generic [ref=f27e1582]: $0.07 → $0.14 /M
+                  - generic [ref=f27e1583]: i
+                - generic [ref=f27e1584]:
+                  - generic:
+                    - checkbox "DeepSeek V3" [ref=f27e1585] [cursor=pointer]
+                    - generic: DeepSeek V3
+                  - generic [ref=f27e1586]: DeepSeek
+                  - generic [ref=f27e1587]: $0.2 → $0.8 /M
+                  - generic [ref=f27e1588]: i
+                - generic [ref=f27e1589]:
+                  - generic:
+                    - checkbox "Llama 3.3 Euryale 70B" [ref=f27e1590] [cursor=pointer]
+                    - generic: Llama 3.3 Euryale 70B
+                  - generic [ref=f27e1591]: Sao10k
+                  - generic [ref=f27e1592]: $0.65 → $0.75 /M
+                  - generic [ref=f27e1593]: i
+                - generic [ref=f27e1594]:
+                  - generic:
+                    - checkbox "o1" [ref=f27e1595] [cursor=pointer]
+                    - generic: o1
+                  - generic [ref=f27e1596]: OpenAI
+                  - generic [ref=f27e1597]: $15 → $60 /M
+                  - generic [ref=f27e1598]: i
+                - generic [ref=f27e1599]:
+                  - generic:
+                    - checkbox "Command R7B (12-2024)" [ref=f27e1600] [cursor=pointer]
+                    - generic: Command R7B (12-2024)
+                  - generic [ref=f27e1601]: Cohere
+                  - generic [ref=f27e1602]: $0.04 → $0.15 /M
+                  - generic [ref=f27e1603]: i
+                - generic [ref=f27e1604]:
+                  - generic:
+                    - checkbox "Llama 3.3 70B Instruct" [ref=f27e1605] [cursor=pointer]
+                    - generic: Llama 3.3 70B Instruct
+                  - generic [ref=f27e1606]: Meta
+                  - generic [ref=f27e1607]: $0.13 → $0.4 /M
+                  - generic [ref=f27e1608]: i
+                - generic [ref=f27e1609]:
+                  - generic:
+                    - checkbox "Llama 3.3 70B Instruct (free) ⚠" [ref=f27e1610] [cursor=pointer]
+                    - generic:
+                      - text: Llama 3.3 70B Instruct (free)
+                      - generic "Sera retiré le 19 juillet 2026" [ref=f27e1611] [cursor=pointer]: ⚠
+                  - generic [ref=f27e1612]: Meta
+                  - generic [ref=f27e1613]: Gratuit
+                  - generic [ref=f27e1614]: i
+                - generic [ref=f27e1615]:
+                  - generic:
+                    - checkbox "Nova Lite 1.0" [ref=f27e1616] [cursor=pointer]
+                    - generic: Nova Lite 1.0
+                  - generic [ref=f27e1617]: Amazon
+                  - generic [ref=f27e1618]: $0.06 → $0.24 /M
+                  - generic [ref=f27e1619]: i
+                - generic [ref=f27e1620]:
+                  - generic:
+                    - checkbox "Nova Micro 1.0" [ref=f27e1621] [cursor=pointer]
+                    - generic: Nova Micro 1.0
+                  - generic [ref=f27e1622]: Amazon
+                  - generic [ref=f27e1623]: $0.04 → $0.14 /M
+                  - generic [ref=f27e1624]: i
+                - generic [ref=f27e1625]:
+                  - generic:
+                    - checkbox "Nova Pro 1.0" [ref=f27e1626] [cursor=pointer]
+                    - generic: Nova Pro 1.0
+                  - generic [ref=f27e1627]: Amazon
+                  - generic [ref=f27e1628]: $0.8 → $3.2 /M
+                  - generic [ref=f27e1629]: i
+                - generic [ref=f27e1630]:
+                  - generic:
+                    - checkbox "GPT-4o (2024-11-20)" [ref=f27e1631] [cursor=pointer]
+                    - generic: GPT-4o (2024-11-20)
+                  - generic [ref=f27e1632]: OpenAI
+                  - generic [ref=f27e1633]: $2.5 → $10 /M
+                  - generic [ref=f27e1634]: i
+                - generic [ref=f27e1635]:
+                  - generic:
+                    - checkbox "Mistral Large 2407" [ref=f27e1636] [cursor=pointer]
+                    - generic: Mistral Large 2407
+                  - generic [ref=f27e1637]: Mistral
+                  - generic [ref=f27e1638]: $2 → $6 /M
+                  - generic [ref=f27e1639]: i
+                - generic [ref=f27e1640]:
+                  - generic:
+                    - checkbox "Qwen2.5 Coder 32B Instruct" [ref=f27e1641] [cursor=pointer]
+                    - generic: Qwen2.5 Coder 32B Instruct
+                  - generic [ref=f27e1642]: Qwen
+                  - generic [ref=f27e1643]: $0.66 → $1 /M
+                  - generic [ref=f27e1644]: i
+                - generic [ref=f27e1645]:
+                  - generic:
+                    - checkbox "UnslopNemo 12B" [ref=f27e1646] [cursor=pointer]
+                    - generic: UnslopNemo 12B
+                  - generic [ref=f27e1647]: Thedrummer
+                  - generic [ref=f27e1648]: $0.4 → $0.4 /M
+                  - generic [ref=f27e1649]: i
+                - generic [ref=f27e1650]:
+                  - generic:
+                    - checkbox "Magnum v4 72B" [ref=f27e1651] [cursor=pointer]
+                    - generic: Magnum v4 72B
+                  - generic [ref=f27e1652]: Anthracite Org
+                  - generic [ref=f27e1653]: $3 → $5 /M
+                  - generic [ref=f27e1654]: i
+                - generic [ref=f27e1655]:
+                  - generic:
+                    - checkbox "Qwen2.5 7B Instruct" [ref=f27e1656] [cursor=pointer]
+                    - generic: Qwen2.5 7B Instruct
+                  - generic [ref=f27e1657]: Qwen
+                  - generic [ref=f27e1658]: $0.04 → $0.1 /M
+                  - generic [ref=f27e1659]: i
+                - generic [ref=f27e1660]:
+                  - generic:
+                    - checkbox "Inflection 3 Pi" [ref=f27e1661] [cursor=pointer]
+                    - generic: Inflection 3 Pi
+                  - generic [ref=f27e1662]: Inflection
+                  - generic [ref=f27e1663]: $2.5 → $10 /M
+                  - generic [ref=f27e1664]: i
+                - generic [ref=f27e1665]:
+                  - generic:
+                    - checkbox "Inflection 3 Productivity" [ref=f27e1666] [cursor=pointer]
+                    - generic: Inflection 3 Productivity
+                  - generic [ref=f27e1667]: Inflection
+                  - generic [ref=f27e1668]: $2.5 → $10 /M
+                  - generic [ref=f27e1669]: i
+                - generic [ref=f27e1670]:
+                  - generic:
+                    - checkbox "Rocinante 12B" [ref=f27e1671] [cursor=pointer]
+                    - generic: Rocinante 12B
+                  - generic [ref=f27e1672]: Thedrummer
+                  - generic [ref=f27e1673]: $0.25 → $0.5 /M
+                  - generic [ref=f27e1674]: i
+                - generic [ref=f27e1675]:
+                  - generic:
+                    - checkbox "Llama 3.2 1B Instruct" [ref=f27e1676] [cursor=pointer]
+                    - generic: Llama 3.2 1B Instruct
+                  - generic [ref=f27e1677]: Meta
+                  - generic [ref=f27e1678]: $0.03 → $0.2 /M
+                  - generic [ref=f27e1679]: i
+                - generic [ref=f27e1680]:
+                  - generic:
+                    - checkbox "Llama 3.2 3B Instruct" [ref=f27e1681] [cursor=pointer]
+                    - generic: Llama 3.2 3B Instruct
+                  - generic [ref=f27e1682]: Meta
+                  - generic [ref=f27e1683]: $0.05 → $0.34 /M
+                  - generic [ref=f27e1684]: i
+                - generic [ref=f27e1685]:
+                  - generic:
+                    - checkbox "Llama 3.2 3B Instruct (free) ⚠" [ref=f27e1686] [cursor=pointer]
+                    - generic:
+                      - text: Llama 3.2 3B Instruct (free)
+                      - generic "Sera retiré le 19 juillet 2026" [ref=f27e1687] [cursor=pointer]: ⚠
+                  - generic [ref=f27e1688]: Meta
+                  - generic [ref=f27e1689]: Gratuit
+                  - generic [ref=f27e1690]: i
+                - generic [ref=f27e1691]:
+                  - generic:
+                    - checkbox "Qwen2.5 72B Instruct" [ref=f27e1692] [cursor=pointer]
+                    - generic: Qwen2.5 72B Instruct
+                  - generic [ref=f27e1693]: Qwen
+                  - generic [ref=f27e1694]: $0.36 → $0.4 /M
+                  - generic [ref=f27e1695]: i
+                - generic [ref=f27e1696]:
+                  - generic:
+                    - checkbox "Command R (08-2024)" [ref=f27e1697] [cursor=pointer]
+                    - generic: Command R (08-2024)
+                  - generic [ref=f27e1698]: Cohere
+                  - generic [ref=f27e1699]: $0.15 → $0.6 /M
+                  - generic [ref=f27e1700]: i
+                - generic [ref=f27e1701]:
+                  - generic:
+                    - checkbox "Command R+ (08-2024)" [ref=f27e1702] [cursor=pointer]
+                    - generic: Command R+ (08-2024)
+                  - generic [ref=f27e1703]: Cohere
+                  - generic [ref=f27e1704]: $2.5 → $10 /M
+                  - generic [ref=f27e1705]: i
+                - generic [ref=f27e1706]:
+                  - generic:
+                    - checkbox "Llama 3.1 Euryale 70B v2.2" [ref=f27e1707] [cursor=pointer]
+                    - generic: Llama 3.1 Euryale 70B v2.2
+                  - generic [ref=f27e1708]: Sao10k
+                  - generic [ref=f27e1709]: $0.85 → $0.85 /M
+                  - generic [ref=f27e1710]: i
+                - generic [ref=f27e1711]:
+                  - generic:
+                    - checkbox "Hermes 3 70B Instruct" [ref=f27e1712] [cursor=pointer]
+                    - generic: Hermes 3 70B Instruct
+                  - generic [ref=f27e1713]: Nousresearch
+                  - generic [ref=f27e1714]: $0.7 → $0.7 /M
+                  - generic [ref=f27e1715]: i
+                - generic [ref=f27e1716]:
+                  - generic:
+                    - checkbox "Hermes 3 405B Instruct" [ref=f27e1717] [cursor=pointer]
+                    - generic: Hermes 3 405B Instruct
+                  - generic [ref=f27e1718]: Nousresearch
+                  - generic [ref=f27e1719]: $1 → $1 /M
+                  - generic [ref=f27e1720]: i
+                - generic [ref=f27e1721]:
+                  - generic:
+                    - checkbox "Hermes 3 405B Instruct (free) ⚠" [ref=f27e1722] [cursor=pointer]
+                    - generic:
+                      - text: Hermes 3 405B Instruct (free)
+                      - generic "Sera retiré le 19 juillet 2026" [ref=f27e1723] [cursor=pointer]: ⚠
+                  - generic [ref=f27e1724]: Nousresearch
+                  - generic [ref=f27e1725]: Gratuit
+                  - generic [ref=f27e1726]: i
+                - generic [ref=f27e1727]:
+                  - generic:
+                    - checkbox "Llama 3 8B Lunaris" [ref=f27e1728] [cursor=pointer]
+                    - generic: Llama 3 8B Lunaris
+                  - generic [ref=f27e1729]: Sao10k
+                  - generic [ref=f27e1730]: $0.04 → $0.05 /M
+                  - generic [ref=f27e1731]: i
+                - generic [ref=f27e1732]:
+                  - generic:
+                    - checkbox "GPT-4o (2024-08-06)" [ref=f27e1733] [cursor=pointer]
+                    - generic: GPT-4o (2024-08-06)
+                  - generic [ref=f27e1734]: OpenAI
+                  - generic [ref=f27e1735]: $2.5 → $10 /M
+                  - generic [ref=f27e1736]: i
+                - generic [ref=f27e1737]:
+                  - generic:
+                    - checkbox "Llama 3.1 70B Instruct" [ref=f27e1738] [cursor=pointer]
+                    - generic: Llama 3.1 70B Instruct
+                  - generic [ref=f27e1739]: Meta
+                  - generic [ref=f27e1740]: $0.4 → $0.4 /M
+                  - generic [ref=f27e1741]: i
+                - generic [ref=f27e1742]:
+                  - generic:
+                    - checkbox "Llama 3.1 8B Instruct" [ref=f27e1743] [cursor=pointer]
+                    - generic: Llama 3.1 8B Instruct
+                  - generic [ref=f27e1744]: Meta
+                  - generic [ref=f27e1745]: $0.05 → $0.08 /M
+                  - generic [ref=f27e1746]: i
+                - generic [ref=f27e1747]:
+                  - generic:
+                    - checkbox "Mistral Nemo" [ref=f27e1748] [cursor=pointer]
+                    - generic: Mistral Nemo
+                  - generic [ref=f27e1749]: Mistral
+                  - generic [ref=f27e1750]: $0.02 → $0.03 /M
+                  - generic [ref=f27e1751]: i
+                - generic [ref=f27e1752]:
+                  - generic:
+                    - checkbox "GPT-4o-mini" [ref=f27e1753] [cursor=pointer]
+                    - generic: GPT-4o-mini
+                  - generic [ref=f27e1754]: OpenAI
+                  - generic [ref=f27e1755]: $0.15 → $0.6 /M
+                  - generic [ref=f27e1756]: i
+                - generic [ref=f27e1757]:
+                  - generic:
+                    - checkbox "GPT-4o-mini (2024-07-18)" [ref=f27e1758] [cursor=pointer]
+                    - generic: GPT-4o-mini (2024-07-18)
+                  - generic [ref=f27e1759]: OpenAI
+                  - generic [ref=f27e1760]: $0.15 → $0.6 /M
+                  - generic [ref=f27e1761]: i
+                - generic [ref=f27e1762]:
+                  - generic:
+                    - checkbox "Gemma 2 27B" [ref=f27e1763] [cursor=pointer]
+                    - generic: Gemma 2 27B
+                  - generic [ref=f27e1764]: Google
+                  - generic [ref=f27e1765]: $0.65 → $0.65 /M
+                  - generic [ref=f27e1766]: i
+                - generic [ref=f27e1767]:
+                  - generic:
+                    - checkbox "GPT-4o" [ref=f27e1768] [cursor=pointer]
+                    - generic: GPT-4o
+                  - generic [ref=f27e1769]: OpenAI
+                  - generic [ref=f27e1770]: $2.5 → $10 /M
+                  - generic [ref=f27e1771]: i
+                - generic [ref=f27e1772]:
+                  - generic:
+                    - checkbox "GPT-4o (2024-05-13)" [ref=f27e1773] [cursor=pointer]
+                    - generic: GPT-4o (2024-05-13)
+                  - generic [ref=f27e1774]: OpenAI
+                  - generic [ref=f27e1775]: $5 → $15 /M
+                  - generic [ref=f27e1776]: i
+                - generic [ref=f27e1777]:
+                  - generic:
+                    - checkbox "Mixtral 8x22B Instruct" [ref=f27e1778] [cursor=pointer]
+                    - generic: Mixtral 8x22B Instruct
+                  - generic [ref=f27e1779]: Mistral
+                  - generic [ref=f27e1780]: $2 → $6 /M
+                  - generic [ref=f27e1781]: i
+                - generic [ref=f27e1782]:
+                  - generic:
+                    - checkbox "WizardLM-2 8x22B" [ref=f27e1783] [cursor=pointer]
+                    - generic: WizardLM-2 8x22B
+                  - generic [ref=f27e1784]: Microsoft
+                  - generic [ref=f27e1785]: $0.62 → $0.62 /M
+                  - generic [ref=f27e1786]: i
+                - generic [ref=f27e1787]:
+                  - generic:
+                    - checkbox "GPT-4 Turbo" [ref=f27e1788] [cursor=pointer]
+                    - generic: GPT-4 Turbo
+                  - generic [ref=f27e1789]: OpenAI
+                  - generic [ref=f27e1790]: $10 → $30 /M
+                  - generic [ref=f27e1791]: i
+                - generic [ref=f27e1792]:
+                  - generic:
+                    - checkbox "Claude 3 Haiku" [ref=f27e1793] [cursor=pointer]
+                    - generic: Claude 3 Haiku
+                  - generic [ref=f27e1794]: Anthropic
+                  - generic [ref=f27e1795]: $0.25 → $1.25 /M
+                  - generic [ref=f27e1796]: i
+                - generic [ref=f27e1797]:
+                  - generic:
+                    - checkbox "Mistral Large" [ref=f27e1798] [cursor=pointer]
+                    - generic: Mistral Large
+                  - generic [ref=f27e1799]: Mistral
+                  - generic [ref=f27e1800]: $2 → $6 /M
+                  - generic [ref=f27e1801]: i
+                - generic [ref=f27e1802]:
+                  - generic:
+                    - checkbox "GPT-3.5 Turbo (older v0613)" [ref=f27e1803] [cursor=pointer]
+                    - generic: GPT-3.5 Turbo (older v0613)
+                  - generic [ref=f27e1804]: OpenAI
+                  - generic [ref=f27e1805]: $1 → $2 /M
+                  - generic [ref=f27e1806]: i
+                - generic [ref=f27e1807]:
+                  - generic:
+                    - checkbox "GPT-4 Turbo Preview" [ref=f27e1808] [cursor=pointer]
+                    - generic: GPT-4 Turbo Preview
+                  - generic [ref=f27e1809]: OpenAI
+                  - generic [ref=f27e1810]: $10 → $30 /M
+                  - generic [ref=f27e1811]: i
+                - generic [ref=f27e1812]:
+                  - generic:
+                    - checkbox "Auto Router" [ref=f27e1813] [cursor=pointer]
+                    - generic: Auto Router
+                  - generic [ref=f27e1814]: Openrouter
+                  - generic [ref=f27e1815]: $-1000000 → $-1000000 /M
+                  - generic [ref=f27e1816]: i
+                - generic [ref=f27e1817]:
+                  - generic:
+                    - checkbox "GPT-3.5 Turbo Instruct" [ref=f27e1818] [cursor=pointer]
+                    - generic: GPT-3.5 Turbo Instruct
+                  - generic [ref=f27e1819]: OpenAI
+                  - generic [ref=f27e1820]: $1.5 → $2 /M
+                  - generic [ref=f27e1821]: i
+                - generic [ref=f27e1822]:
+                  - generic:
+                    - checkbox "GPT-3.5 Turbo 16k" [ref=f27e1823] [cursor=pointer]
+                    - generic: GPT-3.5 Turbo 16k
+                  - generic [ref=f27e1824]: OpenAI
+                  - generic [ref=f27e1825]: $3 → $4 /M
+                  - generic [ref=f27e1826]: i
+                - generic [ref=f27e1827]:
+                  - generic:
+                    - checkbox "Weaver (alpha)" [ref=f27e1828] [cursor=pointer]
+                    - generic: Weaver (alpha)
+                  - generic [ref=f27e1829]: Mancer
+                  - generic [ref=f27e1830]: $0.5 → $0.75 /M
+                  - generic [ref=f27e1831]: i
+                - generic [ref=f27e1832]:
+                  - generic:
+                    - checkbox "ReMM SLERP 13B" [ref=f27e1833] [cursor=pointer]
+                    - generic: ReMM SLERP 13B
+                  - generic [ref=f27e1834]: Undi95
+                  - generic [ref=f27e1835]: $0.45 → $0.65 /M
+                  - generic [ref=f27e1836]: i
+                - generic [ref=f27e1837]:
+                  - generic:
+                    - checkbox "MythoMax 13B" [ref=f27e1838] [cursor=pointer]
+                    - generic: MythoMax 13B
+                  - generic [ref=f27e1839]: Gryphe
+                  - generic [ref=f27e1840]: $0.06 → $0.06 /M
+                  - generic [ref=f27e1841]: i
+                - generic [ref=f27e1842]:
+                  - generic:
+                    - checkbox "GPT-3.5 Turbo" [ref=f27e1843] [cursor=pointer]
+                    - generic: GPT-3.5 Turbo
+                  - generic [ref=f27e1844]: OpenAI
+                  - generic [ref=f27e1845]: $0.5 → $1.5 /M
+                  - generic [ref=f27e1846]: i
+                - generic [ref=f27e1847]:
+                  - generic:
+                    - checkbox "GPT-4" [ref=f27e1848] [cursor=pointer]
+                    - generic: GPT-4
+                  - generic [ref=f27e1849]: OpenAI
+                  - generic [ref=f27e1850]: $30 → $60 /M
+                  - generic [ref=f27e1851]: i

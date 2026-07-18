@@ -1,0 +1,246 @@
+- generic [ref=f45e1]:
+  - button "Afficher le panneau" [ref=f45e65] [cursor=pointer]
+  - complementary:
+    - heading "Cetas Cetas v3.2" [level=1]:
+      - img "Cetas" [ref=f45e7]
+      - text: Cetas
+      - generic [ref=f45e8]: v3.2
+    - generic: By Marexsoft
+    - generic [ref=f45e10]:
+      - button "Marexcode" [ref=f45e11] [cursor=pointer]
+      - button "Agent Code" [ref=f45e12] [cursor=pointer]
+      - button "Plugins" [ref=f45e13] [cursor=pointer]
+      - button "Compétences" [ref=f45e14] [cursor=pointer]
+    - button "Nouvelle conversation" [ref=f45e15] [cursor=pointer]
+    - generic:
+      - generic [ref=f45e17]:
+        - generic [ref=f45e18] [cursor=pointer]: Toutes les catégories
+        - button "Gérer les catégories" [ref=f45e22] [cursor=pointer]
+      - textbox "Rechercher..." [ref=f45e26]
+    - generic:
+      - button "SA" [ref=f45e66] [cursor=pointer]
+      - button "Configuration" [ref=f45e35] [cursor=pointer]
+  - main [ref=f45e39]:
+    - generic [ref=f45e41]:
+      - img "Cetas" [ref=f45e42]
+      - paragraph [ref=f45e43]: Sélectionnez une conversation ou démarrez-en une nouvelle en saisissant votre message ci-dessous.
+    - generic [ref=f45e45]:
+      - generic [ref=f45e46]:
+        - generic [ref=f45e48]:
+          - textbox "Écrivez votre message..." [active] [ref=f45e50]
+          - generic [ref=f45e51]:
+            - button "Plus d'options" [ref=f45e53] [cursor=pointer]
+            - button "Insérer un prompt enregistré" [ref=f45e68] [cursor=pointer]
+            - button "Dicter" [ref=f45e56] [cursor=pointer]
+        - button "Réglages de la conversation" [ref=f45e60] [cursor=pointer]
+      - generic [ref=f45e64]: SamAgent N4
+  - generic [ref=f45e73]:
+    - generic [ref=f45e74]:
+      - button "API et Modèles" [ref=f45e75] [cursor=pointer]
+      - button "Fonctionnalités" [ref=f45e76] [cursor=pointer]
+      - button "Budget" [ref=f45e77] [cursor=pointer]
+      - button "Apparence" [ref=f45e78] [cursor=pointer]
+      - button "Stockage" [ref=f45e79] [cursor=pointer]
+      - button "Utilisateurs" [ref=f45e80] [cursor=pointer]
+      - button "Conversation" [ref=f45e81] [cursor=pointer]
+      - button "FAQ" [ref=f45e82] [cursor=pointer]
+      - button "Statistiques" [ref=f45e83] [cursor=pointer]
+      - button "Partager" [ref=f45e84] [cursor=pointer]
+    - generic:
+      - button "×" [ref=f45e85] [cursor=pointer]
+      - generic:
+        - heading "Fonctionnalités" [level=3] [ref=f45e1870]
+        - paragraph [ref=f45e1871]: Choisissez le fournisseur à utiliser pour chaque fonctionnalité.
+        - generic [ref=f45e1872]:
+          - generic:
+            - generic:
+              - text: Synthèse vocale
+              - generic [ref=f45e1878]: "?"
+            - combobox "Synthèse vocale ?" [ref=f45e1879] [cursor=pointer]:
+              - option "Aucun"
+              - option "Google (Gemini 3.1 Flash TTS) — $1 / $20"
+              - option "Google (Gemini 2.5 Flash TTS) — $0.50 / $10"
+              - option "Système (navigateur) — Gratuit" [selected]
+              - option "Nvidia (Nemotron VoiceChat)"
+          - generic:
+            - generic:
+              - text: Transcription (micro)
+              - generic [ref=f45e1884]: "?"
+            - combobox "Transcription (micro) ?" [ref=f45e1885] [cursor=pointer]:
+              - option "Aucun" [selected]
+              - option "Navigateur (reconnaissance vocale) — Gratuit"
+              - option "OpenRouter (Whisper) — ~$0.006/min"
+              - option "Google (Gemini 3.1 Flash Lite) — $0.50 / $1.5"
+          - generic:
+            - generic:
+              - text: Amélioration de prompts/rôles
+              - generic [ref=f45e1893]: "?"
+            - combobox "Amélioration de prompts/rôles ?" [ref=f45e1894] [cursor=pointer]:
+              - option "Aucun" [selected]
+              - option "── Google ──" [disabled]
+              - option "Gemini 3.5 Flash — $1.5 / $9"
+              - option "Gemini 3.1 Pro — $2 / $12"
+              - option "Gemini 3 Flash — $0.5 / $3"
+              - option "Gemini 3.1 Flash Lite — $0.25 / $1.5"
+              - option "Gemini 2.5 Flash — $0 / $0"
+              - option "Gemma 4 31B — $0 / $0"
+              - option "Gemma 4 26B — $0 / $0"
+              - option "── SamAgent (Fusion) ──" [disabled]
+              - option "SamAgent Nano — $0 / $0"
+              - option "SamAgent N4 — $0 / $0"
+              - option "SamAgent N8 — $0 / $0"
+              - option "── DeepSeek ──" [disabled]
+              - option "DeepSeek V3.2 — $0.14 / $0.28"
+              - option "DeepSeek V4 Pro — $1.74 / $3.48"
+              - option "DeepSeek V4 Flash — $0.14 / $0.28"
+              - option "── groq ──" [disabled]
+              - option "GPT-OSS 20B — $0 / $0"
+              - option "GPT-OSS 120B — $0 / $0"
+              - option "Llama 4 Scout 17B — $0 / $0"
+              - option "Qwen 3 32B — $0 / $0"
+              - option "Llama 3.1 8B — $0.05 / $0.08"
+              - option "Qwen 3.6 27B — $0 / $0"
+              - option "── nvidia ──" [disabled]
+              - option "GLM-5.2 — $0 / $0"
+              - option "MiniMax M3 — $0 / $0"
+              - option "DiffusionGemma 26B — $0 / $0"
+              - option "Step 3.7 Flash — $0 / $0"
+              - option "Mistral Medium 3.5 128B — $0 / $0"
+              - option "Gemma 4 31B — $0 / $0"
+              - option "Nemotron 3 Super 120B — $0 / $0"
+              - option "Nemotron 3 Nano 30B — $0 / $0"
+              - option "GPT-OSS 120B — $0 / $0"
+              - option "Llama 3.3 70B — $0 / $0"
+              - option "Kimi K2.6 — $0 / $0"
+              - option "Nemotron 3 Nano Omni 30B — $0 / $0"
+              - option "Nemotron Nano 12B VL — $0 / $0"
+          - generic:
+            - generic:
+              - text: Résumé IA
+              - generic [ref=f45e1897]: "?"
+            - combobox "Résumé IA ?" [ref=f45e1898] [cursor=pointer]:
+              - option "Aucun" [selected]
+              - option "── Google ──" [disabled]
+              - option "Gemini 3.5 Flash — $1.5 / $9"
+              - option "Gemini 3.1 Pro — $2 / $12"
+              - option "Gemini 3 Flash — $0.5 / $3"
+              - option "Gemini 3.1 Flash Lite — $0.25 / $1.5"
+              - option "Gemini 2.5 Flash — $0 / $0"
+              - option "Gemma 4 31B — $0 / $0"
+              - option "Gemma 4 26B — $0 / $0"
+              - option "── SamAgent (Fusion) ──" [disabled]
+              - option "SamAgent Nano — $0 / $0"
+              - option "SamAgent N4 — $0 / $0"
+              - option "SamAgent N8 — $0 / $0"
+              - option "── DeepSeek ──" [disabled]
+              - option "DeepSeek V3.2 — $0.14 / $0.28"
+              - option "DeepSeek V4 Pro — $1.74 / $3.48"
+              - option "DeepSeek V4 Flash — $0.14 / $0.28"
+              - option "── groq ──" [disabled]
+              - option "GPT-OSS 20B — $0 / $0"
+              - option "GPT-OSS 120B — $0 / $0"
+              - option "Llama 4 Scout 17B — $0 / $0"
+              - option "Qwen 3 32B — $0 / $0"
+              - option "Llama 3.1 8B — $0.05 / $0.08"
+              - option "Qwen 3.6 27B — $0 / $0"
+              - option "── nvidia ──" [disabled]
+              - option "GLM-5.2 — $0 / $0"
+              - option "MiniMax M3 — $0 / $0"
+              - option "DiffusionGemma 26B — $0 / $0"
+              - option "Step 3.7 Flash — $0 / $0"
+              - option "Mistral Medium 3.5 128B — $0 / $0"
+              - option "Gemma 4 31B — $0 / $0"
+              - option "Nemotron 3 Super 120B — $0 / $0"
+              - option "Nemotron 3 Nano 30B — $0 / $0"
+              - option "GPT-OSS 120B — $0 / $0"
+              - option "Llama 3.3 70B — $0 / $0"
+              - option "Kimi K2.6 — $0 / $0"
+              - option "Nemotron 3 Nano Omni 30B — $0 / $0"
+              - option "Nemotron Nano 12B VL — $0 / $0"
+          - generic:
+            - generic:
+              - text: Génération du titre
+              - generic [ref=f45e1902]: "?"
+            - combobox "Génération du titre ?" [ref=f45e1903] [cursor=pointer]:
+              - option "Modèle utilisé dans la conversation" [selected]
+              - option "Aucun"
+              - option "── Google ──" [disabled]
+              - option "Gemini 3.5 Flash — $1.5 / $9"
+              - option "Gemini 3.1 Pro — $2 / $12"
+              - option "Gemini 3 Flash — $0.5 / $3"
+              - option "Gemini 3.1 Flash Lite — $0.25 / $1.5"
+              - option "Gemini 2.5 Flash — $0 / $0"
+              - option "Gemma 4 31B — $0 / $0"
+              - option "Gemma 4 26B — $0 / $0"
+              - option "── SamAgent (Fusion) ──" [disabled]
+              - option "SamAgent Nano — $0 / $0"
+              - option "SamAgent N4 — $0 / $0"
+              - option "SamAgent N8 — $0 / $0"
+              - option "── DeepSeek ──" [disabled]
+              - option "DeepSeek V3.2 — $0.14 / $0.28"
+              - option "DeepSeek V4 Pro — $1.74 / $3.48"
+              - option "DeepSeek V4 Flash — $0.14 / $0.28"
+              - option "── groq ──" [disabled]
+              - option "GPT-OSS 20B — $0 / $0"
+              - option "GPT-OSS 120B — $0 / $0"
+              - option "Llama 4 Scout 17B — $0 / $0"
+              - option "Qwen 3 32B — $0 / $0"
+              - option "Llama 3.1 8B — $0.05 / $0.08"
+              - option "Qwen 3.6 27B — $0 / $0"
+              - option "── nvidia ──" [disabled]
+              - option "GLM-5.2 — $0 / $0"
+              - option "MiniMax M3 — $0 / $0"
+              - option "DiffusionGemma 26B — $0 / $0"
+              - option "Step 3.7 Flash — $0 / $0"
+              - option "Mistral Medium 3.5 128B — $0 / $0"
+              - option "Gemma 4 31B — $0 / $0"
+              - option "Nemotron 3 Super 120B — $0 / $0"
+              - option "Nemotron 3 Nano 30B — $0 / $0"
+              - option "GPT-OSS 120B — $0 / $0"
+              - option "Llama 3.3 70B — $0 / $0"
+              - option "Kimi K2.6 — $0 / $0"
+              - option "Nemotron 3 Nano Omni 30B — $0 / $0"
+              - option "Nemotron Nano 12B VL — $0 / $0"
+          - generic:
+            - generic:
+              - text: Analyse des erreurs
+              - generic [ref=f45e1907]: "?"
+            - combobox "Analyse des erreurs ?" [ref=f45e1908] [cursor=pointer]:
+              - option "Aucun" [selected]
+              - option "── Google ──" [disabled]
+              - option "Gemini 3.5 Flash — $1.5 / $9"
+              - option "Gemini 3.1 Pro — $2 / $12"
+              - option "Gemini 3 Flash — $0.5 / $3"
+              - option "Gemini 3.1 Flash Lite — $0.25 / $1.5"
+              - option "Gemini 2.5 Flash — $0 / $0"
+              - option "Gemma 4 31B — $0 / $0"
+              - option "Gemma 4 26B — $0 / $0"
+              - option "── SamAgent (Fusion) ──" [disabled]
+              - option "SamAgent Nano — $0 / $0"
+              - option "SamAgent N4 — $0 / $0"
+              - option "SamAgent N8 — $0 / $0"
+              - option "── DeepSeek ──" [disabled]
+              - option "DeepSeek V3.2 — $0.14 / $0.28"
+              - option "DeepSeek V4 Pro — $1.74 / $3.48"
+              - option "DeepSeek V4 Flash — $0.14 / $0.28"
+              - option "── groq ──" [disabled]
+              - option "GPT-OSS 20B — $0 / $0"
+              - option "GPT-OSS 120B — $0 / $0"
+              - option "Llama 4 Scout 17B — $0 / $0"
+              - option "Qwen 3 32B — $0 / $0"
+              - option "Llama 3.1 8B — $0.05 / $0.08"
+              - option "Qwen 3.6 27B — $0 / $0"
+              - option "── nvidia ──" [disabled]
+              - option "GLM-5.2 — $0 / $0"
+              - option "MiniMax M3 — $0 / $0"
+              - option "DiffusionGemma 26B — $0 / $0"
+              - option "Step 3.7 Flash — $0 / $0"
+              - option "Mistral Medium 3.5 128B — $0 / $0"
+              - option "Gemma 4 31B — $0 / $0"
+              - option "Nemotron 3 Super 120B — $0 / $0"
+              - option "Nemotron 3 Nano 30B — $0 / $0"
+              - option "GPT-OSS 120B — $0 / $0"
+              - option "Llama 3.3 70B — $0 / $0"
+              - option "Kimi K2.6 — $0 / $0"
+              - option "Nemotron 3 Nano Omni 30B — $0 / $0"
+              - option "Nemotron Nano 12B VL — $0 / $0"
