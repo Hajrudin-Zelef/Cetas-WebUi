@@ -699,9 +699,13 @@ class ProxyHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS, HEAD")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
+
+    def do_HEAD(self):
+        # Déléguer au GET mais sans renvoyer le body (géré par le handler)
+        self.do_GET()
 
     def do_GET(self):
         if self.path in ("/health", "/api/health"):
