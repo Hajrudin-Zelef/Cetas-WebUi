@@ -1,4 +1,24 @@
 // --- Gestion des conversations via IndexedDB ---
+// Compteur de writes en cours pour beforeunload
+var _pendingWrites = 0;
+var _pendingWritesResolve = null;
+
+function _trackWrite(p) {
+    _pendingWrites++;
+    var tracked = p.finally(function() {
+        _pendingWrites--;
+        if (_pendingWrites === 0 && _pendingWritesResolve) {
+            _pendingWritesResolve();
+            _pendingWritesResolve = null;
+        }
+    });
+    return tracked;
+}
+
+function flushPendingWrites() {
+    if (_pendingWrites === 0) return Promise.resolve();
+    return new Promise(function(r) { _pendingWritesResolve = r; });
+}
 
 function openConvDB() {
     return new Promise((resolve, reject) => {
@@ -144,6 +164,7 @@ async function writeConversationFile(filename, content) {
         }
     });
     const guarded = next.catch(() => {});
+    _trackWrite(guarded);
     _writeQueues.set(filename, guarded);
     // Nettoyage de la file une fois le write terminé pour éviter une fuite mémoire
     // (les noms de fichiers sont uniques par conversation, donc la map peut grossir).
@@ -248,6 +269,7 @@ async function updateConversationFile(filename, mergeFn) {
         }
     });
     const guarded = next.catch(() => {});
+    _trackWrite(guarded);
     _writeQueues.set(filename, guarded);
     guarded.finally(() => {
         if (_writeQueues.get(filename) === guarded) _writeQueues.delete(filename);
