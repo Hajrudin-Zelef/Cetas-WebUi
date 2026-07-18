@@ -90,6 +90,7 @@ const MODELS_DATA = {
     { "id": "nvidia/nemotron-voicechat",         "label": "Nvidia (Nemotron VoiceChat)",       "editeur": "nvidia",  "prix": "",             "description": "Synthèse vocale de Nvidia via Nemotron, voix naturelles." }
   ],
   "stt": [
+    { "id": "system-stt",             "label": "Navigateur (reconnaissance vocale)", "editeur": "system", "prix": "Gratuit", "description": "Reconnaissance vocale native du navigateur. Gratuit, sans clé API, fonctionne hors-ligne partiellement." },
     { "id": "whisper-1",              "label": "OpenAI (Whisper)",           "editeur": "openai",  "prix": "$0.006/min",  "description": "Transcription audio précise et multilingue par OpenAI." },
     { "id": "openai/whisper-1",       "label": "OpenRouter (Whisper)",        "editeur": "openrouter", "prix": "~$0.006/min", "description": "Whisper via OpenRouter — utilise votre crédit OpenRouter." },
     { "id": "gemini-3.1-flash-lite", "label": "Google (Gemini 3.1 Flash Lite)", "editeur": "google",  "prix": "$0.50 / $1.5",  "description": "Transcription audio via Gemini Flash Lite, rapide et polyvalent." },
