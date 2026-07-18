@@ -10,12 +10,16 @@ Utilise uniquement stdlib + cryptography (déjà installé).
 import os
 import sys
 import json
+import hashlib
 import http.client
 import logging
 import importlib.util
+import datetime
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 
+import jwt
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 logging.basicConfig(level=logging.INFO, format="[proxy] %(message)s")
@@ -83,6 +87,90 @@ PROVIDER_CONFIG = {
 
 # ── État global ──────────────────────────────────────────────────────
 api_keys: dict[str, str] = {}
+
+# ── Stockage utilisateurs ────────────────────────────────────────────
+USERS_SEED_PATH = os.path.join(BASE_DIR, "core", "users-seed.json")
+
+_jwt_secret: str = ""
+_users: dict[str, dict] = {}
+
+def _hash_password(password: str) -> str:
+    h = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return f"sha256${h}"
+
+def _verify_password(password: str, stored: str) -> bool:
+    if "$" not in stored:
+        return hashlib.sha256(password.encode("utf-8")).hexdigest() == stored
+    algo, hashed = stored.split("$", 1)
+    if algo == "sha256":
+        return hashlib.sha256(password.encode("utf-8")).hexdigest() == hashed
+    return False
+
+def _load_users() -> dict[str, dict]:
+    global _users
+    if _users:
+        return _users
+    if os.path.exists(USERS_PATH):
+        try:
+            with open(USERS_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            _users = data.get("users", {}) if isinstance(data, dict) else {}
+        except Exception:
+            _users = {}
+    if not _users and os.path.exists(USERS_SEED_PATH):
+        try:
+            with open(USERS_SEED_PATH, "r", encoding="utf-8") as f:
+                seed = json.load(f)
+            if isinstance(seed, list):
+                for su in seed:
+                    uname = su.get("username", "").strip()
+                    if uname and uname not in _users:
+                        _users[uname] = {
+                            "username": uname,
+                            "email": su.get("email", ""),
+                            "password_hash": su.get("password_hash", ""),
+                            "role": "admin",
+                            "created_at": su.get("created_at", datetime.datetime.utcnow().isoformat())
+                        }
+                _save_users()
+                log.info("%d utilisateur(s) importés du seed.", len(_users))
+        except Exception as e:
+            log.warning("Seed users ignoré: %s", e)
+    return _users
+
+def _save_users() -> None:
+    data = {"version": 1, "users": _users}
+    with open(USERS_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def _get_jwt_secret() -> str:
+    global _jwt_secret
+    if _jwt_secret:
+        return _jwt_secret
+    pk = api_keys.get("proxy_key")
+    if pk:
+        _jwt_secret = hashlib.sha256(pk.encode("utf-8")).hexdigest()
+    else:
+        log.warning("Pas de proxy_key, fallback JWT secret aléatoire (non persistant).")
+        import secrets
+        _jwt_secret = secrets.token_hex(32)
+    return _jwt_secret
+
+def _create_jwt(username: str, role: str) -> str:
+    now = int(time.time())
+    payload = {
+        "sub": username,
+        "role": role,
+        "iat": now,
+        "exp": now + 604800  # 7 jours
+    }
+    return jwt.encode(payload, _get_jwt_secret(), algorithm="HS256")
+
+def _validate_jwt(token: str) -> dict | None:
+    try:
+        return jwt.decode(token, _get_jwt_secret(), algorithms=["HS256"])
+    except Exception:
+        return None
 
 
 def _load_vault():
@@ -164,6 +252,7 @@ def load_api_keys():
 # ── Stockage conversations (sync multi-appareils) ──────────────────
 CONV_DIR = os.path.join(BASE_DIR, "conversations")
 os.makedirs(CONV_DIR, exist_ok=True)
+USERS_PATH = os.path.join(CONV_DIR, "_users.json")
 
 # Cache RAM : {username: {filename: data_json}} pour accès rapide
 _conv_cache: dict[str, dict[str, dict]] = {}
@@ -280,14 +369,44 @@ class ProxyHandler(BaseHTTPRequestHandler):
         'nvidia': 'nvidia',
     }
 
+    def _get_authenticated_user(self):
+        """Extrait et valide le JWT depuis le header Authorization Bearer."""
+        auth = self.headers.get("Authorization", "").strip()
+        if not auth.startswith("Bearer "):
+            self._respond_json({"error": "Non authentifié"}, 401)
+            return None
+        token = auth[7:]
+        payload = _validate_jwt(token)
+        if not payload:
+            self._respond_json({"error": "Token invalide ou expiré"}, 401)
+            return None
+        return payload.get("sub", "").strip()
+
     def _get_username(self):
-        """Extrait le username depuis le header X-Cetas-User."""
+        """Fallback legacy: X-Cetas-User header (pour migration)."""
         return self.headers.get("X-Cetas-User", "").strip()
 
-    def _conv_list(self):
-        username = self._get_username()
-        if not username:
+    def _require_admin(self) -> str | None:
+        """Vérifie JWT + rôle admin. Retourne le username ou None."""
+        auth = self.headers.get("Authorization", "").strip()
+        if not auth.startswith("Bearer "):
             self._respond_json({"error": "Non authentifié"}, 401)
+            return None
+        token = auth[7:]
+        payload = _validate_jwt(token)
+        if not payload:
+            self._respond_json({"error": "Token invalide ou expiré"}, 401)
+            return None
+        if payload.get("role") != "admin":
+            self._respond_json({"error": "Permission refusée"}, 403)
+            return None
+        return payload.get("sub", "").strip()
+
+    # ── Endpoints conversations ───────────────────────────────────────
+
+    def _conv_list(self):
+        username = self._get_authenticated_user()
+        if not username:
             return
         try:
             convs = load_user_conversations(username)
@@ -311,9 +430,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._respond_json({"error": str(e)}, 500)
 
     def _conv_get(self, filename: str):
-        username = self._get_username()
+        username = self._get_authenticated_user()
         if not username:
-            self._respond_json({"error": "Non authentifié"}, 401)
             return
         try:
             convs = load_user_conversations(username)
@@ -326,9 +444,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._respond_json({"error": str(e)}, 500)
 
     def _conv_save(self, filename: str):
-        username = self._get_username()
+        username = self._get_authenticated_user()
         if not username:
-            self._respond_json({"error": "Non authentifié"}, 401)
             return
         try:
             content_len = int(self.headers.get("Content-Length", 0))
@@ -340,9 +457,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._respond_json({"error": str(e)}, 500)
 
     def _conv_delete(self, filename: str):
-        username = self._get_username()
+        username = self._get_authenticated_user()
         if not username:
-            self._respond_json({"error": "Non authentifié"}, 401)
             return
         try:
             deleted = delete_user_conversation(username, filename)
@@ -352,6 +468,144 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 self._respond_json({"error": "Conversation introuvable"}, 404)
         except Exception as e:
             self._respond_json({"error": str(e)}, 500)
+
+    # ── Endpoints auth / utilisateurs ─────────────────────────────────
+
+    def _auth_login(self):
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        uname = data.get("username", "").strip()
+        password = data.get("password", "").strip()
+        if not uname or not password:
+            self._respond_json({"error": "Identifiants requis."}, 400)
+            return
+        users = _load_users()
+        u = users.get(uname)
+        if not u or not _verify_password(password, u.get("password_hash", "")):
+            self._respond_json({"error": "Identifiants incorrects."}, 401)
+            return
+        token = _create_jwt(uname, u.get("role", "user"))
+        self._respond_json({
+            "token": token,
+            "user": {
+                "username": u["username"],
+                "email": u.get("email", ""),
+                "role": u.get("role", "user"),
+                "created_at": u.get("created_at", "")
+            }
+        })
+
+    def _auth_register(self):
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        uname = data.get("username", "").strip()
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
+        if not uname or not password:
+            self._respond_json({"error": "Username et mot de passe requis."}, 400)
+            return
+        users = _load_users()
+        if uname in users:
+            self._respond_json({"error": "Cet utilisateur existe déjà."}, 409)
+            return
+        role = "admin" if len(users) == 0 else "user"
+        users[uname] = {
+            "username": uname,
+            "email": email,
+            "password_hash": _hash_password(password),
+            "role": role,
+            "created_at": datetime.datetime.utcnow().isoformat()
+        }
+        _save_users()
+        token = _create_jwt(uname, role)
+        log.info("Utilisateur créé: %s (role=%s)", uname, role)
+        self._respond_json({
+            "token": token,
+            "user": {
+                "username": uname,
+                "email": email,
+                "role": role,
+                "created_at": users[uname]["created_at"]
+            }
+        }, 201)
+
+    def _users_list(self):
+        username = self._require_admin()
+        if not username:
+            return
+        users = _load_users()
+        result = []
+        for name, u in users.items():
+            result.append({
+                "username": name,
+                "email": u.get("email", ""),
+                "role": u.get("role", "user"),
+                "created_at": u.get("created_at", "")
+            })
+        self._respond_json(result)
+
+    def _users_update(self, target: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        users = _load_users()
+        if target not in users:
+            self._respond_json({"error": "Utilisateur introuvable"}, 404)
+            return
+        # Seul l'admin ou l'utilisateur lui-même peut modifier
+        is_admin = False
+        auth = self.headers.get("Authorization", "").strip()
+        if auth.startswith("Bearer "):
+            payload = _validate_jwt(auth[7:])
+            is_admin = payload and payload.get("role") == "admin"
+        if not is_admin and username != target:
+            self._respond_json({"error": "Permission refusée"}, 403)
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        u = users[target]
+        if is_admin:
+            if "email" in data:
+                u["email"] = data["email"]
+            if "role" in data:
+                u["role"] = data["role"]
+        if "password" in data and data["password"]:
+            u["password_hash"] = _hash_password(data["password"])
+        _save_users()
+        self._respond_json({"ok": True})
+
+    def _users_delete(self, target: str):
+        username = self._require_admin()
+        if not username:
+            return
+        if target == username:
+            self._respond_json({"error": "Impossible de supprimer votre propre compte."}, 400)
+            return
+        users = _load_users()
+        if target not in users:
+            self._respond_json({"error": "Utilisateur introuvable"}, 404)
+            return
+        del users[target]
+        _save_users()
+        log.info("Utilisateur supprimé: %s", target)
+        self._respond_json({"ok": True})
+
+    # ── Helpers HTTP ──────────────────────────────────────────────────
 
     def _respond_json(self, data: dict, status: int = 200):
         body = json.dumps(data).encode()
@@ -366,7 +620,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Cetas-User")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Cetas-User")
         self.end_headers()
 
     def do_GET(self):
@@ -374,11 +628,23 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._respond_json({"status": "ok", "keys_loaded": len(api_keys)})
             return
         if self.path == "/api/keys":
+            username = self._get_authenticated_user()
+            if not username:
+                return
             mapped = {}
             for k, v in api_keys.items():
                 frontend_key = self._KEY_MAP.get(k, k)
                 mapped[frontend_key] = v
             self._respond_json(mapped)
+            return
+        # Auth / Users
+        if self.path == "/api/users":
+            self._users_list()
+            return
+        if self.path.startswith("/api/users/"):
+            # GET /api/users/<username> not needed for MVP
+            self.send_response(404)
+            self.end_headers()
             return
         # Conversations
         if self.path == "/api/conversations":
@@ -396,6 +662,12 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
+        if self.path == "/api/auth/login":
+            self._auth_login()
+            return
+        if self.path == "/api/auth/register":
+            self._auth_register()
+            return
         if self.path.startswith("/api/proxy/"):
             self._proxy_request("POST")
             return
@@ -403,6 +675,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_PUT(self):
+        if self.path.startswith("/api/users/"):
+            target = self.path[len("/api/users/"):]
+            self._users_update(target)
+            return
         if self.path.startswith("/api/conversations/"):
             filename = self.path[len("/api/conversations/"):]
             self._conv_save(filename)
@@ -411,6 +687,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_DELETE(self):
+        if self.path.startswith("/api/users/"):
+            target = self.path[len("/api/users/"):]
+            self._users_delete(target)
+            return
         if self.path.startswith("/api/conversations/"):
             filename = self.path[len("/api/conversations/"):]
             self._conv_delete(filename)
@@ -491,6 +771,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
 
@@ -501,6 +782,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
 def main():
     port = int(os.environ.get("PROXY_PORT", "8080"))
     load_api_keys()
+    _load_users()
+    _get_jwt_secret()
+    log.info("%d utilisateur(s) chargés, JWT prêt.", len(_users))
     server = HTTPServer(("127.0.0.1", port), ProxyHandler)
     log.info("Proxy prêt sur 127.0.0.1:%d", port)
     try:

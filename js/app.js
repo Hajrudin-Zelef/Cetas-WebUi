@@ -3084,11 +3084,19 @@ initConfig().then(async () => {
         // Sync conversations depuis le serveur (multi-appareils)
         // IMPORTANT : fait AVANT __kiroSplashReady pour que les conversations
         // du compte utilisateur (autres appareils) soient visibles dès l'affichage.
-        var _syncPromise = typeof syncPullFromServer === 'function'
-            ? syncPullFromServer().then(function(n) {
+        var _syncPromise;
+        if (typeof startAutoSync === 'function') {
+            _syncPromise = syncPullFromServer().then(function(n) {
                 if (n > 0) { refreshConvList(); renderFavList(); }
-              }).catch(function(){})
-            : Promise.resolve();
+            }).catch(function(){});
+            startAutoSync();
+        } else if (typeof syncPullFromServer === 'function') {
+            _syncPromise = syncPullFromServer().then(function(n) {
+                if (n > 0) { refreshConvList(); renderFavList(); }
+            }).catch(function(){});
+        } else {
+            _syncPromise = Promise.resolve();
+        }
         _syncPromise.then(function() {
             renderFavList();
             if (typeof window.__kiroSplashReady === 'function') window.__kiroSplashReady();
@@ -11470,9 +11478,9 @@ function _initUserManagement() {
 
     let _editingUsername = null;
 
-    function _renderUserList() {
+    async function _renderUserList() {
         if (!usersList) return;
-        const users = Auth.listUsers();
+        const users = await Auth.listUsers();
         usersList.innerHTML = users.map(u => {
             const initials = (u.username || '?').substring(0, 2).toUpperCase();
             const roleClass = u.role === 'admin' ? 'admin' : 'user';

@@ -8,6 +8,7 @@ const Auth = (() => {
   const LS_USERS = 'cetas-users';
   const SS_SESSION = 'cetas-session';
   const SS_VAULT_KEY = 'cetas-vault-key';       // clé AES-256 raw hex
+  const SS_TOKEN = 'cetas-token';               // JWT
   const LS_VAULT_KEYS = 'cetas-vault-keys';      // clés API chiffrées
   const LS_LEGACY_KEYS = 'minou-apikeys';         // ancien stockage en clair
   const SEED_URL = 'core/users-seed.json';
@@ -72,6 +73,32 @@ const Auth = (() => {
       }
     } catch (e) {}
     return false;
+  }
+
+  /** Token JWT */
+  function _getToken() {
+    return sessionStorage.getItem(SS_TOKEN) || '';
+  }
+
+  function _setToken(token) {
+    sessionStorage.setItem(SS_TOKEN, token);
+  }
+
+  function _clearToken() {
+    sessionStorage.removeItem(SS_TOKEN);
+  }
+
+  /** Décode le payload JWT (sans vérification — le serveur valide) */
+  function _decodeJwtPayload(token) {
+    try {
+      var parts = token.split('.');
+      if (parts.length !== 3) return null;
+      var payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (payload.length % 4) payload += '=';
+      return JSON.parse(atob(payload));
+    } catch (e) {
+      return null;
+    }
   }
 
   // --- Bootstrap première exécution ---
@@ -207,34 +234,67 @@ const Auth = (() => {
 
   // --- API publique ---
 
+  // ── API HTTP helpers ──────────────────────────────────────────────
+
+  function _fetchJSON(url, opts) {
+    opts = opts || {};
+    var token = _getToken();
+    opts.headers = opts.headers || {};
+    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+    if (opts.body && typeof opts.body === 'object') {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(opts.body);
+    }
+    return fetch(url, opts).then(function(r) { return r.json().then(function(d) { return {ok: r.ok, status: r.status, data: d}; }); });
+  }
+
   return {
-    /** Initialise l'auth. Retourne une Promise qui resolve quand l'utilisateur est connecté. */
-    async init() {
-      // Restaurer session existante ?
-      if (_restoreSession()) return _currentUser;
+    // ── Gestion du token ──────────────────────────────────────────
 
-      // Bootstrap les utilisateurs
-      await _bootstrapUsers();
+    /** Retourne le JWT stocké (utilisé par filemanager.js, api.js) */
+    getToken: function() {
+      return _getToken();
+    },
 
-      // Afficher l'overlay de login et attendre
-      return new Promise((resolve) => {
-        const overlay = document.getElementById('login-overlay');
+    // ── Init / Login / Logout ──────────────────────────────────────
+
+    /** Initialise l'auth. Résout quand l'utilisateur est connecté. */
+    init: function() {
+      // Restaurer token JWT ?
+      var token = _getToken();
+      if (token) {
+        var payload = _decodeJwtPayload(token);
+        if (payload && payload.exp && payload.exp * 1000 > Date.now()) {
+          _currentUser = {
+            username: payload.sub,
+            role: payload.role || 'user'
+          };
+          _vaultReady = !!sessionStorage.getItem(SS_VAULT_KEY);
+          return Promise.resolve(_currentUser);
+        }
+        // Token expiré → nettoyer
+        _clearToken();
+      }
+
+      // Fallback: restaurer session legacy
+      if (_restoreSession()) return Promise.resolve(_currentUser);
+
+      // Afficher l'overlay de login
+      return new Promise(function(resolve) {
+        var overlay = document.getElementById('login-overlay');
         if (!overlay) {
-          // Fallback : pas d'overlay → admin auto
-          const users = _readUsers();
-          _createSession(users[0]);
-          resolve(_currentUser);
+          // Fallback : pas d'overlay → rien (dev)
+          resolve(null);
           return;
         }
 
         overlay.style.display = 'flex';
-        const form = document.getElementById('login-form');
-        const usernameInput = document.getElementById('login-username');
-        const passwordInput = document.getElementById('login-password');
-        const errorEl = document.getElementById('login-error');
-        const bodyEl = document.body;
+        var form = document.getElementById('login-form');
+        var usernameInput = document.getElementById('login-username');
+        var passwordInput = document.getElementById('login-password');
+        var errorEl = document.getElementById('login-error');
+        var bodyEl = document.body;
 
-        // Masquer le body de l'app tant que pas connecté
         bodyEl.classList.add('auth-locked');
 
         function showError(msg) {
@@ -250,8 +310,8 @@ const Auth = (() => {
 
         async function handleLogin() {
           hideError();
-          const username = usernameInput.value.trim();
-          const password = passwordInput.value;
+          var username = usernameInput.value.trim();
+          var password = passwordInput.value;
 
           if (!username || !password) {
             showError('Veuillez remplir tous les champs.');
@@ -259,7 +319,7 @@ const Auth = (() => {
           }
 
           try {
-            const result = await Auth.login(username, password);
+            var result = await Auth.login(username, password);
             if (result) {
               overlay.style.display = 'none';
               bodyEl.classList.remove('auth-locked');
@@ -273,163 +333,254 @@ const Auth = (() => {
         }
 
         if (form) {
-          form.addEventListener('submit', (e) => {
+          form.addEventListener('submit', function(e) {
             e.preventDefault();
             handleLogin();
           });
         }
 
-        // Bouton login
-        const loginBtn = document.getElementById('login-btn');
+        var loginBtn = document.getElementById('login-btn');
         if (loginBtn) {
           loginBtn.addEventListener('click', handleLogin);
         }
 
-        // Enter sur les champs
-        passwordInput.addEventListener('keydown', (e) => {
+        passwordInput.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') handleLogin();
         });
       });
     },
 
-    /** Tente de connecter l'utilisateur. Retourne true si succès. */
-    async login(username, password) {
-      const users = _readUsers();
-      const hash = await _sha256(password);
-      const user = users.find(u => u.username === username && u.password_hash === hash);
+    /** Tente de connecter l'utilisateur. Priorité serveur, fallback localStorage. */
+    login: async function(username, password) {
+      // 1) Essayer le serveur
+      try {
+        var resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username: username, password: password})
+        });
+        var data = await resp.json();
+        if (resp.ok && data.token) {
+          _setToken(data.token);
+          var u = data.user;
+          _currentUser = {
+            username: u.username,
+            email: u.email || '',
+            role: u.role || 'user',
+            created_at: u.created_at || ''
+          };
+          // Session legacy pour compatibilité
+          localStorage.setItem('cetas-user', u.username);
+          sessionStorage.setItem(SS_SESSION, JSON.stringify(_currentUser));
+          await _vaultInit(password);
+          return true;
+        }
+      } catch (e) {
+        // Serveur injoignable → fallback
+      }
+
+      // 2) Fallback localStorage (migration)
+      var users = _readUsers();
+      var hash = await _sha256(password);
+      var user = users.find(function(u) { return u.username === username && u.password_hash === hash; });
       if (!user) return false;
+
+      // 3) Migrer ce compte vers le serveur
+      try {
+        var regResp = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            username: user.username,
+            email: user.email || '',
+            password: password
+          })
+        });
+        if (regResp.ok) {
+          // Réessayer le login serveur
+          var retryResp = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: username, password: password})
+          });
+          var retryData = await retryResp.json();
+          if (retryResp.ok && retryData.token) {
+            _setToken(retryData.token);
+            _currentUser = {
+              username: retryData.user.username,
+              email: retryData.user.email || '',
+              role: retryData.user.role || 'user',
+              created_at: retryData.user.created_at || ''
+            };
+            localStorage.setItem('cetas-user', retryData.user.username);
+            sessionStorage.setItem(SS_SESSION, JSON.stringify(_currentUser));
+            await _vaultInit(password);
+            return true;
+          }
+        }
+      } catch (e) {
+        // Migration échouée → fallback localStorage pur
+      }
+
+      // 4) Fallback localStorage pur (serveur injoignable)
       _createSession(user);
-      // Dériver la clé de coffre depuis le mot de passe
       await _vaultInit(password);
       return true;
     },
 
-    /** Déconnecte l'utilisateur et recharge la page */
-    logout() {
+    /** Déconnecte et recharge */
+    logout: function() {
       _clearSession();
+      _clearToken();
       sessionStorage.removeItem(SS_VAULT_KEY);
       _vaultReady = false;
       window.location.reload();
     },
 
-    /** Retourne l'utilisateur connecté ou null */
-    getCurrentUser() {
+    /** Utilisateur connecté */
+    getCurrentUser: function() {
       if (!_currentUser) _restoreSession();
-      return _currentUser ? { ..._currentUser } : null;
+      return _currentUser ? Object.assign({}, _currentUser) : null;
     },
 
-    /** L'utilisateur connecté est-il admin ? */
-    isAdmin() {
-      const u = Auth.getCurrentUser();
+    /** Admin ? */
+    isAdmin: function() {
+      var u = Auth.getCurrentUser();
       return u && u.role === 'admin';
     },
 
-    /** Le coffre de clés API est-il prêt ? */
-    isVaultReady() {
-      return _vaultReady;
-    },
+    // ── Coffre API keys (inchangé) ─────────────────────────────────
 
-    /** Chiffre une chaîne avec la clé de coffre → hex (iv + ciphertext) */
-    async vaultEncrypt(plaintext) {
-      const key = await _getVaultKey();
+    isVaultReady: function() { return _vaultReady; },
+
+    vaultEncrypt: async function(plaintext) {
+      var key = await _getVaultKey();
       if (!key) throw new Error('Coffre non disponible.');
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const enc = new TextEncoder();
-      const ct = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv }, key, enc.encode(plaintext)
+      var iv = crypto.getRandomValues(new Uint8Array(12));
+      var enc = new TextEncoder();
+      var ct = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv }, key, enc.encode(plaintext)
       );
-      const combined = new Uint8Array(iv.length + ct.byteLength);
+      var combined = new Uint8Array(iv.length + ct.byteLength);
       combined.set(iv);
       combined.set(new Uint8Array(ct), iv.length);
       return _bytesToHex(combined);
     },
 
-    /** Déchiffre une chaîne chiffrée par vaultEncrypt → texte clair */
-    async vaultDecrypt(hexCiphertext) {
-      const key = await _getVaultKey();
+    vaultDecrypt: async function(hexCiphertext) {
+      var key = await _getVaultKey();
       if (!key) throw new Error('Coffre non disponible.');
-      const combined = _hexToBytes(hexCiphertext);
-      const iv = combined.slice(0, 12);
-      const ct = combined.slice(12);
-      const pt = await crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv }, key, ct
+      var combined = _hexToBytes(hexCiphertext);
+      var iv = combined.slice(0, 12);
+      var ct = combined.slice(12);
+      var pt = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv }, key, ct
       );
       return new TextDecoder().decode(pt);
     },
 
-    /** Admin : liste tous les utilisateurs */
-    listUsers() {
+    // ── Users CRUD (admin) — via API serveur ───────────────────────
+
+    /** Admin : liste les utilisateurs */
+    listUsers: async function() {
       if (!Auth.isAdmin()) return [];
-      return _readUsers().map(u => ({
-        username: u.username,
-        email: u.email || '',
-        role: u.role || 'user',
-        created_at: u.created_at || ''
-      }));
+      try {
+        var r = await _fetchJSON('/api/users');
+        if (r.ok) return r.data;
+      } catch (e) {}
+      // Fallback localStorage
+      return _readUsers().map(function(u) { return {
+        username: u.username, email: u.email || '', role: u.role || 'user', created_at: u.created_at || ''
+      };});
     },
 
     /** Admin : crée un utilisateur */
-    async createUser(username, email, password, role) {
+    createUser: async function(username, email, password, role) {
       if (!Auth.isAdmin()) throw new Error('Permission refusée.');
-      const users = _readUsers();
-      if (users.find(u => u.username === username)) {
-        throw new Error('Cet utilisateur existe déjà.');
+      try {
+        var r = await _fetchJSON('/api/auth/register', {method: 'POST', body: {username: username, email: email, password: password}});
+        if (r.ok) return true;
+        if (r.status === 409) throw new Error('Cet utilisateur existe déjà.');
+        throw new Error(r.data.error || 'Erreur serveur.');
+      } catch (e) {
+        if (e.message === 'Cet utilisateur existe déjà.') throw e;
+        // Fallback localStorage
+        var users = _readUsers();
+        if (users.find(function(u) { return u.username === username; })) throw new Error('Cet utilisateur existe déjà.');
+        var hash = await _sha256(password);
+        users.push({username: username, email: email || '', password_hash: hash, role: role || 'user', created_at: new Date().toISOString()});
+        _writeUsers(users);
+        return true;
       }
-      const hash = await _sha256(password);
-      users.push({
-        username,
-        email: email || '',
-        password_hash: hash,
-        role: role || 'user',
-        created_at: new Date().toISOString()
-      });
-      _writeUsers(users);
-      return true;
     },
 
     /** Admin : met à jour un utilisateur */
-    async updateUser(username, data) {
+    updateUser: async function(username, data) {
       if (!Auth.isAdmin()) throw new Error('Permission refusée.');
-      const users = _readUsers();
-      const idx = users.findIndex(u => u.username === username);
-      if (idx === -1) throw new Error('Utilisateur introuvable.');
-      if (data.email !== undefined) users[idx].email = data.email;
-      if (data.role !== undefined) users[idx].role = data.role;
-      if (data.password) {
-        users[idx].password_hash = await _sha256(data.password);
+      try {
+        var body = {};
+        if (data.email !== undefined) body.email = data.email;
+        if (data.role !== undefined) body.role = data.role;
+        if (data.password) body.password = data.password;
+        var r = await _fetchJSON('/api/users/' + encodeURIComponent(username), {method: 'PUT', body: body});
+        if (r.ok) return true;
+        throw new Error(r.data.error || 'Erreur serveur.');
+      } catch (e) {
+        // Fallback localStorage
+        var users = _readUsers();
+        var idx = users.findIndex(function(u) { return u.username === username; });
+        if (idx === -1) throw new Error('Utilisateur introuvable.');
+        if (data.email !== undefined) users[idx].email = data.email;
+        if (data.role !== undefined) users[idx].role = data.role;
+        if (data.password) users[idx].password_hash = await _sha256(data.password);
+        _writeUsers(users);
+        return true;
       }
-      _writeUsers(users);
-      return true;
     },
 
     /** Admin : supprime un utilisateur */
-    deleteUser(username) {
+    deleteUser: async function(username) {
       if (!Auth.isAdmin()) throw new Error('Permission refusée.');
-      const current = Auth.getCurrentUser();
+      var current = Auth.getCurrentUser();
       if (current && current.username === username) {
         throw new Error('Vous ne pouvez pas supprimer votre propre compte.');
       }
-      const users = _readUsers();
-      const filtered = users.filter(u => u.username !== username);
-      if (filtered.length === users.length) return false;
-      _writeUsers(filtered);
-      return true;
+      try {
+        var r = await _fetchJSON('/api/users/' + encodeURIComponent(username), {method: 'DELETE'});
+        if (r.ok) return true;
+        throw new Error(r.data.error || 'Erreur serveur.');
+      } catch (e) {
+        // Fallback localStorage
+        var users = _readUsers();
+        var filtered = users.filter(function(u) { return u.username !== username; });
+        if (filtered.length === users.length) return false;
+        _writeUsers(filtered);
+        return true;
+      }
     },
 
     /** Change le mot de passe de l'utilisateur connecté */
-    async changePassword(oldPassword, newPassword) {
-      const current = Auth.getCurrentUser();
+    changePassword: async function(oldPassword, newPassword) {
+      var current = Auth.getCurrentUser();
       if (!current) throw new Error('Non connecté.');
-      const users = _readUsers();
-      const idx = users.findIndex(u => u.username === current.username);
-      if (idx === -1) throw new Error('Utilisateur introuvable.');
-      const oldHash = await _sha256(oldPassword);
-      if (users[idx].password_hash !== oldHash) {
-        throw new Error('Mot de passe actuel incorrect.');
+      try {
+        var r = await _fetchJSON('/api/users/' + encodeURIComponent(current.username), {
+          method: 'PUT',
+          body: {password: newPassword}
+        });
+        if (r.ok) return true;
+        throw new Error(r.data.error || 'Erreur serveur.');
+      } catch (e) {
+        // Fallback localStorage
+        var users = _readUsers();
+        var idx = users.findIndex(function(u) { return u.username === current.username; });
+        if (idx === -1) throw new Error('Utilisateur introuvable.');
+        var oldHash = await _sha256(oldPassword);
+        if (users[idx].password_hash !== oldHash) throw new Error('Mot de passe actuel incorrect.');
+        users[idx].password_hash = await _sha256(newPassword);
+        _writeUsers(users);
+        return true;
       }
-      users[idx].password_hash = await _sha256(newPassword);
-      _writeUsers(users);
-      return true;
     }
   };
 })();

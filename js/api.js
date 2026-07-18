@@ -136,7 +136,15 @@ async function saveApiKeys(keys) {
  */
 async function syncKeysFromProxy() {
     try {
-        const resp = await fetch('/api/keys', { signal: AbortSignal.timeout(3000) });
+        const headers = {};
+        if (typeof Auth !== 'undefined' && Auth.getToken) {
+            const token = Auth.getToken();
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+        }
+        const resp = await fetch('/api/keys', {
+            signal: AbortSignal.timeout(3000),
+            headers: headers
+        });
         if (!resp.ok) return false;
         const keys = await resp.json();
         if (!keys || Object.keys(keys).length === 0) return false;
