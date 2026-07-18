@@ -9807,3 +9807,15 @@ body.dark .plus-menu-dropdown {
         display: none !important;
     }
 }
+
+
+/* FIX : remonter le champ de saisie sur l'écran d'accueil (aucune
+   conversation active) pour un rendu plus confortable en mobile.
+   #empty-chat-placeholder n'existe dans le DOM que sur cet écran ;
+   dès qu'une conversation démarre, il disparaît et le champ revient
+   à sa position normale en bas automatiquement. */
+@media (max-width: 768px) {
+    body:has(#empty-chat-placeholder) .input-area {
+        margin-bottom: 15vh;
+    }
+}
