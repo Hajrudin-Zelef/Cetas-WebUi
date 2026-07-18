@@ -20,18 +20,30 @@ function flushPendingWrites() {
     return new Promise(function(r) { _pendingWritesResolve = r; });
 }
 
+var _dbPromise = null;
+
 function openConvDB() {
-    return new Promise((resolve, reject) => {
-        const req = indexedDB.open('minou_conversations', 1);
-        req.onupgradeneeded = () => {
-            const db = req.result;
+    if (_dbPromise) return _dbPromise;
+    _dbPromise = new Promise(function(resolve, reject) {
+        var req = indexedDB.open('minou_conversations', 1);
+        req.onupgradeneeded = function() {
+            var db = req.result;
             if (!db.objectStoreNames.contains('conversations')) {
                 db.createObjectStore('conversations');
             }
         };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+        req.onsuccess = function() {
+            var db = req.result;
+            db.addEventListener('close', function() { _dbPromise = null; });
+            db.addEventListener('error', function() { _dbPromise = null; });
+            resolve(db);
+        };
+        req.onerror = function() {
+            _dbPromise = null;
+            reject(req.error);
+        };
     });
+    return _dbPromise;
 }
 
 // Sérialise les writes par filename pour éviter les races read-modify-write entre
