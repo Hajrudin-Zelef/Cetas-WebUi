@@ -3067,6 +3067,10 @@ function populateCustomSelect(selectEl, models, tarifFn) {
 
 // --- Initialisation ---
 Auth.init().then(() => {
+    // Stockage persistant : empêche iOS Safari de vider IndexedDB au hard refresh
+    if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().catch(function(){});
+    }
 initConfig().then(async () => {
     // upgradeToCustomSelect + populateUnifiedSelect retirés — sélecteur dans le menu "+"
     // updateTriggerDisplay() utilise maintenant #input-hint
@@ -7347,6 +7351,10 @@ function _scheduleMicRelease() {
 
 window.addEventListener('beforeunload', _releaseMicStream);
 window.addEventListener('pagehide', _releaseMicStream);
+// Sauvegarde des conversations avant fermeture (mobile : hard refresh tue IndexedDB)
+window.addEventListener('beforeunload', function() {
+    if (typeof flushPendingWrites === 'function') flushPendingWrites();
+});
 
 micBtn.addEventListener('click', async () => {
     // Si streaming en cours (mode stop), arrêter la génération
