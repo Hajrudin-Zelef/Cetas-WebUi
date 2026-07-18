@@ -52,6 +52,18 @@ let MODELS = [];
 let SEARCH_MODELS = [];
 let IMAGE_MODELS = [];
 let TARIFS = {};
+var MODELS_MAP = {};
+var IMAGE_MODELS_MAP = {};
+var SEARCH_MODELS_MAP = {};
+
+function _rebuildModelMaps() {
+    var m = {}; for (var i = 0; i < MODELS.length; i++) m[MODELS[i].id] = MODELS[i].editeur || '';
+    MODELS_MAP = m;
+    var im = {}; for (var j = 0; j < IMAGE_MODELS.length; j++) im[IMAGE_MODELS[j].id] = IMAGE_MODELS[j].editeur || '';
+    IMAGE_MODELS_MAP = im;
+    var sm = {}; for (var k = 0; k < SEARCH_MODELS.length; k++) sm[SEARCH_MODELS[k].id] = SEARCH_MODELS[k].editeur || '';
+    SEARCH_MODELS_MAP = sm;
+}
 let IMAGE_TARIFS = {};
 let SEARCH_TARIFS = {};
 
@@ -318,6 +330,7 @@ function loadModels() {
             SEARCH_TARIFS[m.id] = { editeur: m.editeur, inputPer1M: m.inputPer1M, outputPer1M: m.outputPer1M };
         }
     }
+    _rebuildModelMaps();
 }
 
 // IDs renommés côté fournisseur (ex. sortie de preview Gemini) : permet aux conversations
@@ -356,18 +369,15 @@ function computeImagePrice(tarif, format, imageParams) {
 function getSearchTarif(model) { return SEARCH_TARIFS[model] || null; }
 
 function getModelEditeur(modelId) {
-    const m = MODELS.find(m => m.id === modelId);
-    return m ? m.editeur : null;
+    return MODELS_MAP[modelId] || null;
 }
 
 function getImageModelEditeur(modelId) {
-    const m = IMAGE_MODELS.find(m => m.id === modelId);
-    return m ? m.editeur : null;
+    return IMAGE_MODELS_MAP[modelId] || null;
 }
 
 function getSearchModelEditeur(modelId) {
-    const m = SEARCH_MODELS.find(m => m.id === modelId);
-    return m ? m.editeur : null;
+    return SEARCH_MODELS_MAP[modelId] || null;
 }
 
 // Flag global (gardé pour compatibilité — toujours false sans coffre)
@@ -568,6 +578,7 @@ function _applyLocalModels(ed, ids) {
         MODELS.push({ id, label: id, editeur: ed });
         TARIFS[id] = { editeur: ed, inputPer1M: 0, outputPer1M: 0 };
     }
+    _rebuildModelMaps();
 }
 
 // Charge les modèles locaux mis en cache (à appeler à l'init avant le fetch réseau).
