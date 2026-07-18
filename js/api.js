@@ -39,12 +39,18 @@ function proxyUrl(provider, url) {
 }
 
 // Nettoie les headers avant envoi au proxy (supprime les clés d'auth que le proxy injectera)
+// Ajoute le JWT utilisateur pour authentification proxy
 function proxyHeaders(provider, headers) {
     if (isLocalEditeur(provider)) return headers;
     const h = Object.assign({}, headers);
     delete h['Authorization'];
     delete h['x-api-key'];
     delete h['anthropic-dangerous-direct-browser-access'];
+    // Injecter le JWT utilisateur (auth proxy)
+    if (typeof Auth !== 'undefined' && Auth.getToken) {
+        const token = Auth.getToken();
+        if (token) h['Authorization'] = 'Bearer ' + token;
+    }
     return h;
 }
 
@@ -112,8 +118,13 @@ async function saveApiKeys(keys) {
     Object.assign(API_KEYS, keys);
     // Proxy actif → ne pas persister dans le navigateur
     try {
-        const resp = await fetch('/api/keys', { method: 'HEAD', signal: AbortSignal.timeout(1000) });
-        if (resp.ok) return; // Proxy disponible, on garde en mémoire uniquement
+        const h = {};
+        if (typeof Auth !== 'undefined' && Auth.getToken) {
+            var token = Auth.getToken();
+            if (token) h['Authorization'] = 'Bearer ' + token;
+        }
+        const resp = await fetch('/api/keys', { method: 'HEAD', signal: AbortSignal.timeout(1000), headers: h });
+        if (resp.ok || resp.status === 401 || resp.status === 403) return; // Proxy dispo
     } catch (e) { /* Proxy injoignable → coffre chiffré */ }
     // Coffre chiffré uniquement (plus de fallback localStorage en clair)
     if (typeof Auth !== 'undefined' && Auth.isVaultReady()) {
@@ -426,8 +437,11 @@ async function initConfig() {
 // Récupère le catalogue OpenRouter (text + image, catégorie 'all') sans toucher l'UI
 // du panneau Catalogue. Utilisé au démarrage pour avoir des métadonnées à jour.
 async function refreshOrCacheSilently() {
-    // Le proxy backend gère l'auth — la clé n'est plus dans le navigateur
     const headers = {};
+    if (typeof Auth !== 'undefined' && Auth.getToken) {
+        var token = Auth.getToken();
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+    }
     async function fetchOne(isImage) {
         const base = 'https://openrouter.ai/api/v1/models' + (isImage ? '?output_modalities=image' : '');
         const url = proxyUrl('openrouter', base);

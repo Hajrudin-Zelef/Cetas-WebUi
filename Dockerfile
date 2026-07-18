@@ -1,7 +1,7 @@
 FROM nginx:alpine
 
 # Créer un utilisateur non-root pour le proxy
-RUN adduser -D -h /app cetas
+RUN adduser -D -h /app -u 1001 cetas
 
 # Python + cryptography pour le proxy API
 RUN apk add --no-cache python3 py3-cryptography py3-pip curl nodejs npm && pip3 install --break-system-packages pyjwt

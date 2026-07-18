@@ -304,7 +304,7 @@ def load_api_keys():
         sys.exit(1)
 
 # ── Stockage conversations (sync multi-appareils) ──────────────────
-DATA_DIR = os.path.join(os.path.dirname(BASE_DIR), "data")
+DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
 CONV_DIR = os.path.join(BASE_DIR, "conversations")
 os.makedirs(CONV_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
