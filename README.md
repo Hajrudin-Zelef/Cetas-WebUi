@@ -42,11 +42,15 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 - **Export** : Markdown, HTML, sauvegarde JSON complète
 
 ### Administration & Sécurité
-- Authentification multi-utilisateurs avec rôles (user / admin)
+- **Authentification serveur JWT** : scrypt (N=16384), tokens HS256, migration auto SHA-256 → scrypt
+- Authentification multi-utilisateurs avec rôles (user / admin), CRUD via API
 - **Proxy backend** : les clés API restent côté serveur, jamais dans le navigateur
+- Protection JWT sur tous les endpoints proxy (LLM, images, TTS, transcriptions)
+- Rate limiting : 10 login/min, 5 register/min par IP
 - Synchronisation automatique des clés depuis le proxy au démarrage
-- Synchronisation des conversations multi-appareils via le proxy
-- Chiffrement AES-256-GCM des clés au repos
+- Synchronisation des conversations multi-appareils avec réconciliation delete
+- Chiffrement AES-256-GCM des clés au repos (coffre vault)
+- **Sécurité renforcée** : plus de fallback localStorage en clair, CDN retirés (bundles locaux)
 - Suivi de coûts en temps réel, alertes budget configurables
 - Panneau de stockage : gestion des conversations et médias (taille, tri, recherche, suppression)
 
@@ -55,17 +59,20 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 ### Docker (recommandé — proxy backend inclus)
 
 ```bash
-docker build -t cetas .
-docker run -d \
-  --name cetas \
+docker build -t cetas:latest .
+docker run -d --name cetas-webui --restart unless-stopped \
   -p 8080:80 \
+  -v /chemin/vers/.vault:/usr/share/nginx/html/.vault \
+  -v /chemin/vers/.env:/usr/share/nginx/html/.env \
+  -v cetas-data:/usr/share/nginx/html/conversations \
+  -v cetas-data:/app/data \
   -e CETAS_VAULT_PASSWORD=votre_motdepasse \
-  --restart unless-stopped \
-  cetas
+  cetas:latest
 ```
 
 Le proxy backend déchiffre les clés API côté serveur : le navigateur ne les reçoit jamais.
 Même après un effacement des données navigateur, les clés se resynchronisent automatiquement depuis le backend.
+Authentification JWT serveur — un seul compte, tous vos appareils synchronisés.
 
 ### Sans Docker (usage local)
 
