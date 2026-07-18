@@ -7377,6 +7377,43 @@ micBtn.addEventListener('click', async () => {
         return;
     }
 
+    // STT navigateur natif (SpeechRecognition API) — gratuit, sans clé
+    var _sttModel = MODELS_DATA.stt.find(function(m) { return m.id === AUDIO_SETTINGS.sttProvider; });
+    if (_sttModel && _sttModel.editeur === 'system') {
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+            customAlert('Reconnaissance vocale non supportée par ce navigateur.', 'error');
+            return;
+        }
+        try {
+            var sr = new SR();
+            sr.lang = 'fr-FR';
+            sr.continuous = false;
+            sr.interimResults = false;
+            micBtn.classList.add('recording');
+            promptInput.placeholder = 'Parlez...';
+            sr.onresult = function(e) {
+                var text = e.results[0][0].transcript;
+                promptInput.value += (promptInput.value && !promptInput.value.endsWith(' ') ? ' ' : '') + text;
+                promptInput.dispatchEvent(new Event('input'));
+                micBtn.classList.remove('recording');
+                promptInput.placeholder = 'Écrivez votre message...';
+                _scheduleMicRelease();
+            };
+            sr.onerror = function() {
+                micBtn.classList.remove('recording');
+                promptInput.placeholder = 'Écrivez votre message...';
+                _scheduleMicRelease();
+            };
+            sr.start();
+        } catch(e) {
+            micBtn.classList.remove('recording');
+            promptInput.placeholder = 'Écrivez votre message...';
+            customAlert('Erreur reconnaissance vocale: ' + e.message, 'error');
+        }
+        return;
+    }
+
     try {
         if (_micIdleTimer) { clearTimeout(_micIdleTimer); _micIdleTimer = null; }
         if (!micStream || !micStream.active) {
