@@ -1444,7 +1444,7 @@ async function streamModel(modelId, conversationHistory, onChunk, onDone, onErro
         try {
             response = await fetch(provider.getUrl(modelId, webSearch), {
                 method: 'POST',
-                headers: provider.getHeaders(),
+                headers: proxyHeaders(editeur, provider.getHeaders()),
                 body: JSON.stringify(provider.buildBody(modelId, messages, systemPrompt, webSearch, modelParams)),
                 signal
             });
@@ -1558,7 +1558,7 @@ const IMAGE_PROVIDERS = {
 
                 response = await fetch(proxyUrl('openai', 'https://api.openai.com/v1/images/generations'), {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: proxyHeaders('openai', { 'Content-Type': 'application/json' }),
                     body: JSON.stringify(body),
                     signal
                 });
@@ -1708,7 +1708,7 @@ const IMAGE_PROVIDERS = {
 
             const response = await fetch(proxyUrl('openrouter', 'https://openrouter.ai/api/v1/chat/completions'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proxyHeaders('openrouter', { 'Content-Type': 'application/json' }),
                 body: JSON.stringify(body),
                 signal
             });
@@ -1911,7 +1911,7 @@ async function ttsSpeak(text, onDone, onError, silent = false, onPlayingStart = 
         try {
             const response = await fetch(proxyUrl('mistral', 'https://api.mistral.ai/v1/audio/speech'), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proxyHeaders('mistral', { 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     model: ttsModel.id,
                     input: text,
@@ -2027,7 +2027,7 @@ async function ttsSpeak(text, onDone, onError, silent = false, onPlayingStart = 
         const openaiModel = ttsEditeur === 'openai' ? ttsModel : MODELS_DATA.tts.find(m => m.editeur === 'openai');
         const response = await fetch(proxyUrl('openai', 'https://api.openai.com/v1/audio/speech'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: proxyHeaders('openai', { 'Content-Type': 'application/json' }),
             body: JSON.stringify({
                 model: openaiModel.id,
                 input: text,
@@ -2089,7 +2089,7 @@ async function transcribeAudio(audioBlob, onDone, onError) {
             formData.append('language', 'fr');
             const response = await fetch(proxyUrl('mistral', 'https://api.mistral.ai/v1/audio/transcriptions'), {
                 method: 'POST',
-                headers: {},
+                headers: proxyHeaders('mistral', {}),
                 body: formData
             });
             if (!response.ok) {
@@ -2111,6 +2111,7 @@ async function transcribeAudio(audioBlob, onDone, onError) {
             formData.append('language', 'fr');
             const response = await fetch(proxyUrl('openrouter', 'https://openrouter.ai/api/v1/audio/transcriptions'), {
                 method: 'POST',
+                headers: proxyHeaders('openrouter', {}),
                 body: formData
             });
             if (!response.ok) {
@@ -2132,6 +2133,7 @@ async function transcribeAudio(audioBlob, onDone, onError) {
         formData.append('language', 'fr');
         const response = await fetch(proxyUrl('openai', 'https://api.openai.com/v1/audio/transcriptions'), {
             method: 'POST',
+            headers: proxyHeaders('openai', {}),
             body: formData
         });
         if (!response.ok) {
