@@ -1,8 +1,12 @@
 #!/bin/sh
 set -e
 
+# S'assurer que les répertoires de données sont accessibles
+mkdir -p /usr/share/nginx/html/conversations /app/data
+chown -R cetas:cetas /usr/share/nginx/html/conversations /app/data 2>/dev/null || true
+
 echo "[start] Démarrage proxy Python..."
-python3 /app/server.py &
+su -s /bin/sh cetas -c "python3 /app/server.py" &
 PROXY_PID=$!
 
 # Attendre que le proxy soit prêt

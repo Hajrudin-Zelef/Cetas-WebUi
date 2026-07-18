@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="color-scheme" content="light dark">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: blob: data:; script-src 'self' file: 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: blob: https: http://localhost:* http://127.0.0.1:*; font-src 'self' file: data:; media-src 'self' file: data: blob:; connect-src 'self' file: blob: data: https://api.openai.com https://api.anthropic.com https://api.deepseek.com https://api.mistral.ai https://api.perplexity.ai https://api.x.ai https://api.z.ai https://generativelanguage.googleapis.com https://openrouter.ai https://cdn.jsdelivr.net http://localhost:* http://127.0.0.1:*; worker-src 'self' file: blob: https://cdn.jsdelivr.net; manifest-src 'self'; frame-src 'self' file: blob: data:; object-src 'none'; base-uri 'self'; form-action 'none';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: blob: data:; script-src 'self' file: 'unsafe-inline'; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: blob: https: http://localhost:* http://127.0.0.1:*; font-src 'self' file: data:; media-src 'self' file: data: blob:; connect-src 'self' file: blob: data: https://api.openai.com https://api.anthropic.com https://api.deepseek.com https://api.mistral.ai https://api.perplexity.ai https://api.x.ai https://api.z.ai https://generativelanguage.googleapis.com https://openrouter.ai http://localhost:* http://127.0.0.1:*; worker-src 'self' file: blob:; manifest-src 'self'; frame-src 'self' file: blob: data:; object-src 'none'; base-uri 'self'; form-action 'none';">
     <title>Cetas</title>
     <link rel="icon" type="image/png" href="images/Cetas42.png">
     <link rel="manifest" href="manifest.json">
@@ -1204,18 +1204,10 @@
         </div>
     </aside>
 
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"
-            integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
-            crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked@18.0.2/lib/marked.umd.min.js"
-            integrity="sha384-VFZ9RElp7G/IxAGHV8iq2n2RuDktt4iBszz0AX1jzsKdHQRQoRi3LlUhxx31gpx0"
-            crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.1/dist/purify.min.js"
-            integrity="sha384-ikETfzsmSTEkyr7smbhW6mdO8o44Zro09Sk1uC9pbG6ZTJA0wK6v37pwx8h+3VRC"
-            crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
-            integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG"
-            crossorigin="anonymous"></script>
+    <script src="js/pdf.min.js"></script>
+    <script src="js/marked.umd.min.js"></script>
+    <script src="js/purify.min.js"></script>
+    <script src="js/jszip.min.js"></script>
     <script src="models.js"></script>
     <script src="js/api.js"></script>
     <script src="js/filemanager.js"></script>

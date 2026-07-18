@@ -114,20 +114,17 @@ async function saveApiKeys(keys) {
     try {
         const resp = await fetch('/api/keys', { method: 'HEAD', signal: AbortSignal.timeout(1000) });
         if (resp.ok) return; // Proxy disponible, on garde en mémoire uniquement
-    } catch (e) { /* Proxy injoignable → fallback localStorage */ }
-    // Coffre chiffré (prioritaire)
+    } catch (e) { /* Proxy injoignable → coffre chiffré */ }
+    // Coffre chiffré uniquement (plus de fallback localStorage en clair)
     if (typeof Auth !== 'undefined' && Auth.isVaultReady()) {
         try {
             const encrypted = await Auth.vaultEncrypt(JSON.stringify(API_KEYS));
             localStorage.setItem('cetas-vault-keys', encrypted);
             localStorage.removeItem('minou-apikeys');
-            return;
         } catch (e) {
-            console.warn('Écriture coffre impossible, fallback localStorage en clair :', e);
+            console.warn('Écriture coffre impossible, les clés ne seront pas persistées.');
         }
     }
-    // Fallback
-    localStorage.setItem('minou-apikeys', JSON.stringify(API_KEYS));
 }
 
 /** Synchronise les clés depuis le proxy backend au démarrage.

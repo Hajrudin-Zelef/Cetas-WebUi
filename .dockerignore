@@ -1,0 +1,14 @@
+.git
+.gitignore
+node_modules
+*.log
+.backups
+.playwright-mcp
+*.png
+*.jpg
+!images/*.png
+!images/*.jpg
+login-screen.png
+memory_session.md
+CLAUDE.md
+proxy/server.py.back

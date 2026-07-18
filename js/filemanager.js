@@ -547,17 +547,12 @@ function _getCetasUsername() {
 
 function _getAuthHeaders() {
     var headers = {};
-    // JWT Bearer token (auth serveur)
     if (typeof Auth !== 'undefined' && Auth.getToken) {
         var token = Auth.getToken();
         if (token) {
             headers['Authorization'] = 'Bearer ' + token;
-            return headers;
         }
     }
-    // Fallback legacy : X-Cetas-User
-    var username = _getCetasUsername();
-    if (username) headers['X-Cetas-User'] = username;
     return headers;
 }
 

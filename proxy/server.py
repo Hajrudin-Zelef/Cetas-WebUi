@@ -88,6 +88,20 @@ PROVIDER_CONFIG = {
 # ── État global ──────────────────────────────────────────────────────
 api_keys: dict[str, str] = {}
 
+# ── Rate limiter simple (IP → timestamps) ────────────────────────────
+_rate_buckets: dict[str, list] = {}
+
+def _rate_check(key: str, max_req: int = 10, window: int = 60) -> bool:
+    now = time.time()
+    bucket = _rate_buckets.get(key, [])
+    bucket = [t for t in bucket if now - t < window]
+    if len(bucket) >= max_req:
+        _rate_buckets[key] = bucket
+        return False
+    bucket.append(now)
+    _rate_buckets[key] = bucket
+    return True
+
 # ── Stockage utilisateurs ────────────────────────────────────────────
 USERS_SEED_PATH = os.path.join(BASE_DIR, "core", "users-seed.json")
 
@@ -95,21 +109,47 @@ _jwt_secret: str = ""
 _users: dict[str, dict] = {}
 
 def _hash_password(password: str) -> str:
-    h = hashlib.sha256(password.encode("utf-8")).hexdigest()
-    return f"sha256${h}"
+    salt = os.urandom(16)
+    h = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=16384, r=8, p=1)
+    return f"scrypt${salt.hex()}${h.hex()}"
 
 def _verify_password(password: str, stored: str) -> bool:
     if "$" not in stored:
+        # Ancien format sans préfixe = SHA-256 brut
         return hashlib.sha256(password.encode("utf-8")).hexdigest() == stored
-    algo, hashed = stored.split("$", 1)
+    algo, rest = stored.split("$", 1)
     if algo == "sha256":
-        return hashlib.sha256(password.encode("utf-8")).hexdigest() == hashed
+        return hashlib.sha256(password.encode("utf-8")).hexdigest() == rest
+    if algo == "scrypt":
+        parts = rest.split("$", 1)
+        if len(parts) != 2:
+            return False
+        salt_hex, hash_hex = parts
+        try:
+            salt = bytes.fromhex(salt_hex)
+            h = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=16384, r=8, p=1)
+            return h.hex() == hash_hex
+        except Exception:
+            return False
     return False
+
+def _needs_password_upgrade(stored: str) -> bool:
+    """Retourne True si le hash n'est pas en scrypt (migration nécessaire)."""
+    return not stored.startswith("scrypt$")
 
 def _load_users() -> dict[str, dict]:
     global _users
     if _users:
         return _users
+    # Migration: déplacer l'ancien _users.json vers le nouveau emplacement
+    old_path = os.path.join(CONV_DIR, "_users.json")
+    if not os.path.exists(USERS_PATH) and os.path.exists(old_path):
+        try:
+            import shutil
+            shutil.move(old_path, USERS_PATH)
+            log.info("users.json migré vers %s", USERS_PATH)
+        except Exception:
+            pass
     if os.path.exists(USERS_PATH):
         try:
             with open(USERS_PATH, "r", encoding="utf-8") as f:
@@ -140,6 +180,8 @@ def _load_users() -> dict[str, dict]:
 
 def _save_users() -> None:
     data = {"version": 1, "users": _users}
+    if _jwt_secret:
+        data["jwt_secret"] = _jwt_secret
     with open(USERS_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -147,13 +189,25 @@ def _get_jwt_secret() -> str:
     global _jwt_secret
     if _jwt_secret:
         return _jwt_secret
-    pk = api_keys.get("proxy_key")
-    if pk:
-        _jwt_secret = hashlib.sha256(pk.encode("utf-8")).hexdigest()
-    else:
-        log.warning("Pas de proxy_key, fallback JWT secret aléatoire (non persistant).")
-        import secrets
-        _jwt_secret = secrets.token_hex(32)
+    # Essayer de charger depuis users.json (persistant)
+    if os.path.exists(USERS_PATH):
+        try:
+            with open(USERS_PATH, "r", encoding="utf-8") as f:
+                meta = json.load(f)
+            _jwt_secret = meta.get("jwt_secret", "")
+            if _jwt_secret:
+                return _jwt_secret
+        except Exception:
+            pass
+    # Générer un nouveau secret et le persister
+    import secrets
+    _jwt_secret = secrets.token_hex(32)
+    log.info("Nouveau secret JWT généré et persisté.")
+    # Sauver dans users.json
+    data = {"version": 1, "users": _users, "jwt_secret": _jwt_secret}
+    os.makedirs(os.path.dirname(USERS_PATH), exist_ok=True)
+    with open(USERS_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
     return _jwt_secret
 
 def _create_jwt(username: str, role: str) -> str:
@@ -250,12 +304,30 @@ def load_api_keys():
         sys.exit(1)
 
 # ── Stockage conversations (sync multi-appareils) ──────────────────
+DATA_DIR = os.path.join(os.path.dirname(BASE_DIR), "data")
 CONV_DIR = os.path.join(BASE_DIR, "conversations")
 os.makedirs(CONV_DIR, exist_ok=True)
-USERS_PATH = os.path.join(CONV_DIR, "_users.json")
+os.makedirs(DATA_DIR, exist_ok=True)
+USERS_PATH = os.path.join(DATA_DIR, "users.json")
 
 # Cache RAM : {username: {filename: data_json}} pour accès rapide
 _conv_cache: dict[str, dict[str, dict]] = {}
+_conv_cache_ts: dict[str, float] = {}  # timestamp du dernier chargement par user
+_CACHE_TTL = 3600  # 1 heure
+
+def _conv_cache_get(username: str) -> dict[str, dict]:
+    """Retourne le cache utilisateur, l'invalide si TTL dépassé."""
+    now = time.time()
+    if username in _conv_cache and username in _conv_cache_ts:
+        if now - _conv_cache_ts[username] < _CACHE_TTL:
+            return _conv_cache[username]
+        # TTL expiré → vider le cache
+        del _conv_cache[username]
+        del _conv_cache_ts[username]
+    if username not in _conv_cache:
+        _conv_cache[username] = {}
+        _conv_cache_ts[username] = now
+    return _conv_cache[username]
 
 def _conv_user_dir(username: str) -> str:
     """Répertoire des conversations d'un utilisateur."""
@@ -269,11 +341,6 @@ def _conv_user_dir(username: str) -> str:
 def _conv_file_path(username: str, filename: str) -> str:
     safe_fn = filename.replace("/", "_").replace("\\", "_")
     return os.path.join(_conv_user_dir(username), safe_fn)
-
-def _conv_cache_get(username: str) -> dict[str, dict]:
-    if username not in _conv_cache:
-        _conv_cache[username] = {}
-    return _conv_cache[username]
 
 def load_user_conversations(username: str) -> dict[str, dict]:
     """Charge toutes les conversations d'un utilisateur (depuis disque ou cache)."""
@@ -383,8 +450,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
         return payload.get("sub", "").strip()
 
     def _get_username(self):
-        """Fallback legacy: X-Cetas-User header (pour migration)."""
-        return self.headers.get("X-Cetas-User", "").strip()
+        """Retourne le username depuis le JWT (plus de fallback X-Cetas-User)."""
+        return ""
 
     def _require_admin(self) -> str | None:
         """Vérifie JWT + rôle admin. Retourne le username ou None."""
@@ -472,6 +539,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
     # ── Endpoints auth / utilisateurs ─────────────────────────────────
 
     def _auth_login(self):
+        ip = self.client_address[0]
+        if not _rate_check("login:" + ip, 10, 60):
+            self._respond_json({"error": "Trop de tentatives. Réessayez dans une minute."}, 429)
+            return
         content_len = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_len) if content_len > 0 else b"{}"
         try:
@@ -489,6 +560,11 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if not u or not _verify_password(password, u.get("password_hash", "")):
             self._respond_json({"error": "Identifiants incorrects."}, 401)
             return
+        # Migration automatique SHA-256 → scrypt
+        if _needs_password_upgrade(u.get("password_hash", "")):
+            u["password_hash"] = _hash_password(password)
+            _save_users()
+            log.info("Hash du compte %s migré vers scrypt.", uname)
         token = _create_jwt(uname, u.get("role", "user"))
         self._respond_json({
             "token": token,
@@ -501,6 +577,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
         })
 
     def _auth_register(self):
+        ip = self.client_address[0]
+        if not _rate_check("register:" + ip, 5, 60):
+            self._respond_json({"error": "Trop de tentatives. Réessayez dans une minute."}, 429)
+            return
         content_len = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_len) if content_len > 0 else b"{}"
         try:
@@ -620,7 +700,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Cetas-User")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
     def do_GET(self):
@@ -628,7 +708,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._respond_json({"status": "ok", "keys_loaded": len(api_keys)})
             return
         if self.path == "/api/keys":
-            username = self._get_authenticated_user()
+            username = self._require_admin()
             if not username:
                 return
             mapped = {}
@@ -699,6 +779,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _proxy_request(self, method: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
         # Parse /api/proxy/{provider}/...
         path_parts = self.path[len("/api/proxy/"):]
         if "/" not in path_parts:

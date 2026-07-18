@@ -1,5 +1,8 @@
 FROM nginx:alpine
 
+# Créer un utilisateur non-root pour le proxy
+RUN adduser -D -h /app cetas
+
 # Python + cryptography pour le proxy API
 RUN apk add --no-cache python3 py3-cryptography py3-pip curl nodejs npm && pip3 install --break-system-packages pyjwt
 
@@ -12,6 +15,9 @@ COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
 
 # Fichiers de l'application (copiés avant minification)
 COPY . /usr/share/nginx/html
+
+# Répertoire de données (hors racine web)
+RUN mkdir -p /app/data && chown -R cetas:cetas /app/data
 
 # Minifier les JS (sauf libs CDN déjà minifiées)
 RUN terser /usr/share/nginx/html/js/app.js -o /usr/share/nginx/html/js/app.js -c -m --comments false --module
