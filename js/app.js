@@ -81,7 +81,7 @@ const prModalSave = document.getElementById('pr-modal-save');
 const prModalEnhance = document.getElementById('pr-modal-enhance');
 
 const catSelect = document.getElementById('cat-select');
-const catSelectLabel = catSelect.querySelector('.cat-select-label');
+const catSelectLabel = catSelect ? catSelect.querySelector('.cat-select-label') : null;
 const catSelectDropdown = document.getElementById('cat-select-dropdown');
 const catModalOverlay = document.getElementById('cat-modal-overlay');
 const catModalTitle = document.getElementById('cat-modal-title');
@@ -185,7 +185,7 @@ convSearch.addEventListener('input', async () => {
             item.style.display = '';
             continue;
         }
-        const title = item.querySelector('.conv-item-title').textContent.toLowerCase();
+        const title = (item.querySelector('.conv-item-title')?.textContent || '').toLowerCase();
         const fulltext = item.dataset.fulltext || '';
         const match = title.includes(query) || fulltext.includes(query);
         item.style.display = match ? '' : 'none';
@@ -4389,7 +4389,7 @@ function addMessage(role, content, citations, generationTime, thinking, outputTo
         navigator.clipboard.writeText(text).then(() => {
             copyIcon.innerHTML = checkSvg;
             setTimeout(() => { copyIcon.innerHTML = copySvg; }, 1500);
-        });
+        }).catch(function(){});
     }
 
     if (isImageResponse) {
@@ -7504,8 +7504,10 @@ async function renderRolesManageList() {
             `</button>` +
             `<span class="manage-list-item-arrow">›</span>`;
 
-        item.querySelector('.manage-list-item-name').textContent = sp.nom;
-        item.querySelector('.manage-list-item-preview').textContent = sp.contenu.substring(0, 60) + (sp.contenu.length > 60 ? '…' : '');
+        var _mName = item.querySelector('.manage-list-item-name');
+        var _mPrev = item.querySelector('.manage-list-item-preview');
+        if (_mName) _mName.textContent = sp.nom;
+        if (_mPrev) _mPrev.textContent = sp.contenu.substring(0, 60) + (sp.contenu.length > 60 ? '…' : '');
 
         item.querySelector('.manage-list-item-share').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -7560,8 +7562,10 @@ async function renderPromptsManageList() {
             `</button>` +
             `<span class="manage-list-item-arrow">›</span>`;
 
-        item.querySelector('.manage-list-item-name').textContent = pr.nom;
-        item.querySelector('.manage-list-item-preview').textContent = pr.contenu.substring(0, 60) + (pr.contenu.length > 60 ? '…' : '');
+        var _mName2 = item.querySelector('.manage-list-item-name');
+        var _mPrev2 = item.querySelector('.manage-list-item-preview');
+        if (_mName2) _mName2.textContent = pr.nom;
+        if (_mPrev2) _mPrev2.textContent = pr.contenu.substring(0, 60) + (pr.contenu.length > 60 ? '…' : '');
 
         item.querySelector('.manage-list-item-share').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -10421,7 +10425,7 @@ shareCopyBtn.addEventListener('click', () => {
         const originalHTML = shareCopyBtn.innerHTML;
         shareCopyBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copié !';
         setTimeout(() => { shareCopyBtn.innerHTML = originalHTML; }, 2000);
-    });
+    }).catch(function(){});
 });
 
 // Boutons de thème dans le panel Apparence
@@ -11130,7 +11134,7 @@ function addCodeCopyButtons(container) {
             navigator.clipboard.writeText(text).then(() => {
                 btn.textContent = 'Copié !';
                 setTimeout(() => { btn.textContent = 'Copier'; }, 1500);
-            });
+            }).catch(function(){});
         });
         pre.appendChild(btn);
     }
