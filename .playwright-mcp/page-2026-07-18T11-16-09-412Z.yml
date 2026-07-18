@@ -1,0 +1,36 @@
+- generic [ref=f9e1]:
+  - button "Afficher le panneau" [ref=f9e2] [cursor=pointer]
+  - complementary:
+    - heading "Cetas Cetas v3.2" [level=1]:
+      - img "Cetas" [ref=f9e5]
+      - text: Cetas
+      - generic [ref=f9e6]: v3.2
+    - generic: By Marexsoft
+    - generic [ref=f9e7]:
+      - button "Marexcode" [ref=f9e8] [cursor=pointer]
+      - button "Agent Code" [ref=f9e9] [cursor=pointer]
+      - button "Plugins" [ref=f9e10] [cursor=pointer]
+      - button "Compétences" [ref=f9e11] [cursor=pointer]
+    - button "Nouvelle conversation" [ref=f9e12] [cursor=pointer]
+    - generic:
+      - generic [ref=f9e13]:
+        - generic [ref=f9e14] [cursor=pointer]: Toutes les catégories
+        - button "Gérer les catégories" [ref=f9e17] [cursor=pointer]
+      - textbox "Rechercher..." [ref=f9e21]
+    - generic:
+      - button "SA" [ref=f9e24] [cursor=pointer]
+      - button "Configuration" [ref=f9e25] [cursor=pointer]
+  - main [ref=f9e29]:
+    - generic [ref=f9e31]:
+      - img "Cetas" [ref=f9e32]
+      - paragraph [ref=f9e33]: Sélectionnez une conversation ou démarrez-en une nouvelle en saisissant votre message ci-dessous.
+    - generic [ref=f9e35]:
+      - generic [ref=f9e36]:
+        - generic [ref=f9e38]:
+          - textbox "Écrivez votre message..." [active] [ref=f9e40]
+          - generic [ref=f9e41]:
+            - button "Plus d'options" [ref=f9e43] [cursor=pointer]
+            - button "Insérer un prompt enregistré" [ref=f9e46] [cursor=pointer]
+            - button "Dicter" [ref=f9e51] [cursor=pointer]
+        - button "Réglages de la conversation" [ref=f9e55] [cursor=pointer]
+      - generic [ref=f9e59]: SamAgent N4

@@ -1,0 +1,70 @@
+- generic [ref=f45e1]:
+  - button "Afficher le panneau" [ref=f45e65] [cursor=pointer]
+  - complementary:
+    - heading "Cetas Cetas v3.2" [level=1]:
+      - img "Cetas" [ref=f45e7]
+      - text: Cetas
+      - generic [ref=f45e8]: v3.2
+    - generic: By Marexsoft
+    - generic [ref=f45e10]:
+      - button "Marexcode" [ref=f45e11] [cursor=pointer]
+      - button "Agent Code" [ref=f45e12] [cursor=pointer]
+      - button "Plugins" [ref=f45e13] [cursor=pointer]
+      - button "Compétences" [ref=f45e14] [cursor=pointer]
+    - button "Nouvelle conversation" [ref=f45e15] [cursor=pointer]
+    - generic:
+      - generic [ref=f45e17]:
+        - generic [ref=f45e18] [cursor=pointer]: Toutes les catégories
+        - button "Gérer les catégories" [ref=f45e22] [cursor=pointer]
+      - textbox "Rechercher..." [ref=f45e26]
+    - generic:
+      - button "SA" [ref=f45e66] [cursor=pointer]
+      - button "Configuration" [ref=f45e35] [cursor=pointer]
+  - main [ref=f45e39]:
+    - generic [ref=f45e41]:
+      - img "Cetas" [ref=f45e42]
+      - paragraph [ref=f45e43]: Sélectionnez une conversation ou démarrez-en une nouvelle en saisissant votre message ci-dessous.
+    - generic [ref=f45e45]:
+      - generic [ref=f45e46]:
+        - generic [ref=f45e48]:
+          - textbox "Écrivez votre message..." [active] [ref=f45e50]
+          - generic [ref=f45e51]:
+            - button "Plus d'options" [ref=f45e53] [cursor=pointer]
+            - button "Insérer un prompt enregistré" [ref=f45e68] [cursor=pointer]
+            - button "Dicter" [ref=f45e56] [cursor=pointer]
+        - button "Réglages de la conversation" [ref=f45e60] [cursor=pointer]
+      - generic [ref=f45e64]: SamAgent N4
+  - generic [ref=f45e73]:
+    - generic [ref=f45e74]:
+      - button "API et Modèles" [ref=f45e75] [cursor=pointer]
+      - button "Fonctionnalités" [ref=f45e76] [cursor=pointer]
+      - button "Budget" [ref=f45e77] [cursor=pointer]
+      - button "Apparence" [ref=f45e78] [cursor=pointer]
+      - button "Stockage" [ref=f45e79] [cursor=pointer]
+      - button "Utilisateurs" [ref=f45e80] [cursor=pointer]
+      - button "Conversation" [ref=f45e81] [cursor=pointer]
+      - button "FAQ" [ref=f45e82] [cursor=pointer]
+      - button "Statistiques" [ref=f45e83] [cursor=pointer]
+      - button "Partager" [ref=f45e84] [cursor=pointer]
+    - generic:
+      - button "×" [ref=f45e85] [cursor=pointer]
+      - generic:
+        - heading "Stockage" [level=3] [ref=f45e1836]
+        - generic [ref=f45e1838]:
+          - generic:
+            - generic [ref=f45e1839]:
+              - generic:
+                - generic [ref=f45e1840]: Espace utilisé
+                - generic [ref=f45e1841]: 0 o
+            - paragraph: Consultez la taille de chaque conversation et de ses médias, téléchargez ceux que vous voulez conserver, puis supprimez ce dont vous n'avez plus besoin pour libérer de l'espace dans votre navigateur.
+            - generic:
+              - button "0 o Conversations 0 conversation(s)" [ref=f45e1842] [cursor=pointer]:
+                - generic [ref=f45e1843]: 0 o
+                - generic [ref=f45e1849]:
+                  - generic [ref=f45e1850]: Conversations
+                  - generic [ref=f45e1851]: 0 conversation(s)
+              - button "0 o Médias 0 média(s)" [ref=f45e1855] [cursor=pointer]:
+                - generic [ref=f45e1856]: 0 o
+                - generic [ref=f45e1864]:
+                  - generic [ref=f45e1865]: Médias
+                  - generic [ref=f45e1866]: 0 média(s)
