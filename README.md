@@ -15,7 +15,7 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 - **18 providers supportés** : OpenAI, Anthropic, Google, Mistral, DeepSeek, Grok/xAI, Z.ai/GLM, Perplexity, OpenRouter, Groq, Nvidia, Cabreras + modèles locaux (Ollama, LM Studio, LlamaCpp)
 - **Génération d'images** : GPT Image, Gemini (Nano Banana)
 - **Synthèse vocale (TTS)** : OpenAI, Google, Mistral, Nvidia, synthèse système
-- **Transcription audio (STT)** : OpenAI Whisper, Google Gemini, Mistral Voxtral
+- **Transcription audio (STT)** : Navigateur natif (gratuit), OpenAI Whisper, OpenRouter Whisper, Google Gemini, Mistral Voxtral
 - **Recherche web intégrée** : Perplexity Sonar + OpenRouter
 - **Raisonnement visible** : blocks de réflexion (thinking) pour Anthropic, DeepSeek, OpenRouter
 - **Mode réflexion** : toggle pour activer/désactiver le mode reasoning
