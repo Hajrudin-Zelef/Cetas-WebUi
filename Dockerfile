@@ -16,6 +16,9 @@ COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
 # Fichiers de l'application (copiés avant minification)
 COPY . /usr/share/nginx/html
 
+# S'assurer que .env est lisible par l'utilisateur cetas (proxy)
+RUN chmod 644 /usr/share/nginx/html/.env 2>/dev/null || true
+
 # Répertoire de données (hors racine web)
 RUN mkdir -p /app/data && chown -R cetas:cetas /app/data
 
@@ -25,6 +28,17 @@ RUN terser /usr/share/nginx/html/js/ocean.js -o /usr/share/nginx/html/js/ocean.j
 RUN terser /usr/share/nginx/html/js/api.js -o /usr/share/nginx/html/js/api.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/auth.js -o /usr/share/nginx/html/js/auth.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/state.js -o /usr/share/nginx/html/js/state.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/emoji-picker.js -o /usr/share/nginx/html/js/emoji-picker.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/favorites.js -o /usr/share/nginx/html/js/favorites.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/whisper.js -o /usr/share/nginx/html/js/whisper.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/user-management.js -o /usr/share/nginx/html/js/user-management.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/web-search.js -o /usr/share/nginx/html/js/web-search.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/export-md.js -o /usr/share/nginx/html/js/export-md.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/budget.js -o /usr/share/nginx/html/js/budget.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/categories.js -o /usr/share/nginx/html/js/categories.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/roles.js -o /usr/share/nginx/html/js/roles.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/prompts.js -o /usr/share/nginx/html/js/prompts.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/export-import.js -o /usr/share/nginx/html/js/export-import.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/filemanager.js -o /usr/share/nginx/html/js/filemanager.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/faq.js -o /usr/share/nginx/html/js/faq.js -c -m --comments false
 RUN terser /usr/share/nginx/html/models.js -o /usr/share/nginx/html/models.js -c -m --comments false
