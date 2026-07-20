@@ -106,7 +106,8 @@ La documentation technique détaillée se trouve dans le fichier `PriveDoc.md`.
 ## Stack technique
 
 - **Frontend** : Vanilla JS (ES modules), CSS custom properties, HTML5 Canvas
-- **Backend proxy** : Python, AES-GCM
+- **Architecture modulaire** : `app.js` (~9,500 lignes) + 14 modules ES (categories, roles, prompts, export-import, budget, emoji-picker, export-md, favorites, user-management, web-search, whisper, state, theme, ocean...)
+- **Backend proxy** : Python, AES-GCM, JWT (PyJWT)
 - **Serveur** : Nginx alpine, Docker
 
 ## Licence
