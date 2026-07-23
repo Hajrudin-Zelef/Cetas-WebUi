@@ -1530,8 +1530,8 @@ body.canvas-active .side-panel-toolbar {
         --m-font-secondary: 0.78rem;
         --m-font-small: 0.72rem;
         --m-space-sm: 6px;
-        --m-space-md: 10px;
-        --m-space-lg: 14px;
+        --m-space-md: 8px;
+        --m-space-lg: 12px;
         --m-touch-min: 40px;
     }
 
@@ -1561,11 +1561,13 @@ body.canvas-active .side-panel-toolbar {
 
     /* --- Chat plein ecran --- */
     .main { width: 100%; }
-    .chat-container { padding: var(--m-space-md) var(--m-space-md) 80px; gap: var(--m-space-md); }
+    .chat-container { padding: var(--m-space-md) var(--m-space-md) 80px; gap: 6px; }
     body:has(#right-panel.collapsed):not(.canvas-active) .chat-container { padding-right: var(--m-space-md); }
 
     /* --- Messages --- */
     .message { max-width: 90%; padding: var(--m-space-md) var(--m-space-lg); font-size: var(--m-font-primary); }
+    .message-assistant { max-width: 100% !important; padding: var(--m-space-sm) 4px !important; }
+    .message-wrapper .message-assistant { max-width: 100%; }
     .message-wrapper .message { max-width: 90%; }
     .message-images img { max-width: 260px; max-height: 260px; }
     .message-btn-row { gap: 2px; }
@@ -9622,13 +9624,13 @@ body.dark .plus-menu-dropdown {
     align-items: center;
 }
 
-/* ── Rendu façon Gemini : listes à puces rondes, paragraphes aérés ── */
+/* ── Rendu compact façon Claude ── */
 .message-text p {
-    margin: 0 0 0.9em 0;
+    margin: 0 0 0.5em 0;
 }
 
 .message-text ul, .message-text ol {
-    margin: 0.7em 0 0.9em 0;
+    margin: 0.3em 0;
     padding-left: 1.6em;
 }
 
@@ -9638,7 +9640,7 @@ body.dark .plus-menu-dropdown {
 
 .message-text ul li {
     position: relative;
-    margin-bottom: 0.5em;
+    margin-bottom: 0.15em;
 }
 
 .message-text ul li::before {
