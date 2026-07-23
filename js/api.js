@@ -297,12 +297,35 @@ function rebuildModelLists() {
     // (quand l'utilisateur n'a encore rien sélectionné). Évite d'avoir un
     // menu "+" vide alors que le catalogue OpenRouter est dispo.
     const DEFAULT_OR_MODELS = [
+        // N4 Flash (gratuits)
+        'google/gemma-4-31b-it:free',
+        'nvidia/nemotron-3-super-120b-a12b:free',
+        'google/lyria-3-pro-preview',
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+        'poolside/laguna-s-2.1:free',
+        'inclusionai/ling-3.0-flash:free',
+        'google/gemma-4-26b-a4b-it:free',
+        'nvidia/nemotron-3-ultra-550b-a55b:free',
+        'openrouter/free',
+        'cohere/north-mini-code:free',
+        // N4 (payants)
+        'deepseek/deepseek-v4-flash',
+        'qwen/qwen3.5-flash-02-23',
+        'mistralai/mistral-small-2603',
+        'google/gemini-2.5-flash-lite',
+        'openai/gpt-5.4-nano',
+        'meta-llama/llama-4-maverick',
+        'deepseek/deepseek-v4-pro',
+        'qwen/qwen3-coder-next',
+        'xiaomi/mimo-v2.5-pro',
+        'qwen/qwen3.6-35b-a3b',
+        'qwen/qwen3-coder',
+        'deepseek/deepseek-v3.2',
+        'arcee-ai/trinity-large-thinking',
+        // Populaires
         'openrouter/auto',
         'deepseek/deepseek-chat',
-        'meta-llama/llama-4-maverick',
-        'google/gemini-2.5-flash',
         'anthropic/claude-sonnet-4.5',
-        'openai/gpt-5.4-mini'
     ];
     if (orEnabled.size === 0) {
         const textCache = getOrCache('text');
