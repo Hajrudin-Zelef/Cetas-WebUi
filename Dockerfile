@@ -44,8 +44,17 @@ RUN terser /usr/share/nginx/html/js/faq.js -o /usr/share/nginx/html/js/faq.js -c
 RUN terser /usr/share/nginx/html/models.js -o /usr/share/nginx/html/models.js -c -m --comments false
 RUN terser /usr/share/nginx/html/images/ee.js -o /usr/share/nginx/html/images/ee.js -c -m --comments false
 
-# Minifier le CSS
-RUN cleancss /usr/share/nginx/html/css/style.css -o /usr/share/nginx/html/css/style.css
+# Minifier le CSS — style.css est un point d'entrée @import, on concatène
+# dans l'ordre de cascade avant minification
+RUN cat /usr/share/nginx/html/css/variables.css \
+        /usr/share/nginx/html/css/layout.css \
+        /usr/share/nginx/html/css/chat.css \
+        /usr/share/nginx/html/css/components.css \
+        /usr/share/nginx/html/css/canvas.css \
+        /usr/share/nginx/html/css/catalog.css \
+        /usr/share/nginx/html/css/storage.css \
+        /usr/share/nginx/html/css/menu.css \
+    | cleancss -o /usr/share/nginx/html/css/style.css
 RUN cleancss /usr/share/nginx/html/css/ocean.css -o /usr/share/nginx/html/css/ocean.css
 
 # Supprimer node_modules (plus nécessaire après minification)

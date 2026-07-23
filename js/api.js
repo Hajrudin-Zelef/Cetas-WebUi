@@ -108,6 +108,17 @@ async function loadApiKeys() {
             }
             delete parsed.local;
             Object.assign(API_KEYS, parsed);
+            // Clés en clair détectées : seront chiffrées au prochain login via _vaultMigrate()
+            console.warn('⚠️ Clés API chargées depuis le stockage legacy (minou-apikeys). Elles seront migrées vers le coffre chiffré à la prochaine connexion.');
+            // Tenter un nettoyage immédiat si le coffre est disponible (ceinture + bretelles)
+            if (typeof Auth !== 'undefined' && Auth.isVaultReady()) {
+                try {
+                    const encrypted = await Auth.vaultEncrypt(stored);
+                    localStorage.setItem('cetas-vault-keys', encrypted);
+                    localStorage.removeItem('minou-apikeys');
+                    console.log('✅ Clés API migrées avec succès vers le coffre chiffré.');
+                } catch (migErr) { /* coffre non prêt, la migration aura lieu au login */ }
+            }
         }
     } catch (e) {
         console.warn('Lecture des clés API impossible (localStorage corrompu) :', e);

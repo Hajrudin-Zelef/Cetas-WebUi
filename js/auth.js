@@ -19,13 +19,64 @@ const Auth = (() => {
 
   // --- Helpers ---
 
-  /** SHA256 via Web Crypto API */
+  /** SHA256 via Web Crypto API (conservé pour rétrocompatibilité) */
   async function _sha256(text) {
     const enc = new TextEncoder();
     const data = enc.encode(text);
     const hash = await crypto.subtle.digest('SHA-256', data);
     const arr = Array.from(new Uint8Array(hash));
     return arr.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /** Hash un mot de passe avec PBKDF2 (sel aléatoire, 600k itérations).
+   *  Format stocké : "pbkdf2:iterations:salt_hex:hash_hex" */
+  async function _hashPassword(password) {
+    const enc = new TextEncoder();
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']
+    );
+    const derived = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' },
+      keyMaterial, 256
+    );
+    const hashHex = _bytesToHex(new Uint8Array(derived));
+    const saltHex = _bytesToHex(salt);
+    return 'pbkdf2:' + PBKDF2_ITER + ':' + saltHex + ':' + hashHex;
+  }
+
+  /** Vérifie un mot de passe contre un hash stocké.
+   *  Gère les deux formats :
+   *    - "pbkdf2:iter:salt:hash" (nouveau)
+   *    - "abcd1234..." 64 hex chars (ancien SHA-256)
+   *  Retourne { valid, needsUpgrade } — needsUpgrade=true si le hash
+   *  est au format SHA-256 et doit être migré vers PBKDF2. */
+  async function _verifyPassword(password, stored) {
+    if (!stored) return { valid: false, needsUpgrade: false };
+    // ── Nouveau format PBKDF2 ──
+    if (stored.startsWith('pbkdf2:')) {
+      var parts = stored.split(':');
+      if (parts.length !== 4) return { valid: false, needsUpgrade: false };
+      var iterations = parseInt(parts[1], 10);
+      var salt = _hexToBytes(parts[2]);
+      var expectedHash = parts[3];
+      var enc2 = new TextEncoder();
+      var km2 = await crypto.subtle.importKey(
+        'raw', enc2.encode(password), 'PBKDF2', false, ['deriveBits']
+      );
+      var der2 = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: salt, iterations: iterations, hash: 'SHA-256' },
+        km2, 256
+      );
+      var hashHex2 = _bytesToHex(new Uint8Array(der2));
+      return { valid: hashHex2 === expectedHash, needsUpgrade: false };
+    }
+    // ── Ancien format SHA-256 ──
+    var oldHash = await _sha256(password);
+    if (oldHash === stored) {
+      return { valid: true, needsUpgrade: true };
+    }
+    return { valid: false, needsUpgrade: false };
   }
 
   /** Lire les utilisateurs depuis localStorage */
@@ -51,9 +102,24 @@ const Auth = (() => {
       role: user.role || 'user',
       loginTime: Date.now()
     };
+    // Propager le flag must_change_password s'il existe
+    if (user.must_change_password) {
+      session.must_change_password = true;
+    }
     sessionStorage.setItem(SS_SESSION, JSON.stringify(session));
     localStorage.setItem('cetas-user', user.username);
     _currentUser = session;
+  }
+
+  /** Propage le flag must_change_password depuis localStorage vers _currentUser */
+  function _propagateFlags(username) {
+    var users = _readUsers();
+    var localUser = users.find(function(u) { return u.username === username; });
+    if (localUser && localUser.must_change_password) {
+      _currentUser.must_change_password = true;
+      // Mettre à jour la session stockée
+      sessionStorage.setItem(SS_SESSION, JSON.stringify(_currentUser));
+    }
   }
 
   /** Détruire la session */
@@ -135,17 +201,33 @@ const Auth = (() => {
 
     if (users.length > 0) return users;
 
-    // Fallback — compte admin par défaut
-    const defaultHash = await _sha256('admin');
+    // Fallback — compte admin par défaut (PBKDF2)
+    const defaultHash = await _hashPassword('admin');
     users = [{
       username: 'admin',
       email: 'admin@cetas.local',
       password_hash: defaultHash,
       role: 'admin',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      must_change_password: true   // Forcer le changement du mot de passe par défaut
     }];
     _writeUsers(users);
     return users;
+  }
+
+  /** Vérifie si l'admin a toujours le mot de passe par défaut et le marque.
+   *  Appelé après _bootstrapUsers() et au login pour détecter les comptes
+   *  non migrés. */
+  async function _flagDefaultAdminPassword() {
+    var users = _readUsers();
+    var admin = users.find(function(u) { return u.username === 'admin'; });
+    if (!admin) return;
+    // Vérifier si le mot de passe est 'admin' (SHA-256 legacy ou PBKDF2)
+    var check = await _verifyPassword('admin', admin.password_hash);
+    if (check.valid && !admin.must_change_password) {
+      admin.must_change_password = true;
+      _writeUsers(users);
+    }
   }
 
   // --- Coffre clés API (PBKDF2 + AES-256-GCM) ---
@@ -259,7 +341,12 @@ const Auth = (() => {
     // ── Init / Login / Logout ──────────────────────────────────────
 
     /** Initialise l'auth. Résout quand l'utilisateur est connecté. */
-    init: function() {
+    init: async function() {
+      // Bootstrap : s'assurer qu'il existe au moins un compte utilisateur
+      await _bootstrapUsers();
+      // Vérifier si l'admin a toujours le mot de passe par défaut
+      await _flagDefaultAdminPassword();
+
       // Restaurer token JWT ?
       var token = _getToken();
       if (token) {
@@ -372,6 +459,8 @@ const Auth = (() => {
           // Session legacy pour compatibilité
           localStorage.setItem('cetas-user', u.username);
           sessionStorage.setItem(SS_SESSION, JSON.stringify(_currentUser));
+          // Propager must_change_password depuis le compte local
+          _propagateFlags(u.username);
           await _vaultInit(password);
           return true;
         }
@@ -381,9 +470,19 @@ const Auth = (() => {
 
       // 2) Fallback localStorage (migration)
       var users = _readUsers();
-      var hash = await _sha256(password);
-      var user = users.find(function(u) { return u.username === username && u.password_hash === hash; });
+      var user = null;
+      var needsUpgrade = false;
+      for (var i = 0; i < users.length; i++) {
+        if (users[i].username !== username) continue;
+        var vr = await _verifyPassword(password, users[i].password_hash);
+        if (vr.valid) { user = users[i]; needsUpgrade = vr.needsUpgrade; break; }
+      }
       if (!user) return false;
+      // Auto-upgrade : ancien hash SHA-256 → PBKDF2
+      if (needsUpgrade) {
+        user.password_hash = await _hashPassword(password);
+        _writeUsers(users);
+      }
 
       // 3) Migrer ce compte vers le serveur
       try {
@@ -414,6 +513,7 @@ const Auth = (() => {
             };
             localStorage.setItem('cetas-user', retryData.user.username);
             sessionStorage.setItem(SS_SESSION, JSON.stringify(_currentUser));
+            _propagateFlags(retryData.user.username);
             await _vaultInit(password);
             return true;
           }
@@ -447,6 +547,12 @@ const Auth = (() => {
     isAdmin: function() {
       var u = Auth.getCurrentUser();
       return u && u.role === 'admin';
+    },
+
+    /** L'utilisateur doit-il changer son mot de passe ? */
+    needsPasswordChange: function() {
+      var u = Auth.getCurrentUser();
+      return u && u.must_change_password === true;
     },
 
     // ── Coffre API keys (inchangé) ─────────────────────────────────
@@ -507,7 +613,7 @@ const Auth = (() => {
         // Fallback localStorage
         var users = _readUsers();
         if (users.find(function(u) { return u.username === username; })) throw new Error('Cet utilisateur existe déjà.');
-        var hash = await _sha256(password);
+        var hash = await _hashPassword(password);
         users.push({username: username, email: email || '', password_hash: hash, role: role || 'user', created_at: new Date().toISOString()});
         _writeUsers(users);
         return true;
@@ -532,7 +638,7 @@ const Auth = (() => {
         if (idx === -1) throw new Error('Utilisateur introuvable.');
         if (data.email !== undefined) users[idx].email = data.email;
         if (data.role !== undefined) users[idx].role = data.role;
-        if (data.password) users[idx].password_hash = await _sha256(data.password);
+        if (data.password) users[idx].password_hash = await _hashPassword(data.password);
         _writeUsers(users);
         return true;
       }
@@ -575,9 +681,13 @@ const Auth = (() => {
         var users = _readUsers();
         var idx = users.findIndex(function(u) { return u.username === current.username; });
         if (idx === -1) throw new Error('Utilisateur introuvable.');
-        var oldHash = await _sha256(oldPassword);
-        if (users[idx].password_hash !== oldHash) throw new Error('Mot de passe actuel incorrect.');
-        users[idx].password_hash = await _sha256(newPassword);
+        var oldCheck = await _verifyPassword(oldPassword, users[idx].password_hash);
+        if (!oldCheck.valid) throw new Error('Mot de passe actuel incorrect.');
+        users[idx].password_hash = await _hashPassword(newPassword);
+        // Retirer le flag must_change_password s'il existe
+        if (users[idx].must_change_password) {
+          delete users[idx].must_change_password;
+        }
         _writeUsers(users);
         return true;
       }
