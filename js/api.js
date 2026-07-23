@@ -292,6 +292,36 @@ function rebuildModelLists() {
     if (typeof loadCachedLocalModels === 'function') loadCachedLocalModels();
     const prefs = loadCatalogPrefs();
     const orEnabled = new Set(prefs.orEnabled || []);
+
+    // Auto-enable des modèles OpenRouter populaires au premier lancement
+    // (quand l'utilisateur n'a encore rien sélectionné). Évite d'avoir un
+    // menu "+" vide alors que le catalogue OpenRouter est dispo.
+    const DEFAULT_OR_MODELS = [
+        'openrouter/auto',
+        'deepseek/deepseek-chat',
+        'meta-llama/llama-4-maverick',
+        'google/gemini-2.5-flash',
+        'anthropic/claude-sonnet-4.5',
+        'openai/gpt-5.4-mini'
+    ];
+    if (orEnabled.size === 0) {
+        const textCache = getOrCache('text');
+        const imageCache = getOrCache('image');
+        let found = false;
+        for (const id of DEFAULT_OR_MODELS) {
+            const inText = textCache?.models?.some(m => m.id === id && !m._isImage);
+            const inImage = imageCache?.models?.some(m => m.id === id);
+            if (inText || inImage) {
+                orEnabled.add(id);
+                found = true;
+            }
+        }
+        if (found) {
+            prefs.orEnabled = [...orEnabled];
+            saveCatalogPrefs(prefs);
+        }
+    }
+
     if (orEnabled.size === 0) return;
 
     const buildMeta = (m) => ({
