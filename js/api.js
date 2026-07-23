@@ -2264,8 +2264,9 @@ async function streamText(modelId, prompt, onDelta) {
                 throw new Error(`Serveur ${editeur === 'ollama' ? 'Ollama' : 'LM Studio'} injoignable. Vérifiez qu'il soit bien lancé.`);
             }
         }
-        const fetchOpts = { method: 'POST', headers: provider.getHeaders(), body: JSON.stringify(body) };
-        response = await fetch(provider.getUrl(actualModelId), fetchOpts);
+        const fetchUrl = proxyUrl(editeur, provider.getUrl(actualModelId));
+        const fetchOpts = { method: 'POST', headers: proxyHeaders(editeur, provider.getHeaders()), body: JSON.stringify(body) };
+        response = await fetch(fetchUrl, fetchOpts);
         if (!response.ok) throw new Error(`Erreur API ${editeur} : ${response.status}`);
     } catch (fetchErr) {
         // Si modèle local indisponible → tenter le modèle de secours
