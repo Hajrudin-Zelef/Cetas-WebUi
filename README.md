@@ -53,7 +53,8 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 - Synchronisation des conversations multi-appareils avec réconciliation delete
 - Chiffrement AES-256-GCM des clés au repos (coffre vault)
 - **Sécurité renforcée** : suppression auto des clés legacy en clair, plus de fallback localStorage
-- **Headers sécurité** : X-Frame-Options DENY, X-Content-Type-Options nosniff, frame-ancestors
+- **Headers sécurité** : X-Frame-Options DENY, X-Content-Type-Options nosniff
+- **Résilience** : handler global de rejetons non gérées (toast non-bloquant), fallback 4 niveaux auth
 - Suivi de coûts en temps réel, alertes budget configurables
 - Panneau de stockage : gestion des conversations et médias (taille, tri, recherche, suppression)
 
