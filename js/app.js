@@ -3249,7 +3249,7 @@ function saveConversation() {
     writeConversationFile(filename, content).then(() => {
         if (!refreshConvListItem(filename)) refreshConvList();
         checkBudgetAlert();
-    });
+    }).catch(function(e) { console.warn('saveConversation UI update failed:', e); });
     // Sync serveur (multi-appareils) — non bloquant
     if (typeof syncPushToServer === 'function') {
         syncPushToServer(filename, content).catch(function(){});
@@ -3500,12 +3500,14 @@ function addMessage(role, content, citations, generationTime, thinking, outputTo
 
                 // Clic sur le chip → ouvrir dans le file viewer
                 nameSpan.style.cursor = 'pointer';
-                nameSpan.addEventListener('click', () => {
+                nameSpan.addEventListener('click', function() {
+                    // Révoquer l'URL précédente si l'utilisateur clique plusieurs fois
+                    if (this._prevUrl) { URL.revokeObjectURL(this._prevUrl); clearTimeout(this._prevTimer); }
                     const url = makeBlobUrl();
                     if (!url) return;
+                    this._prevUrl = url;
+                    this._prevTimer = setTimeout(() => { URL.revokeObjectURL(url); this._prevUrl = null; }, 60000);
                     openFileViewer(url, file.name);
-                    // Le viewer charge l'URL synchroniquement ; on peut révoquer après un court délai.
-                    setTimeout(() => URL.revokeObjectURL(url), 60000);
                 });
 
                 // Bouton télécharger (visible au hover)

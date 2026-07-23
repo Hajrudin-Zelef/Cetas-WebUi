@@ -91,7 +91,8 @@ const Auth = (() => {
 
   /** Écrire les utilisateurs dans localStorage */
   function _writeUsers(users) {
-    localStorage.setItem(LS_USERS, JSON.stringify(users));
+    try { localStorage.setItem(LS_USERS, JSON.stringify(users)); }
+    catch (e) { console.warn('Impossible d\'écrire les utilisateurs (stockage plein ?) :', e); }
   }
 
   /** Créer une session */
@@ -343,9 +344,9 @@ const Auth = (() => {
     /** Initialise l'auth. Résout quand l'utilisateur est connecté. */
     init: async function() {
       // Bootstrap : s'assurer qu'il existe au moins un compte utilisateur
-      await _bootstrapUsers();
+      try { await _bootstrapUsers(); } catch (e) { console.warn('Bootstrap utilisateurs impossible :', e); }
       // Vérifier si l'admin a toujours le mot de passe par défaut
-      await _flagDefaultAdminPassword();
+      try { await _flagDefaultAdminPassword(); } catch (e) { /* non bloquant */ }
 
       // Restaurer token JWT ?
       var token = _getToken();
@@ -431,9 +432,11 @@ const Auth = (() => {
           loginBtn.addEventListener('click', handleLogin);
         }
 
-        passwordInput.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') handleLogin();
-        });
+        if (passwordInput) {
+          passwordInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') handleLogin();
+          });
+        }
       });
     },
 

@@ -45,6 +45,10 @@ export function initWhisper(micBtn, promptInput) {
     window.addEventListener('beforeunload', _releaseMicStream);
     window.addEventListener('pagehide', _releaseMicStream);
     // Sauvegarde des conversations avant fermeture (mobile : hard refresh tue IndexedDB)
+    // pagehide est le seul événement fiable sur iOS Safari (beforeunload ignoré)
+    window.addEventListener('pagehide', function() {
+        if (typeof flushPendingWrites === 'function') flushPendingWrites();
+    });
     window.addEventListener('beforeunload', function() {
         if (typeof flushPendingWrites === 'function') flushPendingWrites();
     });
