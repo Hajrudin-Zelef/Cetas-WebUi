@@ -1,6 +1,7 @@
 // --- Config API / Providers (script global) ---
 
 const apikeysBtn = document.getElementById('apikeys-btn');
+const apikeysModalOverlay = document.getElementById('apikeys-modal-overlay');
 
 let _modelsDirty = false;
 let _keysDirty = false;
