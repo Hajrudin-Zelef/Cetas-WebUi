@@ -290,14 +290,13 @@ function rebuildModelLists() {
     loadModels();
     // Réinjecter les modèles locaux mis en cache (loadModels a réinitialisé MODELS).
     if (typeof loadCachedLocalModels === 'function') loadCachedLocalModels();
-    const prefs = loadCatalogPrefs();
-    const orEnabled = new Set(prefs.orEnabled || []);
+    var _prefs = loadCatalogPrefs();
+    var _orEnabled = new Set(_prefs.orEnabled || []);
 
-    // Auto-enable des modèles OpenRouter populaires au premier lancement
-    // (quand l'utilisateur n'a encore rien sélectionné). Évite d'avoir un
-    // menu "+" vide alors que le catalogue OpenRouter est dispo.
-    const DEFAULT_OR_MODELS = [
-        // N4 Flash (gratuits)
+    // Modèles OpenRouter activés par défaut (pools SamAgent N4 Flash + N4).
+    // On utilise `var` + fonctions nommées pour éviter les collisions de
+    // variables avec terser qui réutilise agressivement les noms courts.
+    var _DEFAULT_OR = [
         'google/gemma-4-31b-it:free',
         'nvidia/nemotron-3-super-120b-a12b:free',
         'google/lyria-3-pro-preview',
@@ -308,7 +307,6 @@ function rebuildModelLists() {
         'nvidia/nemotron-3-ultra-550b-a55b:free',
         'openrouter/free',
         'cohere/north-mini-code:free',
-        // N4 (payants)
         'deepseek/deepseek-v4-flash',
         'qwen/qwen3.5-flash-02-23',
         'mistralai/mistral-small-2603',
@@ -322,68 +320,68 @@ function rebuildModelLists() {
         'qwen/qwen3-coder',
         'deepseek/deepseek-v3.2',
         'arcee-ai/trinity-large-thinking',
-        // Populaires
         'openrouter/auto',
         'deepseek/deepseek-chat',
         'anthropic/claude-sonnet-4.5',
     ];
-    // Toujours compléter avec les modèles par défaut manquants.
-    // N'affecte pas les modèles désactivés manuellement (ils sont dans `disabled`).
-    const textCache = getOrCache('text');
-    const imageCache = getOrCache('image');
-    let added = false;
-    for (const id of DEFAULT_OR_MODELS) {
-        if (orEnabled.has(id)) continue;
-        const inText = textCache?.models?.some(m => m.id === id && !m._isImage);
-        const inImage = imageCache?.models?.some(m => m.id === id);
-        if (inText || inImage) {
-            orEnabled.add(id);
-            added = true;
+    var _textCache = getOrCache('text');
+    var _imageCache = getOrCache('image');
+    var _added = false;
+    for (var _i = 0; _i < _DEFAULT_OR.length; _i++) {
+        var _id = _DEFAULT_OR[_i];
+        if (_orEnabled.has(_id)) continue;
+        var _inText = _textCache && _textCache.models && _textCache.models.some(function(m) { return m.id === _id && !m._isImage; });
+        var _inImage = _imageCache && _imageCache.models && _imageCache.models.some(function(m) { return m.id === _id; });
+        if (_inText || _inImage) {
+            _orEnabled.add(_id);
+            _added = true;
         }
     }
-    if (added) {
-        prefs.orEnabled = [...orEnabled];
-        saveCatalogPrefs(prefs);
+    if (_added) {
+        _prefs.orEnabled = Array.from(_orEnabled);
+        saveCatalogPrefs(_prefs);
     }
 
-    if (orEnabled.size === 0) return;
+    if (_orEnabled.size === 0) return;
 
-    const buildMeta = (m) => ({
-        id: m.id,
-        label: cleanOrModelLabel(m.label, m.id),
-        editeur: 'openrouter',
-        description: m.description || '',
-        contextLength: m.contextLength || null,
-        created: m.created || null,
-        expirationDate: m.expirationDate || null,
-        knowledgeCutoff: m.knowledgeCutoff || null,
-        inputModalities: m.inputModalities || [],
-        outputModalities: m.outputModalities || [],
-        supportedParameters: m.supportedParameters || [],
-        defaultParameters: m.defaultParameters || null
-    });
+    function _buildMeta(m) {
+        return {
+            id: m.id,
+            label: cleanOrModelLabel(m.label, m.id),
+            editeur: 'openrouter',
+            description: m.description || '',
+            contextLength: m.contextLength || null,
+            created: m.created || null,
+            expirationDate: m.expirationDate || null,
+            knowledgeCutoff: m.knowledgeCutoff || null,
+            inputModalities: m.inputModalities || [],
+            outputModalities: m.outputModalities || [],
+            supportedParameters: m.supportedParameters || [],
+            defaultParameters: m.defaultParameters || null
+        };
+    }
 
     // Cache text → MODELS (filtre _isImage par sécurité, le cache text peut contenir des modèles mixtes)
-    if (textCache?.models) {
-        for (const m of textCache.models) {
-            if (m._isImage) continue;
-            if (orEnabled.has(m.id) && !MODELS.find(x => x.id === m.id)) {
-                MODELS.push(buildMeta(m));
-                TARIFS[m.id] = { editeur: 'openrouter', inputPer1M: m.inputPer1M || 0, outputPer1M: m.outputPer1M || 0 };
+    if (_textCache && _textCache.models) {
+        for (var _j = 0; _j < _textCache.models.length; _j++) {
+            var _m = _textCache.models[_j];
+            if (_m._isImage) continue;
+            if (_orEnabled.has(_m.id) && !MODELS.find(function(x) { return x.id === _m.id; })) {
+                MODELS.push(_buildMeta(_m));
+                TARIFS[_m.id] = { editeur: 'openrouter', inputPer1M: _m.inputPer1M || 0, outputPer1M: _m.outputPer1M || 0 };
             }
         }
     }
 
-    // Cache image → IMAGE_MODELS (la fetch ?output_modalities=image garantit que tous sont images)
-    if (imageCache?.models) {
-        // Filet de sécurité : si le cache a été écrit avant enrichissement /endpoints
-        // (ou par une version antérieure sans hydratation), on relit les prix persistés.
-        const priceMap = (typeof getOrImagePrices === 'function') ? getOrImagePrices() : {};
-        for (const m of imageCache.models) {
-            if (orEnabled.has(m.id) && !IMAGE_MODELS.find(x => x.id === m.id)) {
-                IMAGE_MODELS.push(buildMeta(m));
-                const imageOutput = m.imageOutput || priceMap[m.id] || 0;
-                IMAGE_TARIFS[m.id] = { editeur: 'openrouter', inputPer1M: m.inputPer1M || 0, outputPer1M: m.outputPer1M || 0, imageOutput };
+    // Cache image → IMAGE_MODELS
+    if (_imageCache && _imageCache.models) {
+        var _priceMap = (typeof getOrImagePrices === 'function') ? getOrImagePrices() : {};
+        for (var _k = 0; _k < _imageCache.models.length; _k++) {
+            var _im = _imageCache.models[_k];
+            if (_orEnabled.has(_im.id) && !IMAGE_MODELS.find(function(x) { return x.id === _im.id; })) {
+                IMAGE_MODELS.push(_buildMeta(_im));
+                var _imgOut = _im.imageOutput || _priceMap[_im.id] || 0;
+                IMAGE_TARIFS[_im.id] = { editeur: 'openrouter', inputPer1M: _im.inputPer1M || 0, outputPer1M: _im.outputPer1M || 0, imageOutput: _imgOut };
             }
         }
     }
