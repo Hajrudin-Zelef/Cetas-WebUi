@@ -111,7 +111,7 @@ La documentation technique détaillée se trouve dans le fichier `PriveDoc.md`.
 
 - **Frontend** : Vanilla JS (ES modules), CSS custom properties (design system modulaire), HTML5 Canvas
 - **CSS modulaire** : `style.css` point d'entrée → 8 modules (@import) : variables, layout, chat, components, canvas, catalog, storage, menu
-- **Architecture modulaire** : `app.js` (~9,500 lignes) + 14 modules ES (categories, roles, prompts, export-import, budget, emoji-picker, export-md, favorites, user-management, web-search, whisper, state, theme, ocean...)
+- **Architecture modulaire** : `app.js` (~5,300 lignes) + 14 modules ES + 5 scripts globaux extraits (config-providers, conversations, right-panel, plus-menu, model-catalog)
 - **Backend proxy** : Python, AES-GCM, JWT (PyJWT)
 - **Serveur** : Nginx alpine, Docker
 
