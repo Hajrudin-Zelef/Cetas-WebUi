@@ -335,6 +335,7 @@ function rebuildModelLists() {
             }
         }
     }
+    _rebuildModelMaps();
 }
 
 function loadModels() {
