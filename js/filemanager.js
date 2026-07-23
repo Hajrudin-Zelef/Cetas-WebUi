@@ -613,6 +613,7 @@ async function _syncListKeys(db) {
 
 async function syncPullFromServer() {
     var headers = _getAuthHeaders();
+    if (!headers['Authorization']) return 0;
     try {
         var resp = await fetch('/api/conversations', { headers: headers });
         if (!resp.ok) return 0;
