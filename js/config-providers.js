@@ -104,7 +104,7 @@ function _restoreApiKeyInputs() {
     document.getElementById('apikey-llamacpp').value = API_KEYS.llamacpp || 'http://localhost:8080';
 }
 
-apikeysBtn.addEventListener('click', () => openApiKeysModal());
+apikeysBtn.addEventListener('click', function() { window.openApiKeysModal(); });
 // Auto-save : chaque champ de configuration s'enregistre automatiquement
 function initConfigAutoSave() {
     // Clés API — listeners attachés dynamiquement par _initApiModelesPanel()

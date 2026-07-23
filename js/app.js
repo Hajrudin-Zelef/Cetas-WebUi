@@ -4,6 +4,10 @@
 import { STATE, STREAM_ERROR_CONTENT, TEXT_EXTENSIONS, isStreamActive } from './state.js';
 import './dom.js';
 import { escHtml, escHtmlAttr, safeUrl, isTextFile, arrayBufferToBase64, isPdf, getModelLabel, fmtTokens, fmtCost } from './utils.js';
+
+// Exposer les utilitaires partagés aux scripts globaux (modules extraits)
+window.escHtml = escHtml;
+window.escHtmlAttr = escHtmlAttr;
 import { applyTheme, initTheme, setOnThemeChange } from './theme.js';
 import { initLightbox } from './lightbox.js';
 import { initAttachments, setAttachStateChange, cancelAllPendingLoads, renderAttachPreview, processAttachedFile } from './attachments.js';
@@ -4968,6 +4972,7 @@ function openApiKeysModal(tab = 'apimodeles') {
         modalBox.addEventListener('animationend', cleanup);
     }
 }
+window.openApiKeysModal = openApiKeysModal;
 
 function closeApiKeysModal() {
     if (apikeysModalOverlay.style.display === 'none') return;

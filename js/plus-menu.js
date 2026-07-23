@@ -1,4 +1,5 @@
 // --- Menu "+" (script global) ---
+const escHtml = window.escHtml || function(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
 const modelSelect = document.getElementById("model-select");
 function updateActiveOption(selectEl) {
     if (!selectEl._customUI) return;

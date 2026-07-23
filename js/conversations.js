@@ -1,4 +1,5 @@
 // --- Liste des conversations (script global) ---
+const convList = document.getElementById("conv-list");
 async function refreshConvList() {
     const conversations = await listConversationFiles();
     convList.innerHTML = '';
@@ -600,3 +601,5 @@ function highlightActiveConv() {
         item.classList.toggle('active', fn === expectedFn);
     }
 }
+window.refreshConvList = refreshConvList;
+window.highlightActiveConv = highlightActiveConv;
