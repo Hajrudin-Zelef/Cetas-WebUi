@@ -2038,10 +2038,10 @@ body.canvas-active .side-panel-toolbar {
 .chat-container {
     flex: 1;
     overflow-y: auto;
-    padding: 24px 12px 48px;
+    padding: 20px 12px 40px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 8px;
     touch-action: pan-y;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -2094,10 +2094,10 @@ body.canvas-active .side-panel-toolbar {
 /* Messages */
 .message {
     max-width: 100%;
-    padding: 14px 18px;
+    padding: 10px 16px;
     border-radius: 16px;
-    font-size: 1.2rem;
-    line-height: 1.8;
+    font-size: 0.95rem;
+    line-height: 1.55;
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
