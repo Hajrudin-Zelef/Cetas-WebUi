@@ -6,11 +6,14 @@
 export function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+if (typeof window !== 'undefined') { window.escHtml = escHtml; }
 
 /** Échappe une valeur pour un attribut HTML */
+
 export function escHtmlAttr(s) {
     return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+if (typeof window !== 'undefined') { window.escHtmlAttr = escHtmlAttr; }
 
 /** Bloque les schémas dangereux dans les href */
 export function safeUrl(href) {

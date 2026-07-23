@@ -860,7 +860,11 @@ function _renderOpenRouterCatalogInto(container, isImage) {
 }
 
 // Initialisation immédiate (les écouteurs des champs apikey-* sont attachés ici)
-_initApiModelesPanel();
+if (typeof window.escHtml === 'function') {
+    _initApiModelesPanel();
+} else {
+    window.addEventListener('cetas:app-ready', _initApiModelesPanel, { once: true });
+}
 
 // Onglets de la modale
 document.querySelectorAll('.apikeys-tab').forEach(tab => {

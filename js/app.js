@@ -6,8 +6,6 @@ import './dom.js';
 import { escHtml, escHtmlAttr, safeUrl, isTextFile, arrayBufferToBase64, isPdf, getModelLabel, fmtTokens, fmtCost } from './utils.js';
 
 // Exposer les utilitaires partagés aux scripts globaux (modules extraits)
-window.escHtml = escHtml;
-window.escHtmlAttr = escHtmlAttr;
 import { applyTheme, initTheme, setOnThemeChange } from './theme.js';
 import { initLightbox } from './lightbox.js';
 import { initAttachments, setAttachStateChange, cancelAllPendingLoads, renderAttachPreview, processAttachedFile } from './attachments.js';
@@ -22,6 +20,7 @@ import { initRoles, setRolesCallbacks, refreshSpList, deleteSpItem, exportSpItem
 import { initPrompts, setPromptsCallbacks, refreshPrList, openPrModal, closePrModal } from './prompts.js';
 import { initExportImport, setExportImportCallbacks, exportBackup, importBackup } from './export-import.js';
 import { initCategories, setCategoriesCallbacks, refreshCatBar, updateActiveCatColor, updateNewChatBtnColor, updateCatSelectColor, updateEmptyChatCategory, openCatModal, openCatManagePopup, renderCatManageList, selectCatColor, randomDefaultEmoji, textColorForBg } from './categories.js';
+
 
 const APP_VERSION = '3.2';
 const chatContainer = document.getElementById('chat-container');
@@ -5248,3 +5247,58 @@ if (window.Ocean && typeof window.Ocean.init === 'function') {
 
 // Pas de focus initial sur la barre de saisie
 
+// ============================================================
+// Exposition globale pour les scripts classiques (non-module) :
+// config-providers.js, conversations.js, plus-menu.js, right-panel.js, model-catalog.js
+// ============================================================
+Object.assign(window, {
+    STATE, STREAM_ERROR_CONTENT, TEXT_EXTENSIONS, isStreamActive, escHtml, escHtmlAttr,
+    safeUrl, isTextFile, arrayBufferToBase64, isPdf, getModelLabel, fmtTokens,
+    fmtCost, applyTheme, initTheme, setOnThemeChange, initLightbox, initAttachments,
+    setAttachStateChange, cancelAllPendingLoads, renderAttachPreview, processAttachedFile, initEmojiTabs, showEmojiPicker,
+    hideEmojiPicker, renderEmojiGrid, renderFavList, _isFavorite, _toggleFavorite, setFavoritesCallbacks,
+    initWhisper, setWhisperCallbacks, initUserManagement, updateWebSearchBtn, hasBuiltInWebSearch, calcWebSearchCost,
+    setWebSearchAlignCallback, initExportHandlers, updateExportMdBtn, loadBudgetSettings, toggleBudgetSettings, getCostForPeriod,
+    updateBudgetPreview, checkBudgetAlert, addCostForModel, updateBudgetAmountSuffix, initBudget, initRoles,
+    setRolesCallbacks, refreshSpList, deleteSpItem, exportSpItem, openSpModal, closeSpModal,
+    autoResizeTextarea, initPrompts, setPromptsCallbacks, refreshPrList, openPrModal, closePrModal,
+    initExportImport, setExportImportCallbacks, exportBackup, importBackup, initCategories, setCategoriesCallbacks,
+    refreshCatBar, updateActiveCatColor, updateNewChatBtnColor, updateCatSelectColor, updateEmptyChatCategory, openCatModal,
+    openCatManagePopup, renderCatManageList, selectCatColor, randomDefaultEmoji, textColorForBg, APP_VERSION,
+    chatContainer, promptInput, sendBtn, newChatBtn, tokenInfo, costInfo,
+    convList, modelSelect, spSelect, spListEl, spAddBtn, spEditBtn,
+    spDeleteBtn, rpRoleActions, spModalOverlay, spModalTitle, spModalNom, spModalContenu,
+    spModalCancel, spModalSave, themeToggle, convSearch, attachBtn, fileInput,
+    attachPreview, micBtn, enhancePromptBtn, toolbarInsertBtn, toolbarEnhanceBtn, toolbarSaveBtn,
+    chatHeaderSettings, promptPickerDropdownWrapper, promptPickerDropdown, prListEl, prAddBtn, prModalOverlay,
+    prModalTitle, prModalNom, prModalContenu, prModalCancel, prModalSave, prModalEnhance,
+    apikeysBtn, apikeysModalOverlay, shareBtn, shareMenu, summaryBtn, addModelSwitchElement,
+    addModelSwitch, sidebarToggle, sidebar, _isMobile, _updateSidebarState, _collapseSidebar,
+    mobileSendBtn, canvasToggleBtn, updateCanvasBtn, buildCanvasParserIfActive, SAMAGENT_BOOST_PROMPT, effectiveSystemPrompt,
+    _showRouterThinking, _hideRouterThinking, attachCanvasBeforeToLastAssistant, updateEnhanceBtn, _toolbarMode, _insertBtnVisible,
+    _insertBtnTargetCoords, showInsertBtn, hideInsertBtn, _applyToolbarMode, updatePromptToolbar, closeAllMenus,
+    EDITEUR_LABELS, OR_MAKER_LABELS, _modelMakerLabel, EDITEUR_ORDER, EDITEUR_ICONS, _editeurGroupHeaderHtml,
+    HIDDEN_EDITEURS, hasProviderKey, _tooltip, _MODALITY_LABELS, _PARAM_LABELS, _formatContextLength,
+    _formatModalities, _formatSupportedParams, _formatDefaultParams, _isModelNew, _isModelExpiringSoon, _formatExpirationDateFr,
+    _buildModelTooltip, upgradeToCustomSelect, hasAnyProviderKey, updateTriggerDisplay, updateActiveOption, formatImagePriceRange,
+    _formatOrImagePriceStr, _formatModelPriceString, populateCustomSelect, _buildModelsHtml, _switchTab, _applyModelSelection,
+    populateUnifiedSelect, populateModelSelect, checkApiKeyForModel, micIconDefaultSaved, micIconStopStreaming, updateSendButton,
+    inputHint, alignInputHint, _lastClickX, _lastClickY, showEmptyPlaceholder, hideEmptyPlaceholder,
+    resetConversation, _dlgOverlay, _dlgIcon, _dlgMessage, _dlgActions, _dlgOk,
+    _dlgCancel, _DIALOG_ICONS, _showDialog, customAlert, customConfirm, _isFriendlyCetasError,
+    showErrorAlert, modelAlertTimer, showMissingModelBanner, MODEL_ALERT_DEFAULT, _hideModelAlert, showModelAlert,
+    showNoModelAlert, generateConversationId, updateTokenDisplay, _rebindStreamToVisibleDOM, _mergeConvData, saveConversation,
+    getTextFromContent, _IMG_DOWNLOAD_SVG, buildImagesContainer, imageResultToContent, buildImagePrompt, collectReferenceImages,
+    addMessage, collapseThinkBlock, endStreaming, _wrapNewChars, createStreamRenderer, formatGenTime,
+    formatGenTooltip, setGenTimeOnLastAssistant, appendCitations, removeRegenBtn, addRegenBtn, startEditMessage,
+    _userHasScrolledUp, scrollToBottom, handleApiError, applyErrorStyle, rolesManageOverlay, rolesManageList,
+    rolesManageEmpty, rolesManageClose, rolesManageAdd, rolesManageImport, sidebarRolesBtn, promptsManageOverlay,
+    promptsManageList, promptsManageEmpty, promptsManageClose, promptsManageAdd, sidebarPromptsBtn, openRolesManage,
+    closeRolesManage, openPromptsManage, closePromptsManage, prImportFile, promptsManageImport, dashboardBtn,
+    saveModalOverlay, saveModalClose, saveModalExportBtn, saveModalImportBtn, dashboardContent, dashboardData,
+    _faqLoaded, _faqActiveCategory, renderFaqItems, loadFaq, shareCopyBtn, shareLinkInput,
+    updateThemeOptions, populateModelSelects, populateLocalFallback, updateLocalFallbackVisibility, openApiKeysModal, closeApiKeysModal,
+    addCodeCopyButtons,
+});
+
+window.dispatchEvent(new Event('cetas:app-ready'));

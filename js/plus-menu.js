@@ -66,6 +66,7 @@ const COMPETENCES = [
 ];
 
 function initConversationPanel() {
+    const chatHeaderSettings = document.getElementById('chat-header-settings');
     const rightPanel = document.getElementById('right-panel');
     const convPanelBody = document.getElementById('panel-conversation-body');
     if (!rightPanel || !convPanelBody) return;

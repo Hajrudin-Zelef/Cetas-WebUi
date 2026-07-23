@@ -78,6 +78,11 @@ export const CAT_PRESET_COLORS = [
 
 export const TEXT_EXTENSIONS = ['.txt', '.md', '.csv', '.json', '.xml', '.svg', '.log', '.js', '.py', '.html', '.css'];
 
+// Exposition globale pour les scripts classiques non-module (plus-menu.js, conversations.js, config-providers.js)
+if (typeof window !== 'undefined') {
+    window.STATE = STATE;
+}
+
 export function isStreamActive(streamConvId, streamHistory) {
     return streamConvId === STATE.conversationId && streamHistory === STATE.conversationHistory;
 }
