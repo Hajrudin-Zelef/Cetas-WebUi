@@ -2256,6 +2256,19 @@ function populateCustomSelect(selectEl, models, tarifFn) {
     updateTriggerDisplay(selectEl);
 }
 
+// --- Filet de sécurité : capture toutes les rejetons non gérées ---
+window.addEventListener('unhandledrejection', function(e) {
+    console.warn('[cetas] Rejeton non gérée :', e.reason);
+    // Notification discrète — non bloquante, disparaît après 4s
+    var toast = document.getElementById('update-toast') || document.getElementById('dev-toast');
+    if (toast) {
+        toast.textContent = 'Une erreur est survenue — voir console';
+        toast.style.display = '';
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(function() { toast.style.display = 'none'; }, 4000);
+    }
+});
+
 // --- Initialisation ---
 Auth.init().then(() => {
     // Stockage persistant : empêche iOS Safari de vider IndexedDB au hard refresh
