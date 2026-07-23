@@ -327,22 +327,23 @@ function rebuildModelLists() {
         'deepseek/deepseek-chat',
         'anthropic/claude-sonnet-4.5',
     ];
-    if (orEnabled.size === 0) {
-        const textCache = getOrCache('text');
-        const imageCache = getOrCache('image');
-        let found = false;
-        for (const id of DEFAULT_OR_MODELS) {
-            const inText = textCache?.models?.some(m => m.id === id && !m._isImage);
-            const inImage = imageCache?.models?.some(m => m.id === id);
-            if (inText || inImage) {
-                orEnabled.add(id);
-                found = true;
-            }
+    // Toujours compléter avec les modèles par défaut manquants.
+    // N'affecte pas les modèles désactivés manuellement (ils sont dans `disabled`).
+    const textCache = getOrCache('text');
+    const imageCache = getOrCache('image');
+    let added = false;
+    for (const id of DEFAULT_OR_MODELS) {
+        if (orEnabled.has(id)) continue;
+        const inText = textCache?.models?.some(m => m.id === id && !m._isImage);
+        const inImage = imageCache?.models?.some(m => m.id === id);
+        if (inText || inImage) {
+            orEnabled.add(id);
+            added = true;
         }
-        if (found) {
-            prefs.orEnabled = [...orEnabled];
-            saveCatalogPrefs(prefs);
-        }
+    }
+    if (added) {
+        prefs.orEnabled = [...orEnabled];
+        saveCatalogPrefs(prefs);
     }
 
     if (orEnabled.size === 0) return;
@@ -363,7 +364,6 @@ function rebuildModelLists() {
     });
 
     // Cache text → MODELS (filtre _isImage par sécurité, le cache text peut contenir des modèles mixtes)
-    const textCache = getOrCache('text');
     if (textCache?.models) {
         for (const m of textCache.models) {
             if (m._isImage) continue;
@@ -375,7 +375,6 @@ function rebuildModelLists() {
     }
 
     // Cache image → IMAGE_MODELS (la fetch ?output_modalities=image garantit que tous sont images)
-    const imageCache = getOrCache('image');
     if (imageCache?.models) {
         // Filet de sécurité : si le cache a été écrit avant enrichissement /endpoints
         // (ou par une version antérieure sans hydratation), on relit les prix persistés.
