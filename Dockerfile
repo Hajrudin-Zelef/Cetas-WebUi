@@ -40,6 +40,7 @@ RUN terser /usr/share/nginx/html/js/roles.js -o /usr/share/nginx/html/js/roles.j
 RUN terser /usr/share/nginx/html/js/prompts.js -o /usr/share/nginx/html/js/prompts.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/export-import.js -o /usr/share/nginx/html/js/export-import.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/config-providers.js -o /usr/share/nginx/html/js/config-providers.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/conversations.js -o /usr/share/nginx/html/js/conversations.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/filemanager.js -o /usr/share/nginx/html/js/filemanager.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/faq.js -o /usr/share/nginx/html/js/faq.js -c -m --comments false
 RUN terser /usr/share/nginx/html/models.js -o /usr/share/nginx/html/models.js -c -m --comments false
