@@ -2228,7 +2228,11 @@ async function maybeGenerateTitle(convIdArg, historyArg, modelHint) {
     // Utiliser le modèle configuré pour les titres, sinon le modèle de chat en cours
     // (modelHint permet aux callers en arrière-plan de fournir le modèle du stream
     // capturé, puisque les globals peuvent appartenir à une autre conversation.)
-    const modelId = AUDIO_SETTINGS.titleModel || modelHint || STATE.currentModel || STATE.currentImageModel || STATE.currentSearchModel;
+    let modelId = AUDIO_SETTINGS.titleModel || modelHint || STATE.currentModel || STATE.currentImageModel || STATE.currentSearchModel;
+    // Si le modèle n'a pas de clé API valide, chercher le 1er modèle texte dispo
+    if (modelId && !hasProviderKey(getModelEditeur(modelId))) {
+        modelId = (MODELS || []).find(m => hasProviderKey(m.editeur))?.id || null;
+    }
     if (!modelId) return;
 
     try {
