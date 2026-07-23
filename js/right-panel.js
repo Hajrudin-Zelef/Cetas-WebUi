@@ -1,4 +1,5 @@
 // --- Panneau droit + params (script global) ---
+const spSelect = document.getElementById("sp-select");
 // --- Panneau droit (Rôle) + toolbar latérale (gear + canvas) ---
 const rightPanel = document.getElementById('right-panel');
 const rightPanelToggle = document.getElementById('right-panel-toggle');

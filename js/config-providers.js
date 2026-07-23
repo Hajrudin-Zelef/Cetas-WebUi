@@ -1,5 +1,7 @@
 // --- Config API / Providers (script global) ---
 
+const apikeysBtn = document.getElementById('apikeys-btn');
+
 let _modelsDirty = false;
 let _keysDirty = false;
 let _catalogDirty = false;

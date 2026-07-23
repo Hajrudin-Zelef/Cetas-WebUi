@@ -1,4 +1,13 @@
 // --- Menu "+" (script global) ---
+const modelSelect = document.getElementById("model-select");
+function updateActiveOption(selectEl) {
+    if (!selectEl._customUI) return;
+    const { dropdown } = selectEl._customUI;
+    const val = selectEl._customValue;
+    dropdown.querySelectorAll(".custom-select-option, .custom-select-option--empty").forEach(el => {
+        el.classList.toggle("active", el.dataset.value === val);
+    });
+}
 // --- Menu "+" (Plus d'options) ---
 
 // Mapping des logos de provider (SVG dans images/)
