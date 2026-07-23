@@ -39,6 +39,9 @@ RUN terser /usr/share/nginx/html/js/categories.js -o /usr/share/nginx/html/js/ca
 RUN terser /usr/share/nginx/html/js/roles.js -o /usr/share/nginx/html/js/roles.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/prompts.js -o /usr/share/nginx/html/js/prompts.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/export-import.js -o /usr/share/nginx/html/js/export-import.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/model-catalog.js -o /usr/share/nginx/html/js/model-catalog.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/plus-menu.js -o /usr/share/nginx/html/js/plus-menu.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/right-panel.js -o /usr/share/nginx/html/js/right-panel.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/config-providers.js -o /usr/share/nginx/html/js/config-providers.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/conversations.js -o /usr/share/nginx/html/js/conversations.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/filemanager.js -o /usr/share/nginx/html/js/filemanager.js -c -m --comments false
