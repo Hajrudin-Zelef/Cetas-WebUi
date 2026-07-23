@@ -1452,10 +1452,17 @@ const PROVIDERS = {
 
 // --- 6. streamModel() — dispatcher générique ---
 
-async function streamModel(modelId, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams) {
+async function streamModel(modelId, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, fallbackModel) {
     const editeur = getModelEditeur(modelId) || getSearchModelEditeur(modelId);
     const provider = PROVIDERS[editeur];
-    if (!provider) { onError(new Error(`Éditeur inconnu pour le modèle ${modelId}`)); return; }
+    if (!provider) {
+        // Si un fallback est fourni, on le tente directement
+        if (fallbackModel && fallbackModel.model && fallbackModel.provider) {
+            console.warn('[Fallback] éditeur inconnu pour ' + modelId + ' → bascule sur ' + fallbackModel.model + ' (' + fallbackModel.provider + ')');
+            return streamModel(fallbackModel.model, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, null);
+        }
+        onError(new Error(`Éditeur inconnu pour le modèle ${modelId}`)); return;
+    }
 
     // Décharger le modèle local précédent si on change de modèle
     if (_lastLocalModel && _lastLocalModel.id !== modelId) {
@@ -1522,6 +1529,11 @@ async function streamModel(modelId, conversationHistory, onChunk, onDone, onErro
         onDone(usage, citations);
     } catch (err) {
         if (err.name === 'AbortError') { onDone(null, []); return; }
+        // Fallback : si le modèle échoue et qu'un fallback est fourni, on retry
+        if (fallbackModel && fallbackModel.model && fallbackModel.provider) {
+            console.warn('[Fallback] échec ' + modelId + ' (' + (err.message || err) + ') → bascule sur ' + fallbackModel.model + ' (' + fallbackModel.provider + ')');
+            return streamModel(fallbackModel.model, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, null);
+        }
         onError(err);
     }
 }

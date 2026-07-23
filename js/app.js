@@ -3545,6 +3545,7 @@ function startEditMessage(wrapper, msgDiv) {
 
         // ── Model Fusion Router (regen) ──────────────────────────
         var _routedBy = null;
+        var _routerFallback = null;
         if (activeTextModel && activeTextModel.indexOf('samagent-') === 0) {
             _showRouterThinking(assistantDiv);
             var _routeRegen = await routeModel(newText, activeTextModel);
@@ -3552,6 +3553,7 @@ function startEditMessage(wrapper, msgDiv) {
             _routedBy = _routeRegen.label;
             activeTextModel = _routeRegen.modelId;
             STATE._routerForceThinking = _routeRegen.thinking;
+            _routerFallback = _routeRegen._fallback || null;
         }
 
         const spContent = spTextarea.value.trim() || null;
@@ -3759,7 +3761,8 @@ function startEditMessage(wrapper, msgDiv) {
                     STATE._routerForceThinking = false;
                 }
                 return mp;
-            })()
+            })(),
+            _routerFallback
         );
     });
 }
@@ -3995,6 +3998,7 @@ async function sendMessage() {
 
     // ── Model Fusion Router ──────────────────────────────────────
     var _routedBy = null;
+    var _routerFallback = null;
     if (activeTextModel && activeTextModel.indexOf('samagent-') === 0) {
         _showRouterThinking(assistantDiv);
         var _route = await routeModel(text, activeTextModel);
@@ -4002,6 +4006,7 @@ async function sendMessage() {
         _routedBy = _route.label;
         activeTextModel = _route.modelId;
         STATE._routerForceThinking = _route.thinking;
+        _routerFallback = _route._fallback || null;
     }
 
     if (STATE.currentImageModel) {
@@ -4310,7 +4315,8 @@ async function sendMessage() {
                     STATE._routerForceThinking = false;
                 }
                 return mp;
-            })()
+            })(),
+            _routerFallback
         );
     }
 }

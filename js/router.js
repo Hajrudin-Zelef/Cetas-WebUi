@@ -1,14 +1,14 @@
 // ── Model Fusion Router ──────────────────────────────────────────────
-// Fusionne TOUS les modèles de TOUS les providers (DeepSeek, Google,
-// Groq, Nvidia, OpenRouter) avec rotation de 6+ modèles par tier/intent
-// pour éviter tout spoof et garantir diversité maximale.
+// N4 Flash : modèles OpenRouter gratuits (Rapide)
+// N4       : modèles OpenRouter payants ≤ $1.50/M (Standard)
+// Fallback : si OpenRouter échoue → DeepSeek API (deepseek-v4-flash par défaut)
 //
 // Architecture hybride :
 //   Score ≤ 70 → algorithme regex (rapide, déterministe)
 //   Score > 70 → mini-LLM (analyse sémantique fine, fallback multi-provider)
 //
 // À chaque requête, un modèle est tiré aléatoirement dans le pool
-// correspondant au tier (Nano/N4/N8) et à l'intention (chat/coder/raisonnement).
+// correspondant au tier (Nano/N4 Flash/N4/N8) et à l'intention (chat/coder/raisonnement).
 
 var ROUTER_CONFIG = {
     // ── Score 0-33 : requêtes simples, salutations, questions courtes ─
@@ -38,31 +38,58 @@ var ROUTER_CONFIG = {
             { model: 'meta-llama/llama-4-scout-17b-16e-instruct', provider: 'groq', thinking: false }
         ]
     },
-    // ── Score 34-66 : explications, analyse, code intermédiaire ─
-    n4: {
+    // ── Score 34-66 : N4 Flash (gratuit, rapide) ─
+    'n4-flash': {
         chat: [
-            { model: 'gemini-3-flash-preview',                       provider: 'google',   thinking: false },
-            { model: 'deepseek-v4-flash',                    provider: 'deepseek', thinking: false },
-            { model: 'openai/gpt-oss-120b',                  provider: 'groq',     thinking: false },
-            { model: 'mistralai/mistral-medium-3.5-128b',    provider: 'nvidia',   thinking: false },
-            { model: 'gemini-3.1-flash-lite',                provider: 'google',   thinking: false },
-            { model: 'meta/llama-3.3-70b-instruct',          provider: 'nvidia',   thinking: false }
+            { model: 'google/gemma-4-31b-it:free',                   provider: 'openrouter', thinking: false },
+            { model: 'nvidia/nemotron-3-super-120b-a12b:free',       provider: 'openrouter', thinking: false },
+            { model: 'google/lyria-3-pro-preview',                   provider: 'openrouter', thinking: false },
+            { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', provider: 'openrouter', thinking: false },
+            { model: 'poolside/laguna-s-2.1:free',                   provider: 'openrouter', thinking: false },
+            { model: 'inclusionai/ling-3.0-flash:free',              provider: 'openrouter', thinking: false }
         ],
         coder: [
-            { model: 'gemini-3-flash-preview',                       provider: 'google',   thinking: false },
-            { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: false },
-            { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
-            { model: 'nvidia/nemotron-3-super-120b-a12b',    provider: 'nvidia',   thinking: false },
-            { model: 'meta-llama/llama-4-scout-17b-16e-instruct', provider: 'groq', thinking: false },
-            { model: 'deepseek-chat',                        provider: 'deepseek', thinking: false }
+            { model: 'poolside/laguna-s-2.1:free',                   provider: 'openrouter', thinking: false },
+            { model: 'cohere/north-mini-code:free',                  provider: 'openrouter', thinking: false },
+            { model: 'google/gemma-4-26b-a4b-it:free',               provider: 'openrouter', thinking: false },
+            { model: 'nvidia/nemotron-3-ultra-550b-a55b:free',       provider: 'openrouter', thinking: false },
+            { model: 'openrouter/free',                              provider: 'openrouter', thinking: false },
+            { model: 'google/gemma-4-31b-it:free',                   provider: 'openrouter', thinking: false }
         ],
         raisonnement: [
-            { model: 'gemini-3-flash-preview',                       provider: 'google',   thinking: true  },
-            { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: true  },
-            { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
-            { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', provider: 'nvidia', thinking: true },
-            { model: 'gemini-3.1-pro-preview',                       provider: 'google',   thinking: true  },
-            { model: 'deepseek-chat',                        provider: 'deepseek', thinking: false }
+            { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', provider: 'openrouter', thinking: true },
+            { model: 'google/gemma-4-31b-it:free',                   provider: 'openrouter', thinking: false },
+            { model: 'nvidia/nemotron-3-ultra-550b-a55b:free',       provider: 'openrouter', thinking: false },
+            { model: 'google/lyria-3-pro-preview',                   provider: 'openrouter', thinking: false },
+            { model: 'google/gemma-4-26b-a4b-it:free',               provider: 'openrouter', thinking: false },
+            { model: 'nvidia/nemotron-3-super-120b-a12b:free',       provider: 'openrouter', thinking: false }
+        ]
+    },
+    // ── Score 34-66 : N4 (payant, standard) ─
+    n4: {
+        chat: [
+            { model: 'deepseek/deepseek-v4-flash',           provider: 'openrouter', thinking: false },
+            { model: 'qwen/qwen3.5-flash-02-23',             provider: 'openrouter', thinking: false },
+            { model: 'mistralai/mistral-small-2603',          provider: 'openrouter', thinking: false },
+            { model: 'google/gemini-2.5-flash-lite',          provider: 'openrouter', thinking: false },
+            { model: 'openai/gpt-5.4-nano',                  provider: 'openrouter', thinking: false },
+            { model: 'meta-llama/llama-4-maverick',           provider: 'openrouter', thinking: false }
+        ],
+        coder: [
+            { model: 'deepseek/deepseek-v4-pro',             provider: 'openrouter', thinking: false },
+            { model: 'qwen/qwen3-coder-next',                provider: 'openrouter', thinking: false },
+            { model: 'xiaomi/mimo-v2.5-pro',                 provider: 'openrouter', thinking: false },
+            { model: 'qwen/qwen3.6-35b-a3b',                 provider: 'openrouter', thinking: false },
+            { model: 'deepseek/deepseek-v4-flash',            provider: 'openrouter', thinking: false },
+            { model: 'qwen/qwen3-coder',                     provider: 'openrouter', thinking: false }
+        ],
+        raisonnement: [
+            { model: 'deepseek/deepseek-v4-pro',             provider: 'openrouter', thinking: true },
+            { model: 'qwen/qwen3.6-35b-a3b',                 provider: 'openrouter', thinking: false },
+            { model: 'nvidia/nemotron-3-super-120b-a12b',     provider: 'openrouter', thinking: false },
+            { model: 'xiaomi/mimo-v2.5-pro',                 provider: 'openrouter', thinking: true },
+            { model: 'deepseek/deepseek-v3.2',               provider: 'openrouter', thinking: false },
+            { model: 'arcee-ai/trinity-large-thinking',      provider: 'openrouter', thinking: true }
         ]
     },
     // ── Score 67-100 : code complexe, raisonnement avancé, tâches expert ─
@@ -357,7 +384,7 @@ function _pickFromPool(pool, key) {
  * Score > 70 → mini-LLM (analyse sémantique fine) avec fallback regex si indisponible
  *
  * @param {string} prompt - Le texte de la requête utilisateur
- * @param {string} samAgentModel - 'samagent-nano' | 'samagent-n4' | 'samagent-n8'
+ * @param {string} samAgentModel - 'samagent-nano' | 'samagent-n4-flash' | 'samagent-n4' | 'samagent-n8'
  * @returns {Promise<Object>} { modelId, provider, thinking, label, intent, score, routedBy }
  */
 async function routeModel(prompt, samAgentModel) {
@@ -367,6 +394,8 @@ async function routeModel(prompt, samAgentModel) {
     var tier;
     if (samAgentModel === 'samagent-nano') {
         tier = 'nano';
+    } else if (samAgentModel === 'samagent-n4-flash') {
+        tier = 'n4-flash';
     } else if (samAgentModel === 'samagent-n8') {
         tier = 'n8';
     } else {
@@ -405,9 +434,9 @@ async function routeModel(prompt, samAgentModel) {
     } catch(e) {}
 
     // Abréger le nom du provider pour l'indicateur
-    var provShort = { deepseek: 'DS', google: 'G', groq: 'GQ', nvidia: 'NV' }[route.provider] || route.provider;
+    var provShort = { deepseek: 'DS', google: 'G', groq: 'GQ', nvidia: 'NV', openrouter: 'OR' }[route.provider] || route.provider;
 
-    var tierLabel = { nano: 'Nano', n4: 'N4', n8: 'N8' }[tier];
+    var tierLabel = { nano: 'Nano', 'n4-flash': 'N4 Flash', n4: 'N4', n8: 'N8' }[tier];
 
     return {
         modelId: route.model,
@@ -416,7 +445,9 @@ async function routeModel(prompt, samAgentModel) {
         intent: intent,
         score: score,
         label: 'SamAgent ' + tierLabel + ' [' + provShort + '] → ' + realLabel,
-        routedBy: route.model
+        routedBy: route.model,
+        // Fallback DeepSeek si OpenRouter échoue
+        _fallback: route.provider === 'openrouter' ? { model: 'deepseek-v4-flash', provider: 'deepseek' } : null
     };
 }
 
