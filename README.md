@@ -42,15 +42,18 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 - **Export** : Markdown, HTML, sauvegarde JSON complète
 
 ### Administration & Sécurité
-- **Authentification serveur JWT** : scrypt (N=16384), tokens HS256, migration auto SHA-256 → scrypt
+- **Authentification serveur JWT** : scrypt (N=16384), tokens HS256
+- **Hash client-side** : PBKDF2 (600k itérations, sel 128-bit) pour le mode dégradé — upgrade auto depuis SHA-256
 - Authentification multi-utilisateurs avec rôles (user / admin), CRUD via API
+- Détection automatique du mot de passe admin par défaut — changement forcé
 - **Proxy backend** : les clés API restent côté serveur, jamais dans le navigateur
 - Protection JWT sur tous les endpoints proxy (LLM, images, TTS, transcriptions)
 - Rate limiting : 10 login/min, 5 register/min par IP
 - Synchronisation automatique des clés depuis le proxy au démarrage
 - Synchronisation des conversations multi-appareils avec réconciliation delete
 - Chiffrement AES-256-GCM des clés au repos (coffre vault)
-- **Sécurité renforcée** : plus de fallback localStorage en clair, CDN retirés (bundles locaux)
+- **Sécurité renforcée** : suppression auto des clés legacy en clair, plus de fallback localStorage
+- **Headers sécurité** : X-Frame-Options DENY, X-Content-Type-Options nosniff, frame-ancestors
 - Suivi de coûts en temps réel, alertes budget configurables
 - Panneau de stockage : gestion des conversations et médias (taille, tri, recherche, suppression)
 
@@ -105,7 +108,8 @@ La documentation technique détaillée se trouve dans le fichier `PriveDoc.md`.
 
 ## Stack technique
 
-- **Frontend** : Vanilla JS (ES modules), CSS custom properties, HTML5 Canvas
+- **Frontend** : Vanilla JS (ES modules), CSS custom properties (design system modulaire), HTML5 Canvas
+- **CSS modulaire** : `style.css` point d'entrée → 8 modules (@import) : variables, layout, chat, components, canvas, catalog, storage, menu
 - **Architecture modulaire** : `app.js` (~9,500 lignes) + 14 modules ES (categories, roles, prompts, export-import, budget, emoji-picker, export-md, favorites, user-management, web-search, whisper, state, theme, ocean...)
 - **Backend proxy** : Python, AES-GCM, JWT (PyJWT)
 - **Serveur** : Nginx alpine, Docker
