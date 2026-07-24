@@ -95,30 +95,33 @@ var ROUTER_CONFIG = {
         ]
     },
     // ── Score 67-100 : code complexe, raisonnement avancé, tâches expert ─
+    // N8 = flagship. 100% 2026 (sauf r1-0528 + qwen3-max, références).
+    // Chat : flash/rapide avec code+raison OK. Coder/Raiso : spécialistes.
+    // DeepSeek direct + OpenRouter. Fallback croisé DS↔OR.
     n8: {
         chat: [
-            { model: 'gemini-3.5-flash',                     provider: 'google',   thinking: false },
-            { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: false },
-            { model: 'openai/gpt-oss-120b',                  provider: 'groq',     thinking: false },
-            { model: 'nvidia/nemotron-3-super-120b-a12b',    provider: 'nvidia',   thinking: false },
-            { model: 'gemini-3.1-pro-preview',                       provider: 'google',   thinking: false },
-            { model: 'meta-llama/llama-4-scout-17b-16e-instruct', provider: 'groq', thinking: false }
+            { model: 'deepseek/deepseek-v4-flash',       provider: 'openrouter', thinking: false },
+            { model: 'qwen/qwen3.6-flash',               provider: 'openrouter', thinking: false },
+            { model: 'stepfun/step-3.7-flash',            provider: 'openrouter', thinking: false },
+            { model: 'tencent/hy3',                       provider: 'openrouter', thinking: false },
+            { model: 'minimax/minimax-m2.5',              provider: 'openrouter', thinking: false },
+            { model: 'minimax/minimax-m3',                provider: 'openrouter', thinking: false }
         ],
         coder: [
-            { model: 'gemini-3.5-flash',                     provider: 'google',   thinking: false },
-            { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: false },
-            { model: 'nvidia/nemotron-3-super-120b-a12b',    provider: 'nvidia',   thinking: false },
-            { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
-            { model: 'gemini-3.1-pro-preview',                       provider: 'google',   thinking: false },
-            { model: 'openai/gpt-oss-120b',                  provider: 'groq',     thinking: false }
+            { model: 'deepseek-v4-pro',                   provider: 'deepseek',   thinking: false },
+            { model: 'kwaipilot/kat-coder-air-v2.5',      provider: 'openrouter', thinking: false },
+            { model: 'kwaipilot/kat-coder-pro-v2',        provider: 'openrouter', thinking: false },
+            { model: 'qwen/qwen3.7-plus',                 provider: 'openrouter', thinking: false },
+            { model: 'qwen/qwen3-max',                    provider: 'openrouter', thinking: false },
+            { model: 'meituan/longcat-2.0',               provider: 'openrouter', thinking: false }
         ],
         raisonnement: [
-            { model: 'gemini-3.5-flash',                     provider: 'google',   thinking: true  },
-            { model: 'deepseek-v4-pro',                      provider: 'deepseek', thinking: true  },
-            { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', provider: 'nvidia', thinking: true },
-            { model: 'gemini-3.1-pro-preview',                       provider: 'google',   thinking: true  },
-            { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
-            { model: 'z-ai/glm-5.2',                         provider: 'nvidia',   thinking: false }
+            { model: 'deepseek-v4-pro',                   provider: 'deepseek',   thinking: true  },
+            { model: 'deepseek/deepseek-r1-0528',         provider: 'openrouter', thinking: true  },
+            { model: 'qwen/qwen3-max-thinking',           provider: 'openrouter', thinking: true  },
+            { model: 'inception/mercury-2',               provider: 'openrouter', thinking: true  },
+            { model: 'arcee-ai/trinity-large-thinking',   provider: 'openrouter', thinking: true  },
+            { model: 'nvidia/nemotron-3-ultra-550b-a55b', provider: 'openrouter', thinking: false }
         ]
     }
 };
@@ -440,18 +443,39 @@ async function routeModel(prompt, samAgentModel) {
 
     var tierLabel = { nano: 'Nano', 'n4-flash': 'N4 Flash', n4: 'N4', n8: 'N8' }[tier];
 
+    // Pool DeepSeek pour fallback — un modèle aléatoire à chaque fois
+    // pour éviter de saturer un seul endpoint si tous les OR fail.
+    var DS_FALLBACK = [
+        { model: 'deepseek-v4-pro',  provider: 'deepseek' },
+        { model: 'deepseek-v4-flash', provider: 'deepseek' },
+        { model: 'deepseek-chat',    provider: 'deepseek' }
+    ];
+
     // Fallback cross-provider : si le modèle primaire échoue, on bascule
-    // sur un autre provider du même pool. Nano = Groq/Nvidia/Google,
-    // N4/N4-Flash = OpenRouter → DeepSeek si OR down.
+    // sur un autre provider du même pool.
+    // Nano = Groq/Nvidia/Google → autre provider du pool.
+    // N8   = DeepSeek↔OpenRouter croisé (si DS down → OR, si OR down → DS random).
+    // N4/N4-Flash = OpenRouter → DeepSeek random si OR down.
     var _fallback = null;
+    var _dsRandom = DS_FALLBACK[Math.floor(Math.random() * DS_FALLBACK.length)];
     if (tier === 'nano') {
         var _altModels = pool[intent].filter(function(m) { return m.provider !== route.provider; });
         if (_altModels.length > 0) {
             var _alt = _altModels[Math.floor(Math.random() * _altModels.length)];
             _fallback = { model: _alt.model, provider: _alt.provider };
         }
+    } else if (tier === 'n8') {
+        if (route.provider === 'openrouter') {
+            _fallback = _dsRandom;
+        } else if (route.provider === 'deepseek') {
+            var _orModels = pool[intent].filter(function(m) { return m.provider === 'openrouter'; });
+            if (_orModels.length > 0) {
+                var _orAlt = _orModels[Math.floor(Math.random() * _orModels.length)];
+                _fallback = { model: _orAlt.model, provider: 'openrouter' };
+            }
+        }
     } else if (route.provider === 'openrouter') {
-        _fallback = { model: 'deepseek-v4-flash', provider: 'deepseek' };
+        _fallback = _dsRandom;
     }
 
     return {
