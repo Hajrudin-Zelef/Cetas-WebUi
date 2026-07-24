@@ -13,7 +13,7 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 ## Fonctionnalités
 
 ### Chat & Modèles
-- **SamAgent** — routeur intelligent multi-modèles : fusionne automatiquement les modèles de 5+ providers (DeepSeek, Google, Groq, Nvidia, OpenRouter) avec fallback automatique et rotation de modèles
+- **SamAgent v3.6** — routeur intelligent 4 tiers (Nano/N4 Flash/N4/N8) : fusionne automatiquement les modèles de 5+ providers avec fallback 3 niveaux et stabilité 99.9%
 - **18 providers supportés** : OpenAI, Anthropic, Google, Mistral, DeepSeek, Grok/xAI, Z.ai/GLM, Perplexity, OpenRouter, Groq, Nvidia, Cabreras + modèles locaux (Ollama, LM Studio, LlamaCpp)
 - **Génération d'images** : GPT Image, Gemini (Nano Banana)
 - **Synthèse vocale (TTS)** : OpenAI, Google, Mistral, Nvidia, synthèse système
@@ -49,6 +49,7 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 - Authentification multi-utilisateurs avec rôles (user / admin), CRUD via API
 - Détection automatique du mot de passe admin par défaut — changement forcé
 - **Proxy backend** : les clés API restent côté serveur, jamais dans le navigateur
+- **Worker Cloudflare** : backup anti-SPOF avec bascule automatique si le proxy est down
 - Protection JWT sur tous les endpoints proxy (LLM, images, TTS, transcriptions)
 - Rate limiting : 10 login/min, 5 register/min par IP
 - Synchronisation automatique des clés depuis le proxy au démarrage
