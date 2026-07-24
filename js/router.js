@@ -12,30 +12,32 @@
 
 var ROUTER_CONFIG = {
     // ── Score 0-33 : requêtes simples, salutations, questions courtes ─
+    // Nano = ultra-rapide. Groq + Nvidia + Google uniquement. Pas de DeepSeek.
+    // Chaque intent a 2 modèles par provider → fallback cross-provider natif.
     nano: {
         chat: [
-            { model: 'deepseek-chat',                        provider: 'deepseek', thinking: false },
-            { model: 'llama-3.1-8b-instant',                 provider: 'groq',     thinking: false },
-            { model: 'gemini-3.1-flash-lite',                provider: 'google',   thinking: false },
-            { model: 'stepfun-ai/step-3.7-flash',            provider: 'nvidia',   thinking: false },
-            { model: 'qwen/qwen3-32b',                       provider: 'groq',     thinking: false },
-            { model: 'gemini-2.5-flash',                     provider: 'google',   thinking: false }
+            { model: 'llama-3.1-8b-instant',                 provider: 'groq',   thinking: false },
+            { model: 'qwen/qwen3-32b',                       provider: 'groq',   thinking: false },
+            { model: 'stepfun-ai/step-3.7-flash',            provider: 'nvidia', thinking: false },
+            { model: 'nvidia/nemotron-3-nano-30b-a3b',       provider: 'nvidia', thinking: false },
+            { model: 'gemini-3.1-flash-lite',                provider: 'google', thinking: false },
+            { model: 'gemini-2.5-flash',                     provider: 'google', thinking: false }
         ],
         coder: [
-            { model: 'deepseek-chat',                        provider: 'deepseek', thinking: false },
-            { model: 'qwen/qwen3-32b',                       provider: 'groq',     thinking: false },
-            { model: 'gemini-2.5-flash',                     provider: 'google',   thinking: false },
-            { model: 'z-ai/glm-5.2',                         provider: 'nvidia',   thinking: false },
-            { model: 'openai/gpt-oss-20b',                   provider: 'groq',     thinking: false },
-            { model: 'deepseek-v4-flash',                    provider: 'deepseek', thinking: false }
+            { model: 'openai/gpt-oss-20b',                   provider: 'groq',   thinking: false },
+            { model: 'qwen/qwen3-32b',                       provider: 'groq',   thinking: false },
+            { model: 'stepfun-ai/step-3.7-flash',            provider: 'nvidia', thinking: false },
+            { model: 'nvidia/nemotron-3-nano-30b-a3b',       provider: 'nvidia', thinking: false },
+            { model: 'gemma-4-26b-a4b-it',                   provider: 'google', thinking: false },
+            { model: 'gemini-2.5-flash',                     provider: 'google', thinking: false }
         ],
         raisonnement: [
-            { model: 'gemini-2.5-flash',                     provider: 'google',   thinking: false },
-            { model: 'deepseek-chat',                        provider: 'deepseek', thinking: false },
-            { model: 'qwen/qwen3.6-27b',                     provider: 'groq',     thinking: false },
-            { model: 'google/gemma-4-31b-it',                provider: 'nvidia',   thinking: false },
-            { model: 'gemini-3.1-flash-lite',                provider: 'google',   thinking: false },
-            { model: 'meta-llama/llama-4-scout-17b-16e-instruct', provider: 'groq', thinking: false }
+            { model: 'qwen/qwen3.6-27b',                     provider: 'groq',   thinking: false },
+            { model: 'meta-llama/llama-4-scout-17b-16e-instruct', provider: 'groq', thinking: false },
+            { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', provider: 'nvidia', thinking: true },
+            { model: 'google/gemma-4-31b-it',                provider: 'nvidia', thinking: false },
+            { model: 'gemini-2.5-flash',                     provider: 'google', thinking: false },
+            { model: 'gemini-3.1-flash-lite',                provider: 'google', thinking: false }
         ]
     },
     // ── Score 34-66 : N4 Flash (gratuit, rapide) ─
@@ -438,6 +440,20 @@ async function routeModel(prompt, samAgentModel) {
 
     var tierLabel = { nano: 'Nano', 'n4-flash': 'N4 Flash', n4: 'N4', n8: 'N8' }[tier];
 
+    // Fallback cross-provider : si le modèle primaire échoue, on bascule
+    // sur un autre provider du même pool. Nano = Groq/Nvidia/Google,
+    // N4/N4-Flash = OpenRouter → DeepSeek si OR down.
+    var _fallback = null;
+    if (tier === 'nano') {
+        var _altModels = pool[intent].filter(function(m) { return m.provider !== route.provider; });
+        if (_altModels.length > 0) {
+            var _alt = _altModels[Math.floor(Math.random() * _altModels.length)];
+            _fallback = { model: _alt.model, provider: _alt.provider };
+        }
+    } else if (route.provider === 'openrouter') {
+        _fallback = { model: 'deepseek-v4-flash', provider: 'deepseek' };
+    }
+
     return {
         modelId: route.model,
         provider: route.provider,
@@ -446,8 +462,7 @@ async function routeModel(prompt, samAgentModel) {
         score: score,
         label: 'SamAgent ' + tierLabel + ' [' + provShort + '] → ' + realLabel,
         routedBy: route.model,
-        // Fallback DeepSeek si OpenRouter échoue
-        _fallback: route.provider === 'openrouter' ? { model: 'deepseek-v4-flash', provider: 'deepseek' } : null
+        _fallback: _fallback
     };
 }
 

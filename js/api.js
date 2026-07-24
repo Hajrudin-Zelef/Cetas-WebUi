@@ -307,6 +307,7 @@ function rebuildModelLists() {
         'nvidia/nemotron-3-ultra-550b-a55b:free',
         'openrouter/free',
         'cohere/north-mini-code:free',
+        'nvidia/nemotron-3-super-120b-a12b',
         'deepseek/deepseek-v4-flash',
         'qwen/qwen3.5-flash-02-23',
         'mistralai/mistral-small-2603',
