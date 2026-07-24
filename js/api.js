@@ -28,31 +28,77 @@ function isLocalEditeur(editeur) {
 }
 
 // Préfixe du proxy backend (les providers cloud passent par /api/proxy/{provider}/...)
-const PROXY_BASE = '/api/proxy';
+const PROXY_PRIMARY = '/api/proxy';
+const PROXY_WORKER = 'https://cetas-backup.angeoulai2015.workers.dev/api/proxy';
+const PROXY_WORKER_TOKEN = 'aa7217a90bcf2a786d80720b4355d70e3fdca07c758dc7ea2d49ec96f619ee88';
+const PROXY_RETRY_MS = 30000; // retest le primary toutes les 30s
 
-// Route une URL provider vers le proxy si c'est un provider cloud.
+// État du proxy — bascule automatique primary ↔ worker
+var _proxyDown = false;
+var _proxyDownSince = 0;
+
+// Route une URL provider vers le proxy primaire ou le worker Cloudflare.
 // Les providers locaux (ollama, lmstudio, llamacpp) gardent leurs URLs directes.
 function proxyUrl(provider, url) {
     if (isLocalEditeur(provider)) return url;
     const parsed = new URL(url);
-    return `${PROXY_BASE}/${provider}${parsed.pathname}${parsed.search}`;
+    const base = _proxyDown ? PROXY_WORKER : PROXY_PRIMARY;
+    return `${base}/${provider}${parsed.pathname}${parsed.search}`;
 }
 
-// Nettoie les headers avant envoi au proxy (supprime les clés d'auth que le proxy injectera)
-// Ajoute le JWT utilisateur pour authentification proxy
+// Nettoie les headers avant envoi au proxy (supprime les clés d'auth que le proxy injectera).
+// Proxy primaire : injecte le JWT utilisateur.
+// Worker : injecte le token partagé (pas de JWT — le worker ne fait pas d'auth).
 function proxyHeaders(provider, headers) {
     if (isLocalEditeur(provider)) return headers;
     const h = Object.assign({}, headers);
     delete h['Authorization'];
     delete h['x-api-key'];
     delete h['anthropic-dangerous-direct-browser-access'];
-    // Injecter le JWT utilisateur (auth proxy)
-    if (typeof Auth !== 'undefined' && Auth.getToken) {
-        const token = Auth.getToken();
-        if (token) h['Authorization'] = 'Bearer ' + token;
+    if (_proxyDown) {
+        h['x-cetas-token'] = PROXY_WORKER_TOKEN;
+    } else {
+        // Injecter le JWT utilisateur (auth proxy primaire)
+        if (typeof Auth !== 'undefined' && Auth.getToken) {
+            const token = Auth.getToken();
+            if (token) h['Authorization'] = 'Bearer ' + token;
+        }
     }
     return h;
 }
+
+// Détecte si le proxy primaire est down. Appelé périodiquement.
+// L'utilisateur ne voit rien — le worker prend le relais automatiquement.
+async function _checkProxyHealth() {
+    if (!_proxyDown) {
+        // Vérification proactive : ping le primary toutes les 30s
+        try {
+            const resp = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
+            if (!resp.ok) throw new Error('unhealthy');
+        } catch (e) {
+            console.warn('[Proxy] primaire injoignable → bascule sur worker');
+            _proxyDown = true;
+            _proxyDownSince = Date.now();
+        }
+    } else {
+        // Primary est down → on reteste
+        if (Date.now() - _proxyDownSince >= PROXY_RETRY_MS) {
+            try {
+                const resp = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
+                if (resp.ok) {
+                    console.log('[Proxy] primaire restauré');
+                    _proxyDown = false;
+                }
+            } catch (e) {
+                _proxyDownSince = Date.now(); // reset timer, on réessaiera dans 30s
+            }
+        }
+    }
+}
+
+// Ping initial au chargement, puis toutes les 30 secondes
+_checkProxyHealth();
+setInterval(_checkProxyHealth, PROXY_RETRY_MS);
 
 let MODELS = [];
 let SEARCH_MODELS = [];
