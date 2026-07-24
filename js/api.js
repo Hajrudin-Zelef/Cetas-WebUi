@@ -1495,7 +1495,7 @@ async function streamModel(modelId, conversationHistory, onChunk, onDone, onErro
         // Si un fallback est fourni, on le tente directement
         if (fallbackModel && fallbackModel.model && fallbackModel.provider) {
             console.warn('[Fallback] éditeur inconnu pour ' + modelId + ' → bascule sur ' + fallbackModel.model + ' (' + fallbackModel.provider + ')');
-            return streamModel(fallbackModel.model, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, null);
+            return streamModel(fallbackModel.model, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, fallbackModel._nextFallback || null);
         }
         onError(new Error(`Éditeur inconnu pour le modèle ${modelId}`)); return;
     }
@@ -1568,7 +1568,7 @@ async function streamModel(modelId, conversationHistory, onChunk, onDone, onErro
         // Fallback : si le modèle échoue et qu'un fallback est fourni, on retry
         if (fallbackModel && fallbackModel.model && fallbackModel.provider) {
             console.warn('[Fallback] échec ' + modelId + ' (' + (err.message || err) + ') → bascule sur ' + fallbackModel.model + ' (' + fallbackModel.provider + ')');
-            return streamModel(fallbackModel.model, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, null);
+            return streamModel(fallbackModel.model, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, fallbackModel._nextFallback || null);
         }
         onError(err);
     }

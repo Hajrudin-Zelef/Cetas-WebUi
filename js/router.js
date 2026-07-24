@@ -127,14 +127,11 @@ var ROUTER_CONFIG = {
 };
 
 // ── Router LLM Pool ──────────────────────────────────────────────────
-// Un modèle par provider pour fallback automatique.
-// Si l'un est down, le suivant prend le relais — Cetas ne bloque jamais.
-// C'est l'identité même de SamAgent : Model Fusion sans point de défaillance unique.
+// 2 routeurs seulement : DeepSeek (crédits dispo) + Google (gratuit).
+// Timeout 5s par tentative → max 10s, puis fallback regex.
+// Si les 2 échouent → _pickFromPool (rotation aléatoire).
 var ROUTER_LLM_POOL = [
     { model: 'deepseek-chat',                       provider: 'deepseek',   label: 'DeepSeek V3.2',           type: 'openai',  path: '/v1/chat/completions' },
-    { model: 'llama-3.1-8b-instant',                provider: 'groq',       label: 'Llama 3.1 8B (Groq)',     type: 'openai',  path: '/openai/v1/chat/completions' },
-    { model: 'nvidia/nemotron-3-nano-30b-a3b',      provider: 'nvidia',     label: 'Nemotron Nano 30B (NV)',  type: 'openai',  path: '/v1/chat/completions' },
-    { model: 'google/gemini-2.5-flash-lite',        provider: 'openrouter', label: 'Gemini Flash Lite (OR)',  type: 'openai',  path: '/api/v1/chat/completions' },
     { model: 'gemini-3.1-flash-lite',               provider: 'google',     label: 'Gemini 3.1 Flash Lite (G)', type: 'google', path: '/v1beta/models/gemini-3.1-flash-lite:generateContent' }
 ];
 
@@ -272,7 +269,8 @@ async function _fetchRouterLLM(routerModel, userMessage) {
     var resp = await fetch(proxyPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(5000)
     });
 
     if (!resp.ok) {
@@ -378,7 +376,7 @@ function scoreComplexity(prompt) {
  * @param {string} key - Clé unique tier+intent pour le compteur
  * @returns {Object} L'entrée sélectionnée
  */
-function _pickFromPool(pool, key) {
+function _pickFromPool(pool) {
     var idx = Math.floor(Math.random() * pool.length);
     return pool[idx];
 }
@@ -413,7 +411,8 @@ async function routeModel(prompt, samAgentModel) {
     var route;
 
     // ── Score > 70 → Router LLM (analyse sémantique fine) ──
-    if (score > 70) {
+    // Sauter pour Nano : score toujours ≤33, perdre 5s pour rien.
+    if (score > 70 && tier !== 'nano') {
         console.log('[Router] score=' + score + ' > 70 → LLM router activé (intent=' + intent + ', tier=' + tier + ')');
         try {
             route = await callRouterLLM(prompt, pool[intent]);
@@ -425,7 +424,7 @@ async function routeModel(prompt, samAgentModel) {
 
     // Fallback : algo regex si score ≤ 70 ou si LLM router a échoué
     if (!route) {
-        route = _pickFromPool(pool[intent], tier + '_' + intent);
+        route = _pickFromPool(pool[intent]);
     }
 
     // Résoudre le label du modèle réel
@@ -443,39 +442,63 @@ async function routeModel(prompt, samAgentModel) {
 
     var tierLabel = { nano: 'Nano', 'n4-flash': 'N4 Flash', n4: 'N4', n8: 'N8' }[tier];
 
-    // Pool DeepSeek pour fallback — un modèle aléatoire à chaque fois
-    // pour éviter de saturer un seul endpoint si tous les OR fail.
+    // Fallback 3 niveaux (primary → fallback → _nextFallback → error).
+    // streamModel propage _nextFallback dans ses appels récursifs.
+    // Chaque niveau est un provider différent → aucun point de défaillance unique.
+    //
+    // Pool DeepSeek pour fallback — rotation aléatoire à chaque appel.
     var DS_FALLBACK = [
         { model: 'deepseek-v4-pro',  provider: 'deepseek' },
         { model: 'deepseek-v4-flash', provider: 'deepseek' },
         { model: 'deepseek-chat',    provider: 'deepseek' }
     ];
 
-    // Fallback cross-provider : si le modèle primaire échoue, on bascule
-    // sur un autre provider du même pool.
-    // Nano = Groq/Nvidia/Google → autre provider du pool.
-    // N8   = DeepSeek↔OpenRouter croisé (si DS down → OR, si OR down → DS random).
-    // N4/N4-Flash = OpenRouter → DeepSeek random si OR down.
     var _fallback = null;
-    var _dsRandom = DS_FALLBACK[Math.floor(Math.random() * DS_FALLBACK.length)];
+    var _ds1 = DS_FALLBACK[Math.floor(Math.random() * DS_FALLBACK.length)];
+    var _dsRest = DS_FALLBACK.filter(function(ds) { return ds.model !== _ds1.model; });
+    var _ds2 = _dsRest[Math.floor(Math.random() * _dsRest.length)];
+
     if (tier === 'nano') {
-        var _altModels = pool[intent].filter(function(m) { return m.provider !== route.provider; });
-        if (_altModels.length > 0) {
-            var _alt = _altModels[Math.floor(Math.random() * _altModels.length)];
-            _fallback = { model: _alt.model, provider: _alt.provider };
+        // Nano: 3 providers (Groq/Nvidia/Google) → chaîne cross-provider
+        //   primary = P1 → fallback = P2 → _nextFallback = P3
+        var _provs = ['groq', 'nvidia', 'google'];
+        var _fbProvs = _provs.filter(function(p) { return p !== route.provider; });
+        // shuffle simple pour varier l'ordre des fallbacks
+        if (Math.random() > 0.5) _fbProvs.reverse();
+
+        var _fb1Pool = pool[intent].filter(function(m) { return m.provider === _fbProvs[0]; });
+        var _fb2Pool = pool[intent].filter(function(m) { return m.provider === _fbProvs[1]; });
+
+        if (_fb1Pool.length > 0) {
+            var _fb1 = _fb1Pool[Math.floor(Math.random() * _fb1Pool.length)];
+            _fallback = { model: _fb1.model, provider: _fb1.provider };
+            if (_fb2Pool.length > 0) {
+                var _fb2 = _fb2Pool[Math.floor(Math.random() * _fb2Pool.length)];
+                _fallback._nextFallback = { model: _fb2.model, provider: _fb2.provider };
+            }
         }
     } else if (tier === 'n8') {
+        // N8: DeepSeek↔OpenRouter croisé, 3 niveaux
+        //   primary OR → fallback DS → _nextFallback autre OR du pool
+        //   primary DS → fallback OR → _nextFallback autre DS
         if (route.provider === 'openrouter') {
-            _fallback = _dsRandom;
-        } else if (route.provider === 'deepseek') {
-            var _orModels = pool[intent].filter(function(m) { return m.provider === 'openrouter'; });
-            if (_orModels.length > 0) {
-                var _orAlt = _orModels[Math.floor(Math.random() * _orModels.length)];
-                _fallback = { model: _orAlt.model, provider: 'openrouter' };
+            _fallback = _ds1;
+            var _orFb2 = pool[intent].filter(function(m) { return m.provider === 'openrouter' && m.model !== route.model; });
+            if (_orFb2.length > 0) {
+                _fallback._nextFallback = { model: _orFb2[Math.floor(Math.random() * _orFb2.length)].model, provider: 'openrouter' };
+            }
+        } else {
+            // provider === 'deepseek'
+            var _orFb = pool[intent].filter(function(m) { return m.provider === 'openrouter'; });
+            if (_orFb.length > 0) {
+                _fallback = { model: _orFb[Math.floor(Math.random() * _orFb.length)].model, provider: 'openrouter' };
+                _fallback._nextFallback = _ds1;
             }
         }
     } else if (route.provider === 'openrouter') {
-        _fallback = _dsRandom;
+        // N4/N4-Flash: OR → DS random → autre DS random
+        _fallback = _ds1;
+        _fallback._nextFallback = _ds2;
     }
 
     return {
