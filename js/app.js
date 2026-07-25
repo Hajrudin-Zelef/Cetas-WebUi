@@ -2930,46 +2930,44 @@ function _samAgentMakeClickable(el) {
     const model = STATE.currentModel || '';
     if (model.indexOf('samagent-') !== 0) return;
     const allP = el.querySelectorAll('p');
-    // Domaines à détecter (insensible à la casse, présence dans le texte)
     const domains = [
         { keys: ['chat général', 'chat general'], label: '💬 Chat général' },
         { keys: ['coder'],                   label: '💻 Coder' },
         { keys: ['avancé', 'avance'],        label: '🔬 Avancé' }
     ];
-    let found = false;
-    for (const p of allP) {
-        const txt = p.textContent.trim().toLowerCase();
-        // Ignorer les lignes trop longues (probablement pas une proposition)
-        if (txt.length > 120) continue;
-        let match = null;
-        for (const d of domains) {
-            for (const k of d.keys) {
-                if (txt.indexOf(k) !== -1) { match = d; break; }
-            }
-            if (match) break;
-        }
-        if (match) {
-            found = true;
-            p.classList.add('samagent-proposal');
-            p.style.cssText = 'cursor:pointer;padding:8px 12px;margin:4px 0;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);transition:background 0.15s,border-color 0.15s';
-            p.addEventListener('mouseenter', () => { p.style.background = 'var(--bg-hover)'; p.style.borderColor = 'var(--accent)'; });
-            p.addEventListener('mouseleave', () => { p.style.background = 'var(--bg-input)'; p.style.borderColor = 'var(--border-input)'; });
-            const label = match.label;
-            p.addEventListener('click', () => {
-                el.querySelectorAll('.samagent-proposal').forEach(b => {
-                    b.style.pointerEvents = 'none';
-                    b.style.opacity = '0.5';
-                });
-                const promptInput = document.getElementById('prompt-input');
-                const sendBtn = document.getElementById('send-btn');
-                if (promptInput && sendBtn && !sendBtn.disabled) {
-                    promptInput.value = label;
-                    sendBtn.click();
-                }
+    // Vérifier qu'au moins un domaine est mentionné dans la réponse
+    const fullText = (el.textContent || '').toLowerCase();
+    const mentioned = domains.filter(d => d.keys.some(k => fullText.indexOf(k) !== -1));
+    if (mentioned.length === 0) return;
+    if (el.querySelector('.samagent-proposals-rendered')) return;
+    el.querySelector('.msg-text')?.classList.add('samagent-proposals-rendered');
+
+    // Ajouter 3 boutons fixes en bas du message
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'samagent-buttons';
+    btnContainer.style.cssText = 'margin-top:8px;display:flex;flex-direction:column;gap:4px';
+    for (const d of domains) {
+        const btn = document.createElement('div');
+        btn.textContent = d.label;
+        btn.style.cssText = 'cursor:pointer;padding:8px 12px;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);font-size:0.9rem;transition:background 0.15s,border-color 0.15s';
+        btn.addEventListener('mouseenter', () => { btn.style.background = 'var(--bg-hover)'; btn.style.borderColor = 'var(--accent)'; });
+        btn.addEventListener('mouseleave', () => { btn.style.background = 'var(--bg-input)'; btn.style.borderColor = 'var(--border-input)'; });
+        btn.addEventListener('click', () => {
+            btnContainer.querySelectorAll('div').forEach(b => {
+                b.style.pointerEvents = 'none';
+                b.style.opacity = '0.5';
             });
-        }
+            const promptInput = document.getElementById('prompt-input');
+            const sendBtn = document.getElementById('send-btn');
+            if (promptInput && sendBtn && !sendBtn.disabled) {
+                promptInput.value = d.label;
+                sendBtn.click();
+            }
+        });
+        btnContainer.appendChild(btn);
     }
-    if (found) el.querySelector('.msg-text')?.classList.add('samagent-proposals-rendered');
+    const textEl = el.querySelector('.msg-text');
+    if (textEl) textEl.appendChild(btnContainer);
 }
 
 // --- Streaming animé : typewriter + expansion douce ---
