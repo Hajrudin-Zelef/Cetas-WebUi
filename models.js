@@ -1,3 +1,4 @@
+// Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
 const MODELS_DATA = {
   "text": [
     { "id": "gpt-5.6-sol",                 "label": "GPT-5.6 Sol",       "editeur": "openai",    "inputPer1M": 5,     "outputPer1M": 30,  "description": "Modèle frontière d'OpenAI pour le travail professionnel complexe (contexte 1M)." },

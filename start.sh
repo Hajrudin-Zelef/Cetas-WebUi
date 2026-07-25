@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+# Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
 set -e
 
 # S'assurer que les répertoires de données sont accessibles

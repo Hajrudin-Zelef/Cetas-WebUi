@@ -1,3 +1,4 @@
+# Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
 FROM nginx:alpine
 
 # Créer un utilisateur non-root pour le proxy
