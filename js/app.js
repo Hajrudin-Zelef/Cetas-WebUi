@@ -4635,6 +4635,13 @@ dashboardBtn.addEventListener('click', () => {
     saveModalOverlay.style.display = 'flex';
 });
 
+const sidebarFaqBtn = document.getElementById('sidebar-faq-btn');
+if (sidebarFaqBtn) {
+    sidebarFaqBtn.addEventListener('click', () => {
+        openApiKeysModal('faq');
+    });
+}
+
 saveModalClose.addEventListener('click', () => {
     saveModalOverlay.style.display = 'none';
 });

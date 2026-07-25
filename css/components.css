@@ -1296,8 +1296,8 @@
     justify-content: flex-end;
     gap: 10px;
     padding: 10px 16px;
-    border-top: 1px solid var(--border-input, #e5e7eb);
-    background: var(--bg-secondary, #f3f4f6);
+    border-top: 1px solid var(--border-input);
+    background: var(--bg-sidebar);
     flex-shrink: 0;
     margin-top: auto;
 }
@@ -2008,8 +2008,8 @@ body.dark .budget-alert-popup {
 /* --- Quotas d'utilisation --- */
 
 .quota-card {
-    background: var(--bg-input, #f9fafb);
-    border: 1px solid var(--border-input, #e5e7eb);
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
     border-radius: 12px;
     margin-bottom: 12px;
     overflow: hidden;
@@ -2034,8 +2034,8 @@ body.dark .budget-alert-popup {
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    border-bottom: 1px solid var(--border-input, #e5e7eb);
-    background: var(--bg-secondary, #f3f4f6);
+    border-bottom: 1px solid var(--border-input);
+    background: var(--bg-sidebar);
 }
 
 .quota-provider-icon {
@@ -2163,8 +2163,8 @@ body.dark .budget-alert-popup {
 
 .quota-card-footer {
     padding: 8px 14px;
-    border-top: 1px solid var(--border-input, #e5e7eb);
-    background: var(--bg-secondary, #f3f4f6);
+    border-top: 1px solid var(--border-input);
+    background: var(--bg-sidebar);
 }
 
 .quota-footer-grid {
