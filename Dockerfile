@@ -5,7 +5,7 @@ FROM nginx:alpine
 RUN adduser -D -h /app -u 1001 cetas
 
 # Python + cryptography pour le proxy API
-RUN apk add --no-cache python3 py3-cryptography py3-pip curl nodejs npm && pip3 install --break-system-packages pyjwt
+RUN apk add --no-cache python3 py3-cryptography py3-pip curl nodejs npm bash && pip3 install --break-system-packages pyjwt
 
 # Minifier JS/CSS pour réduire le poids (40-60% de gain)
 RUN npm install -g terser clean-css-cli
