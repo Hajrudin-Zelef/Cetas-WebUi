@@ -2825,7 +2825,7 @@ function addMessage(role, content, citations, generationTime, thinking, outputTo
     chatContainer.appendChild(wrapper);
     wrapper.addEventListener('animationend', () => wrapper.classList.remove('animate-in'), { once: true });
     scrollToBottom(true);
-    // Ajouter les boutons SamAgent si applicable (après rendu complet du message)
+    // Ajouter les boutons SamAgent si applicable
     if (role === 'assistant') _samAgentMakeClickable(div);
     return div;
 }
@@ -2931,12 +2931,22 @@ function _samAgentMakeClickable(el) {
     if (!el) return;
     const model = STATE.currentModel || '';
     if (model.indexOf('samagent-') !== 0) return;
-    const allP = el.querySelectorAll('p');
     const domains = [
         { keys: ['chat général', 'chat general', 'question générale', 'conseil'], label: '💬 Chat général' },
         { keys: ['coder', 'programmation', 'script', 'débogage', 'debug'],     label: '💻 Coder' },
         { keys: ['avancé', 'avance', 'raisonnement', 'analyse', 'maths', 'rédaction'], label: '🔬 Avancé' }
     ];
+    // Ne pas afficher les boutons si un choix de domaine a déjà été fait
+    const wrapper = el.parentElement;
+    let prev = wrapper?.previousElementSibling;
+    while (prev) {
+        const prevMsg = prev.querySelector('.message-user');
+        if (prevMsg) {
+            const prevText = (prevMsg.querySelector('.message-text')?.textContent || '').trim();
+            if (domains.some(d => d.label === prevText)) return;
+        }
+        prev = prev.previousElementSibling;
+    }
     // Vérifier qu'au moins un domaine est mentionné dans la réponse
     const fullText = (el.textContent || '').toLowerCase();
     const mentioned = domains.filter(d => d.keys.some(k => fullText.indexOf(k) !== -1));
