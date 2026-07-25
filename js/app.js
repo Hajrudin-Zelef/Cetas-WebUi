@@ -2962,6 +2962,11 @@ function _samAgentMakeClickable(el) {
     const btnContainer = document.createElement('div');
     btnContainer.className = 'samagent-buttons';
     btnContainer.style.cssText = 'margin-top:8px;display:flex;flex-direction:column;gap:4px';
+    // Label discret
+    const label = document.createElement('div');
+    label.textContent = 'Propositions :';
+    label.style.cssText = 'font-size:0.75rem;color:var(--text-muted, #888);margin-bottom:2px';
+    btnContainer.appendChild(label);
     for (const d of domains) {
         const btn = document.createElement('div');
         btn.textContent = d.label;
