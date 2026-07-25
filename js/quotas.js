@@ -114,6 +114,7 @@ function loadAlertSettings() {
 function saveAlertSettings(settings) {
     try {
         localStorage.setItem(ALERTS_KEY, JSON.stringify(settings));
+        if (window._syncPushSetting) window._syncPushSetting(ALERTS_KEY, JSON.stringify(settings));
     } catch { /* silencieux */ }
 }
 
@@ -132,7 +133,15 @@ function saveTopUp(providerId, amount) {
     } else {
         tops[providerId] = parseFloat(amount);
     }
-    try { localStorage.setItem(TOPUP_KEY, JSON.stringify(tops)); } catch {}
+    try {
+        // Si l'objet est vide (plus de top-ups), supprimer la clé plutôt que stocker "{}"
+        if (Object.keys(tops).length === 0) {
+            localStorage.removeItem(TOPUP_KEY);
+        } else {
+            localStorage.setItem(TOPUP_KEY, JSON.stringify(tops));
+        }
+        if (window._syncPushSetting) window._syncPushSetting(TOPUP_KEY, JSON.stringify(tops));
+    } catch { /* silencieux */ }
 }
 
 // Calcule les crédits dérivés : si pas de crédits API mais topUp + usage connus
@@ -369,9 +378,15 @@ function renderNoApiCard(provider) {
     `;
 }
 
+let _renderVersion = 0;
+
 async function fetchAndRenderQuotas() {
     const list = document.getElementById('quotas-list');
     if (!list) return;
+
+    // Anti race-condition : chaque appel incrémente la version.
+    // Seul le dernier appel peut écrire dans le DOM.
+    const myVersion = ++_renderVersion;
 
     const alertSettings = loadAlertSettings();
     const cache = loadCachedQuotas();
@@ -381,11 +396,12 @@ async function fetchAndRenderQuotas() {
     const enriched = (id, d) => d ? deriveCredits({ ...d, _provider: id }, topUps) : null;
 
     // Afficher les cartes immédiatement avec données en cache (ou état loading)
-    list.innerHTML = QUOTA_PROVIDERS.map(p => {
-        return renderQuotaCard(p, enriched(p.id, cache[p.id]), alertSettings);
-    }).join('') + NO_API_PROVIDERS.map(p => renderNoApiCard(p)).join('');
-
-    attachListeners();
+    if (myVersion === _renderVersion) {
+        list.innerHTML = QUOTA_PROVIDERS.map(p => {
+            return renderQuotaCard(p, enriched(p.id, cache[p.id]), alertSettings);
+        }).join('') + NO_API_PROVIDERS.map(p => renderNoApiCard(p)).join('');
+        attachListeners();
+    }
 
     // Fetch frais pour chaque provider avec API (en parallèle)
     const results = await Promise.all(QUOTA_PROVIDERS.map(async (p) => {
@@ -405,14 +421,14 @@ async function fetchAndRenderQuotas() {
 
     saveCachedQuotas(cache);
 
-    // Re-render avec données fraîches
-    list.innerHTML = results.map(({ provider, data }) =>
-        renderQuotaCard(provider, data, alertSettings)
-    ).join('') + NO_API_PROVIDERS.map(p => renderNoApiCard(p)).join('');
-
-    attachListeners();
-
-    checkQuotaAlerts(results, alertSettings);
+    // Re-render avec données fraîches — seulement si pas d'appel plus récent
+    if (myVersion === _renderVersion) {
+        list.innerHTML = results.map(({ provider, data }) =>
+            renderQuotaCard(provider, data, alertSettings)
+        ).join('') + NO_API_PROVIDERS.map(p => renderNoApiCard(p)).join('');
+        attachListeners();
+        checkQuotaAlerts(results, alertSettings);
+    }
 }
 
 // --- Alertes ---

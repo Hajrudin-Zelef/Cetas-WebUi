@@ -35,6 +35,7 @@ export function initTheme() {
         const order = ['light', 'dark', 'auto'];
         const next = order[(order.indexOf(current) + 1) % order.length];
         localStorage.setItem('minou-theme', next);
+        if (window._syncPushSetting) window._syncPushSetting('minou-theme', next);
         applyTheme(next);
     });
 }

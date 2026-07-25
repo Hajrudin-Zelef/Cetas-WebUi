@@ -1177,6 +1177,8 @@ Auth.init().then(() => {
     if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().catch(function(){});
     }
+    // Sync silencieuse des paramètres utilisateur depuis le serveur
+    import('./settings-sync.js').then(function(m) { m.syncPullSettings(); }).catch(function(){});
 initConfig().then(async () => {
     // upgradeToCustomSelect + populateUnifiedSelect retirés — sélecteur dans le menu "+"
     // updateTriggerDisplay() utilise maintenant #input-hint

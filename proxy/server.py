@@ -707,6 +707,41 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
 
+    # ── Endpoints settings ──────────────────────────────────────────
+
+    def _settings_get(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        users = _load_users()
+        user = users.get(username, {})
+        self._respond_json({"settings": user.get("settings", {})})
+
+    def _settings_put(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+            body = self.rfile.read(length) if length > 0 else b"{}"
+            data = json.loads(body.decode("utf-8"))
+        except Exception:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        users = _load_users()
+        if username not in users:
+            self._respond_json({"error": "Utilisateur introuvable"}, 404)
+            return
+        # Merge partiel : chaque clé envoyée remplace la clé existante
+        current = users[username].get("settings", {})
+        if isinstance(current, dict):
+            current.update(data)
+        else:
+            current = data
+        users[username]["settings"] = current
+        _save_users()
+        self._respond_json({"ok": True})
+
     def do_HEAD(self):
         # Déléguer au GET mais sans renvoyer le body (géré par le handler)
         self.do_GET()
@@ -742,6 +777,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
             filename = self.path[len("/api/conversations/"):]
             self._conv_get(filename)
             return
+        # Settings utilisateur
+        if self.path == "/api/settings":
+            self._settings_get()
+            return
         # Proxy
         if self.path.startswith("/api/proxy/"):
             self._proxy_request("GET")
@@ -770,6 +809,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if self.path.startswith("/api/conversations/"):
             filename = self.path[len("/api/conversations/"):]
             self._conv_save(filename)
+            return
+        # Settings utilisateur
+        if self.path == "/api/settings":
+            self._settings_put()
             return
         self.send_response(404)
         self.end_headers()

@@ -139,5 +139,7 @@ function saveBudgetSettings() {
     const enabled = document.getElementById('budget-enabled').checked;
     const period = document.getElementById('budget-period').value;
     const amount = parseFloat(document.getElementById('budget-amount').value) || 0;
-    localStorage.setItem('minou-budget', JSON.stringify({ enabled, period, amount }));
+    const data = JSON.stringify({ enabled, period, amount });
+    localStorage.setItem('minou-budget', data);
+    if (window._syncPushSetting) window._syncPushSetting('minou-budget', data);
 }

@@ -233,7 +233,9 @@ function loadCatalogPrefs() {
 }
 
 function saveCatalogPrefs(prefs) {
-    localStorage.setItem('minou-catalog-prefs', JSON.stringify(prefs));
+    const data = JSON.stringify(prefs);
+    localStorage.setItem('minou-catalog-prefs', data);
+    if (window._syncPushSetting) window._syncPushSetting('minou-catalog-prefs', data);
 }
 
 // Caches OR séparés par type d'onglet : la requête diffère
@@ -1949,7 +1951,9 @@ function loadAudioSettings() {
         AUDIO_SETTINGS.sttProvider = migrateByEditeur(AUDIO_SETTINGS.sttProvider, 'stt');
         // Ne réécrire en localStorage que si la migration a effectivement changé une valeur.
         if (AUDIO_SETTINGS.ttsProvider !== beforeTts || AUDIO_SETTINGS.sttProvider !== beforeStt) {
-            localStorage.setItem('minou-audio-settings', JSON.stringify(AUDIO_SETTINGS));
+            const data = JSON.stringify(AUDIO_SETTINGS);
+            localStorage.setItem('minou-audio-settings', data);
+            if (window._syncPushSetting) window._syncPushSetting('minou-audio-settings', data);
         }
     } catch (e) {
         console.warn('Lecture des paramètres audio impossible (localStorage corrompu) :', e);
@@ -1958,7 +1962,9 @@ function loadAudioSettings() {
 
 function saveAudioSettings(settings) {
     Object.assign(AUDIO_SETTINGS, settings);
-    localStorage.setItem('minou-audio-settings', JSON.stringify(AUDIO_SETTINGS));
+    const data = JSON.stringify(AUDIO_SETTINGS);
+    localStorage.setItem('minou-audio-settings', data);
+    if (window._syncPushSetting) window._syncPushSetting('minou-audio-settings', data);
 }
 
 // Convertit du PCM brut 16-bit mono en blob WAV (pour Gemini TTS)
