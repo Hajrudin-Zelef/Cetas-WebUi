@@ -11,12 +11,12 @@ const FAQ_DATA = [
     {
         category: 'general',
         question: "Qu'est-ce que Cetas ?",
-        answer: "Cetas est une <strong>interface de discussion IA multi-modèles</strong> axée sur la confidentialité. Entièrement exécutée dans votre navigateur, elle fonctionne sans serveur distant. Vos conversations, réglages et clés API restent <strong>strictement locaux</strong> sur votre machine.<br><br>L'outil vous permet d'interroger les meilleures IA du marché (OpenAI, Anthropic, Google, Mistral, modèles locaux, etc.) depuis une interface unifiée. Il utilise vos propres clés API, que vous pouvez facilement configurer grâce aux boutons de redirection présents dans les paramètres de l'application."
+        answer: "Cetas est une <strong>interface de discussion IA multi-modèles</strong> développée par <strong>Marexsoft Corporation</strong>. Elle vous permet d'interroger les meilleures IA du marché (OpenAI, Anthropic, Google, Mistral, DeepSeek, modèles locaux, etc.) depuis une interface unifiée, en utilisant vos propres clés API.<br><br>L'application fonctionne dans votre navigateur et s'accompagne d'un <strong>serveur optionnel</strong> qui protège vos clés API (elles ne sont jamais exposées au navigateur) et synchronise vos conversations et réglages entre vos appareils. Une fois connecté à votre compte, vous retrouvez automatiquement toutes vos données, quel que soit l'appareil utilisé."
     },
     {
         category: 'general',
         question: "Mes données sont-elles en sécurité ?",
-        answer: "<strong>Oui, totalement.</strong> Toutes vos conversations, rôles et prompts sont stockés <strong>uniquement dans votre navigateur</strong> (IndexedDB et localStorage).<br><br>Aucune donnée ne transite par nos serveurs. Les requêtes sont envoyées <strong>directement</strong> depuis votre navigateur vers les fournisseurs d'IA (OpenAI, Anthropic, etc.) grâce à vos propres clés API.<br><br><strong>Important :</strong> pour garantir cette sécurité, Cetas doit être utilisé sur un <strong>ordinateur personnel non accessible au public</strong>. Ne l'installez jamais sur un hébergement en ligne (mutualisé, VPS, etc.) : dans ce cas, vos données et vos clés API seraient exposées et insuffisamment protégées."
+        answer: "<strong>Oui.</strong> Cetas est conçu pour que vous gardiez le contrôle de vos données :<ul><li>Vos <strong>clés API</strong> sont stockées côté serveur et ne sont jamais envoyées à votre navigateur — les requêtes aux fournisseurs d'IA passent par un intermédiaire sécurisé qui injecte la clé sans jamais vous l'exposer.</li><li>Vos <strong>conversations et réglages</strong> sont sauvegardés à la fois dans votre navigateur (pour un accès rapide) et sur le serveur (pour les retrouver après un changement d'appareil ou un nettoyage du navigateur).</li><li>L'accès à vos données est protégé par un <strong>compte utilisateur</strong> avec authentification.</li></ul><strong>Important :</strong> Cetas doit être utilisé sur un <strong>serveur personnel non accessible au public</strong>. Ne l'installez jamais sur un hébergement mutualisé ou un VPS public : vos données et votre configuration de sécurité seraient exposées."
     },
     {
         category: 'general',
@@ -103,8 +103,8 @@ const FAQ_DATA = [
     },
     {
         category: 'learn',
-        question: "Comment fonctionne le suivi de budget ?",
-        answer: "Le suivi de budget vous permet de <strong>définir un montant maximum de dépenses</strong> par période (jour, semaine ou mois).<br><br>Activez-le dans <strong>Configuration > Budget</strong>, définissez le montant et la période. Une alerte s'affichera lorsque vous approchez la limite. Les coûts sont estimés d'après le nombre de tokens et les tarifs de chaque fournisseur."
+        question: "Comment fonctionne le suivi de budget et les quotas ?",
+        answer: "Cetas propose deux mécanismes complémentaires pour suivre vos dépenses :<br><br><strong>1. Suivi de budget</strong> (Configuration > Budget) : définissez un <strong>montant maximum</strong> par période (jour, semaine ou mois). Une alerte s'affiche lorsque vous dépassez ce montant. Les coûts sont estimés d'après le nombre de tokens consommés et les tarifs officiels de chaque fournisseur.<br><br><strong>2. Quotas d'utilisation</strong> (Configuration > Quotas) : consultez vos <strong>crédits restants</strong> chez OpenRouter et DeepSeek en temps réel. Vous pouvez aussi renseigner manuellement le montant de votre recharge pour calculer vos crédits disponibles. Des <strong>alertes seuil</strong> vous préviennent quand vos crédits tombent sous un certain montant.<br><br>Les deux fonctionnent ensemble : le budget suit vos dépenses par période, les quotas vous informent de votre solde en direct."
     },
 
 
@@ -114,7 +114,7 @@ const FAQ_DATA = [
     {
         category: 'troubleshoot',
         question: "Pourquoi mes conversations ont-elles disparu ?",
-        answer: "Les données de Cetas sont stockées dans la <strong>base de données de votre navigateur</strong> (IndexedDB et localStorage). Elles peuvent être effacées si vous :<ul><li>Videz vos cookies ou votre cache</li><li>Supprimez vos données de navigation</li><li>Utilisez un mode de navigation privée</li><li>Atteignez la limite de stockage du navigateur (le navigateur peut alors évincer les données les plus anciennes)</li></ul><strong>Conseil :</strong> exportez régulièrement une sauvegarde via le bouton <strong>« Sauvegardes »</strong> dans le menu de gauche. Vous pourrez réimporter vos données à tout moment.<br><br>Pour <strong>libérer de l'espace sans tout perdre</strong>, ouvrez le panneau <strong>Configuration > Stockage</strong> : il liste vos conversations et vos médias avec leur poids, ce qui permet de cibler ce qui prend le plus de place avant de supprimer."
+        answer: "Si vous êtes connecté à votre compte, vos conversations sont <strong>synchronisées avec le serveur</strong>. Après un nettoyage du navigateur ou un changement d'appareil, reconnectez-vous simplement : toutes vos conversations seront restaurées automatiquement.<br><br>Si vous utilisez Cetas <strong>sans compte</strong> (mode local), les données sont stockées dans la <strong>base de données de votre navigateur</strong> (IndexedDB et localStorage). Elles peuvent être effacées si vous videz vos cookies, supprimez vos données de navigation, ou utilisez la navigation privée.<br><br><strong>Conseil :</strong> le bouton <strong>« 💾 Sauvegarder tout »</strong> en bas de la fenêtre Configuration sauvegarde immédiatement tous vos réglages sur le serveur. Pour une sauvegarde complète de vos conversations, utilisez le bouton <strong>« Sauvegardes »</strong> dans le menu de gauche."
     },
     {
         category: 'troubleshoot',
@@ -125,6 +125,56 @@ const FAQ_DATA = [
         category: 'troubleshoot',
         question: "J'ai un problème avec mes modèles locaux (Ollama / LM Studio)",
         answer: "Si vos modèles locaux ne s'affichent pas dans le sélecteur, voici les causes les plus fréquentes :<br><br><strong>1. Problème de CORS (le plus courant)</strong><br>Votre navigateur bloque les requêtes vers votre serveur local. Pour résoudre cela :<ul><li><strong>Ollama :</strong> définissez la variable d'environnement <code>OLLAMA_ORIGINS=*</code> avant de lancer Ollama.</li><li><strong>LM Studio :</strong> activez l'option <strong>« Enable CORS »</strong> dans les paramètres du serveur local.</li></ul><strong>2. Serveur non démarré ou aucun modèle téléchargé</strong><br>Vérifiez que le serveur tourne bien sur l'URL indiquée et que vous avez préalablement téléchargé au moins un modèle."
+    },
+    {
+        category: 'learn',
+        question: "Qu'est-ce que SamAgent et comment ça marche ?",
+        answer: "<strong>SamAgent</strong> est le routeur intelligent de Cetas. Au lieu de choisir manuellement un modèle, SamAgent <strong>sélectionne automatiquement le meilleur modèle</strong> pour votre requête parmi des dizaines de modèles répartis sur 4 niveaux :<ul><li><strong>Nano</strong> — modèles ultra-rapides et économiques pour les tâches simples</li><li><strong>N4 Flash</strong> — modèles gratuits via OpenRouter, bon équilibre rapidité/qualité</li><li><strong>N4</strong> — modèles payants abordables pour les tâches intermédiaires</li><li><strong>N8</strong> — modèles flagship 2026 pour les requêtes complexes nécessitant le meilleur</li></ul>SamAgent intègre aussi un <strong>système de fallback à 3 niveaux</strong> : si un fournisseur est indisponible, il bascule automatiquement sur le suivant sans interrompre votre conversation. Vous pouvez sélectionner SamAgent depuis le <strong>menu « + »</strong> à côté de la zone de saisie."
+    },
+    {
+        category: 'learn',
+        question: "Comment fonctionne le mode réflexion (reasoning) ?",
+        answer: "Le <strong>mode réflexion</strong> (ou <em>thinking</em>) permet à l'IA de <strong>raisonner en privé</strong> avant de vous répondre. L'IA écrit un raisonnement détaillé (étape par étape) qu'elle utilise pour produire une réponse plus réfléchie, puis ce raisonnement est affiché dans un bloc dédié.<br><br>Activez-le via le <strong>menu « + »</strong> → option <strong>Réflexion</strong>. Vous pouvez choisir le niveau d'effort : <strong>Faible, Moyen, ou Max</strong>. Plus l'effort est élevé, plus l'IA prend de temps pour raisonner avant de répondre. Ce mode est particulièrement utile pour les tâches de logique, de mathématiques, de codage complexe ou d'analyse approfondie."
+    },
+    {
+        category: 'learn',
+        question: "Comment mes réglages sont-ils sauvegardés entre mes appareils ?",
+        answer: "Lorsque vous êtes connecté à votre compte, tous vos réglages (thème, budget, quotas, préférences audio, modèles activés) sont <strong>automatiquement synchronisés</strong> avec le serveur. Vous n'avez rien à faire : chaque modification est sauvegardée en arrière-plan.<br><br>Pour forcer une sauvegarde immédiate, utilisez le bouton <strong>« 💾 Sauvegarder tout »</strong> en bas de la fenêtre Configuration. Vos réglages seront restaurés automatiquement si vous changez d'appareil, videz le cache de votre navigateur, ou après une mise à jour de l'application."
+    },
+    {
+        category: 'learn',
+        question: "Comment utiliser la recherche web intégrée ?",
+        answer: "Le bouton <strong>recherche web</strong> (🌐) dans la barre de saisie permet à l'IA de <strong>chercher des informations en ligne</strong> avant de vous répondre. Activez-le pour les questions d'actualité, les vérifications de faits, ou toute requête nécessitant des informations à jour.<br><br>La recherche utilise Perplexity ou OpenRouter selon votre configuration. Le coût de la recherche est inclus dans le coût total de la réponse."
+    },
+    {
+        category: 'learn',
+        question: "Comment fonctionne le menu « + » ?",
+        answer: "Le <strong>menu « + »</strong> (à droite de la zone de saisie) est le centre de contrôle rapide de Cetas. Il permet de :<ul><li><strong>Changer de modèle</strong> — texte, image, ou recherche web</li><li><strong>Activer la réflexion</strong> (thinking) avec choix du niveau d'effort</li><li><strong>Activer la recherche web</strong></li></ul>C'est le moyen le plus rapide de configurer votre session sans ouvrir les paramètres."
+    },
+    {
+        category: 'learn',
+        question: "Comment partager Cetas avec d'autres personnes ?",
+        answer: "Cetas est un projet gratuit et open-source. Vous pouvez le partager en utilisant le <strong>lien de partage</strong> disponible dans l'onglet <strong>Configuration > Partager</strong>. Merci de respecter les conditions : ne pas vendre Cetas et utiliser uniquement le lien officiel pour le partager."
+    },
+    {
+        category: 'learn',
+        question: "Comment gérer plusieurs utilisateurs ?",
+        answer: "Si vous êtes <strong>administrateur</strong>, vous pouvez créer et gérer des comptes utilisateurs dans <strong>Configuration > Utilisateurs</strong>. Chaque utilisateur a ses propres conversations, réglages et quotas, isolés des autres. Le premier compte créé est automatiquement administrateur."
+    },
+    {
+        category: 'learn',
+        question: "Comment fonctionnent les favoris ?",
+        answer: "Vous pouvez <strong>épingler une conversation en favori</strong> en cliquant sur l'étoile (★) à côté de son titre dans la liste de gauche. Les conversations favorites restent <strong>toujours visibles en haut</strong> de la liste, quel que soit le filtre de catégorie actif. Pratique pour garder vos discussions importantes à portée de clic."
+    },
+    {
+        category: 'troubleshoot',
+        question: "Pourquoi certains modèles n'apparaissent-ils pas dans le sélecteur ?",
+        answer: "Plusieurs raisons possibles :<ol><li><strong>Clé API manquante</strong> — vérifiez dans Configuration > API et Modèles que la clé du fournisseur est bien renseignée.</li><li><strong>Modèle non activé</strong> — pour OpenRouter, ouvrez le Catalogue et cochez les modèles que vous souhaitez voir apparaître.</li><li><strong>Modèle obsolète</strong> — les modèles retirés par les fournisseurs sont automatiquement désactivés.</li></ol>"
+    },
+    {
+        category: 'troubleshoot',
+        question: "L'application est lente, que faire ?",
+        answer: "Quelques astuces pour améliorer les performances :<ul><li>Supprimez les <strong>médias volumineux</strong> depuis Configuration > Stockage > Médias (triez par « Plus lourds »).</li><li>Supprimez les <strong>anciennes conversations</strong> dont vous n'avez plus besoin.</li><li>Si vous avez beaucoup de conversations (>200), utilisez les <strong>catégories</strong> pour les organiser — cela allège l'affichage de la liste.</li><li>Exportez une sauvegarde et <strong>réimportez-la</strong> pour nettoyer les données résiduelles.</li></ul>"
     },
     {
         category: 'troubleshoot',
