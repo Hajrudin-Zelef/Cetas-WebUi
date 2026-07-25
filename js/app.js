@@ -2825,6 +2825,8 @@ function addMessage(role, content, citations, generationTime, thinking, outputTo
     chatContainer.appendChild(wrapper);
     wrapper.addEventListener('animationend', () => wrapper.classList.remove('animate-in'), { once: true });
     scrollToBottom(true);
+    // Ajouter les boutons SamAgent si applicable (après rendu complet du message)
+    if (role === 'assistant') _samAgentMakeClickable(div);
     return div;
 }
 
@@ -2931,16 +2933,16 @@ function _samAgentMakeClickable(el) {
     if (model.indexOf('samagent-') !== 0) return;
     const allP = el.querySelectorAll('p');
     const domains = [
-        { keys: ['chat général', 'chat general'], label: '💬 Chat général' },
-        { keys: ['coder'],                   label: '💻 Coder' },
-        { keys: ['avancé', 'avance'],        label: '🔬 Avancé' }
+        { keys: ['chat général', 'chat general', 'question générale', 'conseil'], label: '💬 Chat général' },
+        { keys: ['coder', 'programmation', 'script', 'débogage', 'debug'],     label: '💻 Coder' },
+        { keys: ['avancé', 'avance', 'raisonnement', 'analyse', 'maths', 'rédaction'], label: '🔬 Avancé' }
     ];
     // Vérifier qu'au moins un domaine est mentionné dans la réponse
     const fullText = (el.textContent || '').toLowerCase();
     const mentioned = domains.filter(d => d.keys.some(k => fullText.indexOf(k) !== -1));
     if (mentioned.length === 0) return;
     if (el.querySelector('.samagent-proposals-rendered')) return;
-    el.querySelector('.msg-text')?.classList.add('samagent-proposals-rendered');
+    el.querySelector('.message-text')?.classList.add('samagent-proposals-rendered');
 
     // Ajouter 3 boutons fixes en bas du message
     const btnContainer = document.createElement('div');
@@ -2958,7 +2960,7 @@ function _samAgentMakeClickable(el) {
                 b.style.opacity = '0.5';
             });
             const promptInput = document.getElementById('prompt-input');
-            const sendBtn = document.getElementById('send-btn');
+            const sendBtn = document.getElementById('mobile-send-btn');
             if (promptInput && sendBtn && !sendBtn.disabled) {
                 promptInput.value = d.label;
                 sendBtn.click();
@@ -2966,7 +2968,7 @@ function _samAgentMakeClickable(el) {
         });
         btnContainer.appendChild(btn);
     }
-    const textEl = el.querySelector('.msg-text');
+    const textEl = el.querySelector('.message-text');
     if (textEl) textEl.appendChild(btnContainer);
 }
 
