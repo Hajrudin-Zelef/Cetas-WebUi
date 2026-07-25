@@ -33,7 +33,7 @@ var _proxyDownSince = 0;
 // Les providers locaux (ollama, lmstudio, llamacpp) gardent leurs URLs directes.
 function proxyUrl(provider, url) {
     if (isLocalEditeur(provider)) return url;
-    const parsed = new URL(url);
+    try { var parsed = new URL(url); } catch (e) { console.warn('[proxyUrl] URL invalide:', url); return url; }
     const base = _proxyDown ? PROXY_WORKER : PROXY_PRIMARY;
     return `${base}/${provider}${parsed.pathname}${parsed.search}`;
 }
