@@ -11,7 +11,7 @@ const FAQ_DATA = [
     {
         category: 'general',
         question: "Qu'est-ce que Cetas ?",
-        answer: "Cetas est un <strong>assistant IA multi-modèles</strong> — une interface de chat privée, sécurisée et gratuite développée par <strong>Marexsoft Corporation</strong>. Elle supporte <strong>18 fournisseurs</strong> : OpenAI, Anthropic, Google Gemini, Mistral, DeepSeek, Grok (xAI), Z.ai/GLM, Perplexity, OpenRouter, Groq, Nvidia, Cabreras, ainsi que les modèles locaux (Ollama, LM Studio, LLaMA.cpp).<br><br>L'application fonctionne dans votre navigateur et s'accompagne d'un <strong>serveur optionnel</strong> qui protège vos clés API (elles ne sont jamais exposées au navigateur) et synchronise vos conversations et réglages entre vos appareils. Une fois connecté à votre compte, vous retrouvez automatiquement toutes vos données, quel que soit l'appareil utilisé."
+        answer: "Cetas est un <strong>assistant IA multi-modèles</strong> — une interface de chat privée, sécurisée et gratuite développée par <strong>Marexsoft Corporation</strong>, fondée par <strong>Kouassi Marius</strong>. Elle supporte <strong>18 fournisseurs</strong> : OpenAI, Anthropic, Google Gemini, Mistral, DeepSeek, Grok (xAI), Z.ai/GLM, Perplexity, OpenRouter, Groq, Nvidia, Cabreras, ainsi que les modèles locaux (Ollama, LM Studio, LLaMA.cpp).<br><br>L'application fonctionne dans votre navigateur et s'accompagne d'un <strong>serveur optionnel</strong> qui protège vos clés API (elles ne sont jamais exposées au navigateur) et synchronise vos conversations et réglages entre vos appareils. Une fois connecté à votre compte, vous retrouvez automatiquement toutes vos données, quel que soit l'appareil utilisé."
     },
     {
         category: 'general',

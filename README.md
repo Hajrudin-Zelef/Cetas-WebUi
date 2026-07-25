@@ -4,7 +4,7 @@
 
 *Assistant IA multi-modèles* — Interface de chat privée, sécurisée et gratuite. Entièrement exécutée dans le navigateur (Vanilla JS), avec un proxy backend optionnel pour la sécurité des clés API. Interface en français.
 
-By **Marexsoft Corporation**
+By **Marexsoft Corporation** — Fondateur : **Kouassi Marius**
 
 ## Aperçu
 
