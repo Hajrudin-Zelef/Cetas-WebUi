@@ -24,7 +24,7 @@ for (const [ls, srv] of Object.entries(KEY_MAP)) {
 
 // Debounce par clé pour éviter les rafales de requêtes
 const _pending = {};
-const DEBOUNCE_MS = 2000;
+const DEBOUNCE_MS = 1000;
 
 // ── Pull (serveur → localStorage) ──────────────────────────────────
 
@@ -155,5 +155,6 @@ function _getToken() {
 // puissent appeler syncPushSetting sans import circulaire.
 window._syncPushSetting = syncPushSetting;
 window._syncPullSettings = syncPullSettings;
+window._syncPushAll = syncPushAll;
 
 export { syncPullSettings, syncPushSetting, syncPushAll };

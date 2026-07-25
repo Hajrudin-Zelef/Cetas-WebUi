@@ -533,6 +533,23 @@ function refreshAlerts() {
 
 // --- Init ---
 function initQuotas() {
+    const saveBtn = document.getElementById('quotas-save-btn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            // Force un push immédiat de tous les paramètres
+            if (window._syncPushAll) {
+                await window._syncPushAll();
+            }
+            // Feedback visuel bref
+            saveBtn.textContent = '✓ Sauvegardé';
+            saveBtn.disabled = true;
+            setTimeout(() => {
+                saveBtn.textContent = 'Sauvegarder';
+                saveBtn.disabled = false;
+            }, 1500);
+        });
+    }
+
     const refreshBtn = document.getElementById('quotas-refresh-btn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {

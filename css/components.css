@@ -1286,6 +1286,26 @@
     overflow: hidden;
     min-height: 0;
     min-width: 0;
+    position: relative;
+}
+
+/* Barre de sauvegarde globale — sticky en bas de la modale */
+.apikeys-global-save-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border-input, #e5e7eb);
+    background: var(--bg-secondary, #f3f4f6);
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+.apikeys-global-save-hint {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #6b7280);
+    flex: 1;
 }
 
 .apikeys-panel {

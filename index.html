@@ -64,6 +64,9 @@
     // éviter un flash en clair quand `dark` (ou `auto` sur OS sombre) est
     // sauvegardé. `applyTheme` plus loin dans app.js fera la même chose
     // (idempotent) et mettra à jour le libellé du bouton de bascule.
+    // Stub silencieux — le vrai _syncPushSetting est défini dans settings-sync.js
+    // quand le module est chargé. En attendant, les appels sont ignorés sans erreur.
+    window._syncPushSetting = function(){};
     (function () {
         var t = localStorage.getItem('minou-theme') || 'light';
         if (t === 'auto') document.body.classList.add('theme-auto');
@@ -811,6 +814,7 @@
                         <div id="quotas-global-alert" class="quotas-global-alert" style="display:none"></div>
                     </div>
                     <div class="models-save-row">
+                        <button type="button" id="quotas-save-btn" class="models-save-btn" style="margin-right:8px">Sauvegarder</button>
                         <button type="button" id="quotas-refresh-btn" class="models-save-btn">Actualiser</button>
                     </div>
                 </div>
@@ -997,6 +1001,11 @@
                         <p class="share-panel-text">Merci à toutes celles et ceux qui partagent Cetas autour d'eux 🙏</p>
                     </div>
                     </div>
+                </div>
+                <!-- Barre de sauvegarde globale (sticky, visible sur tous les onglets) -->
+                <div class="apikeys-global-save-row">
+                    <span class="apikeys-global-save-hint">Tous les paramètres sont sauvegardés automatiquement.</span>
+                    <button type="button" id="global-save-btn" class="models-save-btn">💾 Sauvegarder tout</button>
                 </div>
             </div>
         </div>

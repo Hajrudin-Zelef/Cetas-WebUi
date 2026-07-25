@@ -213,6 +213,22 @@ function initConfigAutoSave() {
             _setBudgetDirty(false);
         });
     }
+
+    // Bouton sauvegarde globale (sticky en bas de la modale)
+    const globalSaveBtn = document.getElementById('global-save-btn');
+    if (globalSaveBtn) {
+        globalSaveBtn.addEventListener('click', async () => {
+            if (window._syncPushAll) {
+                await window._syncPushAll();
+                globalSaveBtn.textContent = '✓ Sauvegardé !';
+                globalSaveBtn.disabled = true;
+                setTimeout(() => {
+                    globalSaveBtn.textContent = '💾 Sauvegarder tout';
+                    globalSaveBtn.disabled = false;
+                }, 2000);
+            }
+        });
+    }
 }
 
 // ============================================================
