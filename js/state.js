@@ -58,7 +58,7 @@ export const STATE = {
     micTranscribing: false,
 
     // --- Divers ---
-    webSearchEnabled: false,
+    webSearchEnabled: true,
     webSearchDepth: 'standard',
     originalPromptBeforeEnhance: null,
     isEnhancing: false,

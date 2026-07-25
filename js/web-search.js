@@ -3,7 +3,8 @@
 import { STATE } from './state.js';
 
 const webSearchBtn = document.getElementById('web-search-btn');
-const WEB_SEARCH_EDITEURS = ['openai', 'anthropic', 'google', 'grok', 'openrouter'];
+// Tous les providers supportent la recherche (natif ou function-calling)
+const WEB_SEARCH_EDITEURS = ['openai', 'anthropic', 'google', 'grok', 'openrouter', 'deepseek', 'mistral', 'groq', 'nvidia', 'zai', 'perplexity', 'cabreras', 'ollama', 'lmstudio', 'llamacpp'];
 const WEB_SEARCH_TOOLTIPS = {
     openai: 'Prix recherche web OpenAI : 0,01 $ / requête',
     anthropic: 'Prix recherche web Anthropic : 0,01 $ / requête',

@@ -34,6 +34,8 @@ RUN terser /usr/share/nginx/html/js/favorites.js -o /usr/share/nginx/html/js/fav
 RUN terser /usr/share/nginx/html/js/whisper.js -o /usr/share/nginx/html/js/whisper.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/user-management.js -o /usr/share/nginx/html/js/user-management.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/web-search.js -o /usr/share/nginx/html/js/web-search.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/search-engine.js -o /usr/share/nginx/html/js/search-engine.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/tool-search.js -o /usr/share/nginx/html/js/tool-search.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/export-md.js -o /usr/share/nginx/html/js/export-md.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/budget.js -o /usr/share/nginx/html/js/budget.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/quotas.js -o /usr/share/nginx/html/js/quotas.js -c -m --comments false --module

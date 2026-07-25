@@ -26,6 +26,41 @@ const PROXY_WORKER = 'https://cetas-backup.angeoulai2015.workers.dev/api/proxy';
 const PROXY_WORKER_TOKEN = 'aa7217a90bcf2a786d80720b4355d70e3fdca07c758dc7ea2d49ec96f619ee88';
 const PROXY_RETRY_MS = 30000; // retest le primary toutes les 30s
 
+// Providers avec recherche web native (outil géré côté serveur par le provider)
+var NATIVE_SEARCH_EDITORS = new Set(['openai', 'anthropic', 'google', 'grok', 'openrouter', 'perplexity']);
+
+// Outils function-calling pour les providers SANS recherche native
+var WEB_SEARCH_TOOLS = [
+    {
+        type: 'function',
+        function: {
+            name: 'web_search',
+            description: 'Search the web for current information. Use this when you need up-to-date facts, recent events, or information beyond your knowledge cutoff. Returns a list of results with titles, URLs, and snippets.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: { type: 'string', description: 'The search query' }
+                },
+                required: ['query']
+            }
+        }
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'web_fetch',
+            description: 'Fetch and read the full content of a web page. Use this after web_search to get detailed information from a specific URL.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    url: { type: 'string', description: 'The URL to fetch' }
+                },
+                required: ['url']
+            }
+        }
+    }
+];
+
 var _proxyDown = false;
 var _proxyDownSince = 0;
 
@@ -849,8 +884,13 @@ function createThinkTagParser() {
 // Options : textOnly (Perplexity), trimTrailingAssistant (Mistral), collapseTextOnly (Local)
 function formatChatCompletionsMessages(history, options = {}) {
     const messages = history.filter(m => m.role !== 'system').map(msg => {
+        // Préserve tool_call_id (role=tool) et tool_calls (role=assistant)
+        const extra = {};
+        if (msg.tool_call_id) extra.tool_call_id = msg.tool_call_id;
+        if (msg.tool_calls) extra.tool_calls = msg.tool_calls;
+
         if (typeof msg.content === 'string') {
-            return { role: msg.role, content: msg.content };
+            return Object.assign({ role: msg.role, content: msg.content }, extra);
         }
         if (Array.isArray(msg.content)) {
             if (options.textOnly) {
@@ -859,7 +899,7 @@ function formatChatCompletionsMessages(history, options = {}) {
                     if (p.type === 'file') return `--- Contenu du fichier joint : ${p.name} ---\n${p.textContent || ''}\n--- Fin du fichier ---`;
                     return '';
                 }).filter(Boolean).join('\n');
-                return { role: msg.role, content: text };
+                return Object.assign({ role: msg.role, content: text }, extra);
             }
             const parts = [];
             for (const part of msg.content) {
@@ -877,11 +917,11 @@ function formatChatCompletionsMessages(history, options = {}) {
                 }
             }
             if (options.collapseTextOnly && !parts.some(p => p.type === 'image_url')) {
-                return { role: msg.role, content: parts.map(p => p.text).filter(Boolean).join('\n') };
+                return Object.assign({ role: msg.role, content: parts.map(p => p.text).filter(Boolean).join('\n') }, extra);
             }
-            return { role: msg.role, content: parts };
+            return Object.assign({ role: msg.role, content: parts }, extra);
         }
-        return { role: msg.role, content: String(msg.content) };
+        return Object.assign({ role: msg.role, content: String(msg.content) }, extra);
     });
     if (options.trimTrailingAssistant) {
         while (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
@@ -897,6 +937,9 @@ function createChatCompletionsParser(hasThinkingCallback, options = {}) {
     let usage = { input_tokens: 0, output_tokens: 0, cost_real: null };
     let citations = [];
     const thinkParser = hasThinkingCallback ? createThinkTagParser() : null;
+    // Tool call accumulation (function-calling)
+    let toolCalls = {};
+    let finishReason = null;
 
     function parse(parsed) {
         const events = [];
@@ -933,6 +976,23 @@ function createChatCompletionsParser(hasThinkingCallback, options = {}) {
             }
         }
 
+        // Tool calls (function-calling) : accumulation delta par delta
+        if (options.accumulateToolCalls) {
+            const tcDeltas = parsed.choices?.[0]?.delta?.tool_calls;
+            if (tcDeltas) {
+                for (const tc of tcDeltas) {
+                    if (!toolCalls[tc.index]) {
+                        toolCalls[tc.index] = { id: tc.id, type: tc.type, function: { name: '', arguments: '' } };
+                    }
+                    if (tc.id) toolCalls[tc.index].id = tc.id;
+                    if (tc.function?.name) toolCalls[tc.index].function.name += tc.function.name;
+                    if (tc.function?.arguments) toolCalls[tc.index].function.arguments += tc.function.arguments;
+                }
+            }
+            const fr = parsed.choices?.[0]?.finish_reason;
+            if (fr) finishReason = fr;
+        }
+
         // Citations (Perplexity: parsed.citations, OpenAI: annotations)
         if (options.extractCitations) {
             const c = options.extractCitations(parsed);
@@ -958,7 +1018,9 @@ function createChatCompletionsParser(hasThinkingCallback, options = {}) {
     }
 
     parse.flush = () => thinkParser ? thinkParser.flush() : [];
-    parse.getResult = () => ({ usage, citations });
+    parse.getResult = () => ({ usage, citations, toolCalls: Object.values(toolCalls), finishReason });
+    parse.hasToolCalls = () => finishReason === 'tool_calls' && Object.keys(toolCalls).length > 0;
+    parse.getToolCalls = () => Object.values(toolCalls);
     return parse;
 }
 
@@ -1023,6 +1085,13 @@ function chatCompletionsProvider(config) {
                 if (modelParams.top_a != null && allow('top_a')) orExtra.top_a = modelParams.top_a;
                 if (modelParams.repetition_penalty != null && allow('repetition_penalty')) orExtra.repetition_penalty = modelParams.repetition_penalty;
                 if (modelParams.seed != null && allow('seed')) orExtra.seed = modelParams.seed;
+            }
+            // Injection des outils function-calling pour providers sans recherche native
+            if (webSearch) {
+                const ed = getModelEditeur(modelId);
+                if (ed && !NATIVE_SEARCH_EDITORS.has(ed)) {
+                    extras.tools = WEB_SEARCH_TOOLS;
+                }
             }
             return { model: modelId, messages, stream: true, ...std, ...orExtra, ...extras };
         },
@@ -1482,6 +1551,17 @@ const PROVIDERS = {
 async function streamModel(modelId, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, fallbackModel) {
     const editeur = getModelEditeur(modelId) || getSearchModelEditeur(modelId);
     const provider = PROVIDERS[editeur];
+
+    // Redirige vers le tool loop function-calling pour les providers sans recherche native
+    if (webSearch && editeur && typeof NATIVE_SEARCH_EDITORS !== 'undefined' && !NATIVE_SEARCH_EDITORS.has(editeur)) {
+        if (typeof streamModelWithTools === 'function') {
+            return streamModelWithTools(modelId, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, fallbackModel);
+        }
+        // Si tool-search.js pas chargé, on continue sans webSearch
+        console.warn('[api] streamModelWithTools non trouvé — recherche web ignorée pour ' + editeur);
+        webSearch = false;
+    }
+
     if (!provider) {
         // Si un fallback est fourni, on le tente directement
         if (fallbackModel && fallbackModel.model && fallbackModel.provider) {

@@ -1,0 +1,32 @@
+# Cetas + SearXNG — © Marexsoft Corporation. Fondateur Kouassi Marius.
+# Usage : docker compose up -d
+# SearXNG fournit la recherche web gratuite et illimitée.
+
+services:
+  cetas:
+    build: .
+    ports:
+      - "80:80"
+    environment:
+      - CETAS_VAULT_PASSWORD=${CETAS_VAULT_PASSWORD:-}
+    volumes:
+      - ./conversations:/usr/share/nginx/html/conversations
+      - ./data:/app/data
+      - ./.vault:/usr/share/nginx/html/.vault
+      - ./.env:/usr/share/nginx/html/.env
+
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "127.0.0.1:8084:8080"
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8084/
+      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:-changeme}
+    volumes:
+      - ./searxng-data:/etc/searxng
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
