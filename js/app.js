@@ -2929,36 +2929,46 @@ function _samAgentMakeClickable(el) {
     if (!el) return;
     const model = STATE.currentModel || '';
     if (model.indexOf('samagent-') !== 0) return;
-    // Détecte les <p> qui commencent par 💬, 💻 ou 🔬
-    const emojis = ['💬', '💻', '🔬'];
     const allP = el.querySelectorAll('p');
+    // Domaines à détecter (insensible à la casse, présence dans le texte)
+    const domains = [
+        { keys: ['chat général', 'chat general'], label: '💬 Chat général' },
+        { keys: ['coder'],                   label: '💻 Coder' },
+        { keys: ['avancé', 'avance'],        label: '🔬 Avancé' }
+    ];
     let found = false;
     for (const p of allP) {
-        const txt = p.textContent.trim();
-        for (const em of emojis) {
-            if (txt.startsWith(em)) {
-                found = true;
-                p.classList.add('samagent-proposal');
-                p.style.cssText = 'cursor:pointer;padding:8px 12px;margin:4px 0;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);transition:background 0.15s,border-color 0.15s';
-                p.addEventListener('mouseenter', () => { p.style.background = 'var(--bg-hover)'; p.style.borderColor = 'var(--accent)'; });
-                p.addEventListener('mouseleave', () => { p.style.background = 'var(--bg-input)'; p.style.borderColor = 'var(--border-input)'; });
-                p.addEventListener('click', () => {
-                    el.querySelectorAll('.samagent-proposal').forEach(b => {
-                        b.style.pointerEvents = 'none';
-                        b.style.opacity = '0.5';
-                    });
-                    // Envoyer le domaine choisi (1ère ligne seulement)
-                    const promptInput = document.getElementById('prompt-input');
-                    const sendBtn = document.getElementById('send-btn');
-                    if (promptInput && sendBtn && !sendBtn.disabled) {
-                        promptInput.value = txt.split(' : ')[0]; // juste "💬 Chat général"
-                        sendBtn.click();
-                    }
-                });
+        const txt = p.textContent.trim().toLowerCase();
+        // Ignorer les lignes trop longues (probablement pas une proposition)
+        if (txt.length > 120) continue;
+        let match = null;
+        for (const d of domains) {
+            for (const k of d.keys) {
+                if (txt.indexOf(k) !== -1) { match = d; break; }
             }
+            if (match) break;
+        }
+        if (match) {
+            found = true;
+            p.classList.add('samagent-proposal');
+            p.style.cssText = 'cursor:pointer;padding:8px 12px;margin:4px 0;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);transition:background 0.15s,border-color 0.15s';
+            p.addEventListener('mouseenter', () => { p.style.background = 'var(--bg-hover)'; p.style.borderColor = 'var(--accent)'; });
+            p.addEventListener('mouseleave', () => { p.style.background = 'var(--bg-input)'; p.style.borderColor = 'var(--border-input)'; });
+            const label = match.label;
+            p.addEventListener('click', () => {
+                el.querySelectorAll('.samagent-proposal').forEach(b => {
+                    b.style.pointerEvents = 'none';
+                    b.style.opacity = '0.5';
+                });
+                const promptInput = document.getElementById('prompt-input');
+                const sendBtn = document.getElementById('send-btn');
+                if (promptInput && sendBtn && !sendBtn.disabled) {
+                    promptInput.value = label;
+                    sendBtn.click();
+                }
+            });
         }
     }
-    // Marquer le conteneur pour éviter le double traitement
     if (found) el.querySelector('.msg-text')?.classList.add('samagent-proposals-rendered');
 }
 
