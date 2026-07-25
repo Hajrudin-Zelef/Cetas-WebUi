@@ -59,6 +59,7 @@ Cetas est une alternative open-source aux assistants IA propriétaires. Les clé
 - **Headers sécurité** : X-Frame-Options DENY, X-Content-Type-Options nosniff
 - **Résilience** : handler global de rejetons non gérées (toast non-bloquant), fallback 4 niveaux auth
 - Suivi de coûts en temps réel, alertes budget configurables
+- **Quotas d'utilisation** : crédits API restants (OpenRouter, DeepSeek), recharge manuelle, alertes seuil
 - Panneau de stockage : gestion des conversations et médias (taille, tri, recherche, suppression)
 
 ## Démarrage rapide
@@ -114,7 +115,7 @@ La documentation technique détaillée se trouve dans le fichier `PriveDoc.md`.
 
 - **Frontend** : Vanilla JS (ES modules), CSS custom properties (design system modulaire), HTML5 Canvas
 - **CSS modulaire** : `style.css` point d'entrée → 8 modules (@import) : variables, layout, chat, components, canvas, catalog, storage, menu
-- **Architecture modulaire** : `app.js` (~5,300 lignes) + 14 modules ES + 5 scripts globaux extraits (config-providers, conversations, right-panel, plus-menu, model-catalog)
+- **Architecture modulaire** : `app.js` (~5,300 lignes) + 15 modules ES + 5 scripts globaux extraits (config-providers, conversations, right-panel, plus-menu, model-catalog)
 - **Backend proxy** : Python, AES-GCM, JWT (PyJWT)
 - **Serveur** : Nginx alpine, Docker
 
