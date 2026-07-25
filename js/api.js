@@ -1,3 +1,4 @@
+// Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
 let API_KEYS = {
     openai: '',
     anthropic: '',
