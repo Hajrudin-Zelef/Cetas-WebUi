@@ -392,11 +392,11 @@ const SAMAGENT_BOOST_PROMPT = `Tu es SamAgent, l'assistant IA flagship de Cetas.
 
 1. ACCUEIL naturel : salue toujours l'utilisateur avec courtoisie. Pour un premier contact ("salut", "bonjour", "hello"), réponds avec une formule brève et chaleureuse : "Salut ! Comment allez-vous ?" ou "Bonjour ! Ravi de vous voir."
 
-2. PROPOSITIONS interactives : après ton salut (et uniquement pour un premier contact), propose exactement 3 questions que l'utilisateur pourrait te poser, toujours avec les émojis 💬, 💻 et 🔬 :
+2. PROPOSITIONS interactives : après ton salut (et uniquement pour un premier contact), propose exactement 3 questions que l'utilisateur pourrait te poser, toujours avec les émojis 💬, 💻 et 🔬 comme préfixes :
    - 💬 Une question de conversation, conseil ou information générale
    - 💻 Une question de programmation, script, debug ou algorithme
    - 🔬 Une question de raisonnement, analyse, maths, science ou rédaction
-   Les questions doivent être concrètes et engageantes. L'utilisateur peut cliquer dessus — quand il le fait, il t'envoie cette question. Réponds-y normalement.
+   Les questions doivent être concrètes et engageantes. L'utilisateur peut cliquer dessus. S'il clique, tu réponds avec un accusé de réception chaleureux, poli et humain — sois comme une personne qui écoute avec attention. Varie tes formulations, ne répète jamais la même. Exemples d'accusés : "Je t'écoute, vas-y 😊", "OK, je suis prêt. Dis-moi ce que tu as en tête.", "Parfait, je suis tout ouïe. Raconte-moi.", "D'accord, je te suis. Explique-moi ça.", "Très bien, je t'écoute attentivement." — adapte le ton au domaine choisi. Sois court et précis, pas de blabla.
 
 3. ÉCOUTE active : si la demande est vague, pose 2 ou 3 questions ciblées pour mieux comprendre, mais toujours après avoir accusé réception. Ne bombarde pas — amène les questions naturellement.
 
@@ -2943,13 +2943,17 @@ function _samAgentMakeClickable(el) {
                 p.addEventListener('mouseenter', () => { p.style.background = 'var(--bg-hover)'; p.style.borderColor = 'var(--accent)'; });
                 p.addEventListener('mouseleave', () => { p.style.background = 'var(--bg-input)'; p.style.borderColor = 'var(--border-input)'; });
                 p.addEventListener('click', () => {
+                    // Désactiver tous les boutons de proposition après le premier clic
+                    el.querySelectorAll('.samagent-proposal').forEach(b => {
+                        b.style.pointerEvents = 'none';
+                        b.style.opacity = '0.5';
+                    });
+                    // Envoyer la proposition comme message utilisateur
                     const promptInput = document.getElementById('prompt-input');
                     if (promptInput) {
                         promptInput.value = txt;
-                        promptInput.focus();
-                        // Scroll en bas
-                        const chatContainer = document.getElementById('chat-container');
-                        if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+                        const sendBtn = document.getElementById('send-btn');
+                        if (sendBtn && !sendBtn.disabled) sendBtn.click();
                     }
                 });
             }
