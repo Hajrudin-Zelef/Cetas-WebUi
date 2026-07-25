@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Menu "+" (script global) ---
 const escHtml = window.escHtml || function(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
 const modelSelect = document.getElementById("model-select");

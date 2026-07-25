@@ -1,16 +1,12 @@
-// ============================================================
-// theme.js — Gestion du thème clair/sombre/auto
-// ============================================================
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 import { getThemeToggle } from './dom.js';
 
 let _onThemeChange = null;
 
-/** Enregistre un callback appelé après chaque changement de thème */
 export function setOnThemeChange(fn) {
     _onThemeChange = fn;
 }
 
-/** Applique le thème et persiste dans localStorage */
 export function applyTheme(mode) {
     if (mode === 'auto') {
         document.body.classList.remove('dark');
@@ -24,7 +20,6 @@ export function applyTheme(mode) {
     if (_onThemeChange) _onThemeChange();
 }
 
-/** Initialise le toggle de thème et applique le thème sauvegardé */
 export function initTheme() {
     const toggle = getThemeToggle();
     const saved = localStorage.getItem('minou-theme') || 'light';

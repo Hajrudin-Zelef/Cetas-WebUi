@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Catégories ---
 import { STATE, CAT_PRESET_COLORS } from './state.js';
 import { escHtml } from './utils.js';

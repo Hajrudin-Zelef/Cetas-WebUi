@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Bouton recherche web (globe) ---
 import { STATE } from './state.js';
 

@@ -1,5 +1,4 @@
-// ============================================================
-// state.js — État partagé de l'application (objet singleton)
+// state.js — État partagé. © Marexsoft Corporation. Fondateur Kouassi Marius.
 //
 // Utilisation : import { STATE } from './state.js';
 // Tous les modules partagent la même référence → mutations ET

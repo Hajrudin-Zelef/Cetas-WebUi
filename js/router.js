@@ -1,4 +1,4 @@
-// ── Model Fusion Router ──────────────────────────────────────────────
+// SamAgent — Routeur intelligent multi-providers. © Marexsoft Corporation. Fondateur Kouassi Marius.
 // N4 Flash : modèles OpenRouter gratuits (Rapide)
 // N4       : modèles OpenRouter payants ≤ $1.50/M (Standard)
 // Fallback : si OpenRouter échoue → DeepSeek API (deepseek-v4-flash par défaut)

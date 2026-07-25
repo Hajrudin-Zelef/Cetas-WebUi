@@ -1,5 +1,4 @@
-// --- Config API / Providers (script global) ---
-
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 const apikeysBtn = document.getElementById('apikeys-btn');
 const apikeysModalOverlay = document.getElementById('apikeys-modal-overlay');
 
@@ -106,9 +105,7 @@ function _restoreApiKeyInputs() {
 }
 
 apikeysBtn.addEventListener('click', function() { window.openApiKeysModal(); });
-// Auto-save : chaque champ de configuration s'enregistre automatiquement
 function initConfigAutoSave() {
-    // Clés API — listeners attachés dynamiquement par _initApiModelesPanel()
     const apiKeyIds = ['apikey-openai','apikey-anthropic','apikey-google','apikey-perplexity',
         'apikey-mistral','apikey-deepseek','apikey-grok','apikey-zai',
         'apikey-groq','apikey-nvidia','apikey-cabreras',
@@ -121,13 +118,11 @@ function initConfigAutoSave() {
         }
         saveApiKeys(keys);
         _setKeysDirty(false);
-        // Mettre à jour l'affichage masqué pour tous les providers cloud
         for (const id of ['openai','anthropic','google','perplexity','mistral','deepseek','grok','zai','groq','nvidia','cabreras','openrouter']) {
             _updateMaskedKeyDisplay(id);
         }
     }
 
-    // Bouton « Sauvegarder » du panel API et Modèles — sauve clés + catalogue
     const apimodelesSaveBtn = document.getElementById('apimodeles-save-btn');
     if (apimodelesSaveBtn) {
         apimodelesSaveBtn.addEventListener('click', () => {
@@ -148,7 +143,6 @@ function initConfigAutoSave() {
         });
     }
 
-    // Sélecteurs audio/modèles — sauvegarde manuelle via bouton
     const selectIds = ['audio-tts-provider','audio-stt-provider','enhance-provider','summary-model','title-model','error-explainer-model','local-fallback-model'];
 
     function autoSaveAudioSettings() {
@@ -186,7 +180,6 @@ function initConfigAutoSave() {
         });
     }
 
-    // Budget — sauvegarde manuelle via bouton
     const budgetFields = ['budget-enabled','budget-period','budget-amount'];
     for (const id of budgetFields) {
         const el = document.getElementById(id);
@@ -214,7 +207,6 @@ function initConfigAutoSave() {
         });
     }
 
-    // Bouton sauvegarde globale (sticky en bas de la modale)
     const globalSaveBtn = document.getElementById('global-save-btn');
     if (globalSaveBtn) {
         globalSaveBtn.addEventListener('click', async () => {
@@ -231,9 +223,6 @@ function initConfigAutoSave() {
     }
 }
 
-// ============================================================
-// --- Sous-onglets fournisseurs (panel API et Modèles) ---
-// ============================================================
 
 const PROVIDERS_CONFIG = [
     { id: 'openrouter', label: 'OpenRouter',       icon: 'OpenRouter.svg', placeholder: 'sk-or-...',  link: 'https://openrouter.ai/settings/keys',                        linkLabel: 'Obtenir une clé API OpenRouter', hasImage: true, isOpenRouter: true },
@@ -274,7 +263,6 @@ function _buildProviderSectionHtml(p, isFirst) {
     const localStatusHtml = p.isLocal ? `<p class="apikey-local-status" id="apikey-${p.id}-status"></p>` : '';
     const refreshBtn = p.isLocal ? `<button id="apikey-${p.id}-refresh" type="button" class="apikey-local-update-btn" data-provider="${p.id}">Mettre à jour</button>` : '';
     const eyeBtn = p.isLocal ? '' : `<button type="button" class="apikey-eye-btn" data-target="apikey-${p.id}" title="Afficher la clé" aria-label="Afficher la clé">${_EYE_SVG}</button>`;
-    // Affichage de la clé masquée + bouton Valider (providers cloud uniquement)
     const maskedKeyHtml = p.isLocal ? '' : `<div class="apikey-masked-row" id="apikey-masked-${p.id}" style="display:none">
         <span class="apikey-masked-key" id="apikey-masked-text-${p.id}"></span>
         <button type="button" class="apikey-validate-btn" id="apikey-validate-${p.id}" data-provider="${p.id}">Valider</button>
@@ -315,12 +303,10 @@ function _initApiModelesPanel() {
     tabsContainer.innerHTML = _buildProviderTabsHtml();
     contentContainer.innerHTML = PROVIDERS_CONFIG.map((p, idx) => _buildProviderSectionHtml(p, idx === 0)).join('');
 
-    // Sous-onglet fournisseur — clic
     tabsContainer.querySelectorAll('.provider-tab').forEach(btn => {
         btn.addEventListener('click', () => _selectProvider(btn.dataset.provider));
     });
 
-    // Boutons "Valider" — sauvegarde la clé et affiche les modèles
     PROVIDERS_CONFIG.forEach(p => {
         if (p.isLocal) return;
         const btn = document.getElementById('apikey-validate-' + p.id);
@@ -336,16 +322,13 @@ function _initApiModelesPanel() {
         });
     });
 
-    // Listeners par section
     PROVIDERS_CONFIG.forEach(p => {
         const section = contentContainer.querySelector(`.provider-section[data-provider="${p.id}"]`);
         if (!section) return;
         const input = section.querySelector(`#apikey-${p.id}`);
         if (input) input.addEventListener('input', () => {
             _setKeysDirty(true);
-            // Mettre à jour l'affichage masqué
             _updateMaskedKeyDisplay(p.id);
-            // Re-render catalog (les modèles deviennent visibles dès qu'une clé est saisie)
             renderProviderCatalog(p.id);
         });
         const eye = section.querySelector('.apikey-eye-btn');
@@ -876,14 +859,12 @@ function _renderOpenRouterCatalogInto(container, isImage) {
     }
 }
 
-// Initialisation immédiate (les écouteurs des champs apikey-* sont attachés ici)
 if (typeof window.escHtml === 'function') {
     _initApiModelesPanel();
 } else {
     window.addEventListener('cetas:app-ready', _initApiModelesPanel, { once: true });
 }
 
-// Onglets de la modale
 document.querySelectorAll('.apikeys-tab').forEach(tab => {
     tab.addEventListener('click', async () => {
         const currentActiveTab = document.querySelector('.apikeys-tab.active');
@@ -966,8 +947,6 @@ document.querySelectorAll('.apikeys-tab').forEach(tab => {
     });
 });
 
-// ===================== Panel Stockage =====================
-
 const _STORAGE_VIEWMODE_KEY = 'cetas-storage-media-viewmode';
 const _storage = {
     subtab: 'conversations',
@@ -1001,7 +980,6 @@ if (typeof setOnConvMutated === 'function') {
     setOnConvMutated(() => { _storage._dirty = true; });
 }
 
-// Icônes SVG (24x24 viewBox, stroke currentColor) — style Feather.
 const _STORAGE_ICONS = {
     chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
     image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
@@ -1236,7 +1214,6 @@ function _renderStorageOverview() {
         const overflow = entries.slice(_STORAGE_MAX_VISIBLE_CATS - 1);
         const otherSize = overflow.reduce((s, e) => s + e.size, 0);
         const merged = visible.concat([{ key: 'other', label: 'Autre', size: otherSize }]);
-        // Re-tri pour placer "Autre" selon sa taille
         entries = merged.sort((a, b) => b.size - a.size);
     }
 
@@ -1747,7 +1724,6 @@ async function _deleteSingleStorageMedia(mediaId) {
         if (_storage.categorySizes && _storage.categorySizes[cat] != null) {
             _storage.categorySizes[cat] = Math.max(0, _storage.categorySizes[cat] - removedSize);
         }
-        // Idem _deleteSingleStorageConv : la mutation locale a tout resynchronisé.
         _storage._dirty = false;
     } else {
         await _loadStorageData();
@@ -1797,7 +1773,6 @@ async function _deleteSelectedStorage() {
     if (typeof refreshConvList === 'function') refreshConvList();
 }
 
-// État du dock de prévisualisation (lancé depuis Stockage > Conversations)
 let _storagePreviewFilename = null;
 
 function _openStorageFilePreview(id) {
@@ -1826,7 +1801,6 @@ function _openStoragePreview(filename) {
     if (titleEl) titleEl.textContent = (conv && conv.titre) ? conv.titre : 'Sans titre';
     document.body.classList.add('storage-preview-mode');
 
-    // Charger la conversation dans la vue principale pour aperçu
     loadConversation(filename);
 
     // Animer la modale Paramètres vers le dock du bas
@@ -2068,7 +2042,6 @@ async function _initStoragePanel() {
             btn.classList.toggle('active', btn.dataset.viewmode === _storage.mediaViewMode);
         });
 
-        // Dock de prévisualisation : Annuler / Sélectionner / Supprimer
         const dockCancel = document.getElementById('storage-preview-cancel');
         const dockSelect = document.getElementById('storage-preview-select');
         const dockDelete = document.getElementById('storage-preview-delete');

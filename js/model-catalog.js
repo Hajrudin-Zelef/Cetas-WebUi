@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Catalogue de modèles (script global) ---
 // --- Catalogue de modèles ---
 // ============================================================

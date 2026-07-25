@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Cetas API Proxy Server
+Cetas API Proxy Server — © Marexsoft Corporation. Fondateur Kouassi Marius.
 Déchiffre les clés API depuis .env (via proxy_key du vault .enc),
 forwarde les requêtes aux providers en injectant l'authentification.
 

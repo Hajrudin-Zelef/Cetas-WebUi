@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Favoris ---
 import { escHtml } from './utils.js';
 

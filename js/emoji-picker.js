@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Emoji Picker ---
 const EMOJI_LIBRARY = {
     'Smileys': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊','😇','🥰','😍','🤩','😘','😋','😛','🤔','🤗','🤫','🤭','😏','😌','😴','🤓','😎','🥳','😤','😠','🤯','😱','🥺','😢','😭','🫠'],

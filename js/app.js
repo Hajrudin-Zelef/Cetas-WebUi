@@ -1,6 +1,4 @@
-// ============================================================
-// Cetas v3.2 — Point d'entrée (module ES6)
-// ============================================================
+// Cetas v3.7 — © Marexsoft Corporation. Fondateur Kouassi Marius.
 import { STATE, STREAM_ERROR_CONTENT, TEXT_EXTENSIONS, isStreamActive } from './state.js';
 import './dom.js';
 import { escHtml, escHtmlAttr, safeUrl, isTextFile, arrayBufferToBase64, isPdf, getModelLabel, fmtTokens, fmtCost } from './utils.js';
@@ -277,12 +275,10 @@ document.querySelectorAll('.sp-toggle').forEach(toggle => {
         toggle.innerHTML = collapsed ? '&#9656;' : '&#9662;';
         localStorage.setItem('minou-collapse-' + toggle.dataset.target, collapsed ? '1' : '0');
     });
-    // Clic sur le header entier
     toggle.closest('.sp-header').addEventListener('click', (e) => {
         if (e.target.closest('.sp-add-btn')) return;
         toggle.click();
     });
-    // Restaurer l'état
     const saved = localStorage.getItem('minou-collapse-' + toggle.dataset.target);
     if (saved === '1') {
         document.getElementById(toggle.dataset.target)?.classList.add('collapsed');
@@ -333,7 +329,6 @@ if (_isMobile()) {
 }
 _updateSidebarState();
 
-// Re-vérifier au resize
 window.addEventListener('resize', () => {
     if (_isMobile() && !sidebar.classList.contains('collapsed')) {
         sidebar.classList.add('collapsed');
@@ -416,7 +411,6 @@ function effectiveSystemPrompt(spContent) {
     return sp;
 }
 
-// ── Indicateur furtif du routeur SamAgent ──────────────────────────────
 // Affiche un message animé dans la bulle assistant pendant l'analyse.
 // L'utilisateur voit une activité sans savoir qu'un routeur LLM tourne.
 var ROUTER_THINKING_MESSAGES = [
@@ -505,7 +499,6 @@ function updateEnhanceBtn() {
         enhancePromptBtn.disabled = !hasText || STATE.isEnhancing || STATE.isStreaming;
         enhancePromptBtn.classList.remove('revert');
     }
-    // Update toolbar visibility
     updatePromptToolbar();
 }
 
@@ -710,7 +703,6 @@ toolbarSaveBtn.addEventListener('click', () => {
     openPrModal(null, text);
 });
 
-// Fermer tous les menus contextuels ouverts
 function closeAllMenus(except) {
     document.querySelectorAll('.copy-menu.open').forEach(m => { if (m !== except) m.classList.remove('open'); });
     document.querySelectorAll('.menu-open').forEach(b => b.classList.remove('menu-open'));
@@ -923,7 +915,6 @@ function upgradeToCustomSelect(selectEl) {
     // retirés (fuite mémoire + handlers en double).
     if (selectEl._customUI) return;
 
-    // Créer le DOM personnalisé
     const container = document.createElement('div');
     container.className = 'custom-select';
 
@@ -982,7 +973,6 @@ function upgradeToCustomSelect(selectEl) {
     // Clic sur le trigger → ouvrir/fermer
     trigger.addEventListener('click', () => {
         if (selectEl._customDisabled) return;
-        // Fermer les autres dropdowns ouverts
         document.querySelectorAll('.custom-select.open').forEach(el => {
             if (el !== container) el.classList.remove('open');
         });
@@ -1010,14 +1000,12 @@ function upgradeToCustomSelect(selectEl) {
         selectEl.dispatchEvent(new Event('change'));
     });
 
-    // Fermer au clic extérieur
     document.addEventListener('click', (e) => {
         if (!container.contains(e.target)) {
             container.classList.remove('open');
         }
     });
 
-    // Fermer avec Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             container.classList.remove('open');
@@ -1819,7 +1807,6 @@ function resetConversation() {
     STATE.isEnhancing = false;
     attachPreview.innerHTML = '';
     modelSelect.disabled = false;
-    // Forcer l'onglet Texte et synchroniser la valeur affichée
     _switchTab('text', false);
     modelSelect._customValue = isTextModel ? lastModel : '';
     updateTriggerDisplay(modelSelect);
@@ -3116,7 +3103,6 @@ function appendCitations(messageDiv, citations) {
         a.href = safeUrl(url);
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
-        // Afficher le titre si disponible, sinon le domaine
         if (citTitle) {
             a.textContent = citTitle.length > 50 ? citTitle.substring(0, 50) + '...' : citTitle;
         } else {
@@ -3447,7 +3433,6 @@ function startEditMessage(wrapper, msgDiv) {
     const originalText = getTextFromContent(STATE.conversationHistory[histIdx].content);
     const btnRow = wrapper.querySelector('.message-btn-row');
 
-    // Masquer le btnRow existant
     if (btnRow) btnRow.style.display = 'none';
 
     // Figer la largeur de la bulle avant de vider le contenu
@@ -3523,7 +3508,6 @@ function startEditMessage(wrapper, msgDiv) {
         STATE.conversationHistory[histIdx].content = newText;
         STATE.conversationHistory.splice(histIdx + 1);
 
-        // Supprimer tous les wrappers DOM après celui-ci (+ les model-switch markers)
         const allElements = Array.from(chatContainer.children);
         const wrapperIndex = allElements.indexOf(wrapper);
         for (let i = allElements.length - 1; i > wrapperIndex; i--) {
@@ -3555,7 +3539,6 @@ function startEditMessage(wrapper, msgDiv) {
 
         var activeTextModel = STATE.currentModel || STATE.currentSearchModel;
 
-        // ── Model Fusion Router (regen) ──────────────────────────
         var _routedBy = null;
         var _routerFallback = null;
         if (activeTextModel && activeTextModel.indexOf('samagent-') === 0) {
@@ -3913,7 +3896,6 @@ async function sendMessage() {
         return;
     }
 
-    // Initialiser la conversation si c'est le premier message
     if (!STATE.conversationId) {
         let _firstLabel = text;
         if (!_firstLabel) {
@@ -3969,7 +3951,6 @@ async function sendMessage() {
         messageContent = text;
     }
 
-    // Afficher le message utilisateur
     addMessage('user', messageContent);
     STATE.conversationHistory.push({ role: 'user', content: messageContent });
 
@@ -3993,7 +3974,6 @@ async function sendMessage() {
     const _streamCtx = { conversationId: _streamConvId, history: _streamHistory, abortController: STATE.currentAbortController };
     STATE._activeStreams.set(_streamConvId, _streamCtx);
 
-    // Créer le bloc de réponse assistant
     const assistantDiv = addMessage('assistant', '');
     assistantDiv.classList.add('streaming');
     const genStartTime = Date.now();
@@ -4008,7 +3988,6 @@ async function sendMessage() {
 
     var activeTextModel = STATE.currentModel || STATE.currentSearchModel;
 
-    // ── Model Fusion Router ──────────────────────────────────────
     var _routedBy = null;
     var _routerFallback = null;
     if (activeTextModel && activeTextModel.indexOf('samagent-') === 0) {
@@ -4419,7 +4398,6 @@ async function togglePromptPicker() {
 // Bouton "Insérer un prompt" dans la toolbar
 toolbarInsertBtn.addEventListener('click', () => togglePromptPicker());
 
-// Fermer le picker en cliquant ailleurs
 document.addEventListener('click', (e) => {
     if (!toolbarInsertBtn.contains(e.target) && !promptPickerDropdownWrapper.contains(e.target)) {
         if (promptPickerDropdownWrapper.style.display !== 'none') {
@@ -4673,7 +4651,6 @@ async function listAllConvStats() {
 // --- Modale Config (clés API) --- (module config-providers.js)
 initConfigAutoSave();
 // (coffre-fort retiré — sera remplacé par une nouvelle logique)
-// ============================================================
 // --- Catalogue de modèles (module model-catalog.js) ---
 // --- FAQ ---
 let _faqLoaded = false;
@@ -4947,7 +4924,6 @@ function updateLocalFallbackVisibility() {
 }
 
 function openApiKeysModal(tab = 'apimodeles') {
-    // Reset de la visibilité des champs clés API
     document.querySelectorAll('.apikey-eye-btn').forEach(btn => {
         const target = document.getElementById(btn.dataset.target);
         if (target) target.type = 'password';
@@ -4967,7 +4943,6 @@ function openApiKeysModal(tab = 'apimodeles') {
     _setCatalogDirty(false);
     if (tab === 'apimodeles') renderProviderCatalog(_activeProvider);
     populateModelSelects();
-    // Charger les réglages budget
     const budget = loadBudgetSettings();
     document.getElementById('budget-enabled').checked = budget.enabled;
     document.getElementById('budget-period').value = budget.period;
@@ -4976,7 +4951,6 @@ function openApiKeysModal(tab = 'apimodeles') {
     updateBudgetAmountSuffix();
     if (budget.enabled) updateBudgetPreview();
     _setBudgetDirty(false);
-    // Activer l'onglet demandé
     document.querySelectorAll('.apikeys-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.apikeys-panel').forEach(p => p.classList.remove('active'));
     document.querySelector('.apikeys-tab[data-tab="' + tab + '"]').classList.add('active');
@@ -5276,10 +5250,8 @@ if (window.Ocean && typeof window.Ocean.init === 'function') {
 
 // Pas de focus initial sur la barre de saisie
 
-// ============================================================
 // Exposition globale pour les scripts classiques (non-module) :
 // config-providers.js, conversations.js, plus-menu.js, right-panel.js, model-catalog.js
-// ============================================================
 Object.assign(window, {
     STATE, STREAM_ERROR_CONTENT, TEXT_EXTENSIONS, isStreamActive, escHtml, escHtmlAttr,
     safeUrl, isTextFile, arrayBufferToBase64, isPdf, getModelLabel, fmtTokens,

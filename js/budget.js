@@ -1,4 +1,4 @@
-// --- Budget ---
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 import { STATE } from './state.js';
 
 export function loadBudgetSettings() {

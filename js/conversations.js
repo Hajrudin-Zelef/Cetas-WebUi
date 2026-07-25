@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Liste des conversations (script global) ---
 const convList = document.getElementById("conv-list");
 async function refreshConvList() {

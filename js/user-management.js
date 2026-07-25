@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Gestion des utilisateurs (admin uniquement) ---
 import { escHtml } from './utils.js';
 

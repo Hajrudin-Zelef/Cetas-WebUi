@@ -1,3 +1,4 @@
+# © Marexsoft Corporation. Fondateur Kouassi Marius.
 #!/usr/bin/env python3
 """
 Chiffre les clés API du vault vers .env.

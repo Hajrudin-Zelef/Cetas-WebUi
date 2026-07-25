@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Panneau droit + params (script global) ---
 const spSelect = document.getElementById("sp-select");
 // --- Panneau droit (Rôle) + toolbar latérale (gear + canvas) ---

@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 /**
  * Cetas Backup Proxy — Cloudflare Worker
  *

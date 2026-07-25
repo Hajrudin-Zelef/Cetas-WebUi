@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // ============================================================
 // utils.js — Fonctions utilitaires pures (zéro dépendance DOM/état)
 // ============================================================

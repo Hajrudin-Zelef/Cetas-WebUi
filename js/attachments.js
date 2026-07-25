@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // ============================================================
 // attachments.js — Pièces jointes : fichiers, drag-drop, presse-papiers
 // ============================================================

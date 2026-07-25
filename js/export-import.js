@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Export / Import ---
 import { refreshCatBar } from './categories.js';
 import { refreshSpList } from './roles.js';

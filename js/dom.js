@@ -1,6 +1,5 @@
-// ============================================================
-// dom.js — Registre centralisé des éléments DOM (getters lazy)
-// ============================================================
+// dom.js — Registre centralisé des éléments DOM. © Marexsoft Corporation. Fondateur Kouassi Marius.
+//
 
 // --- Chat principal ---
 export const getChatContainer = () => document.getElementById('chat-container');

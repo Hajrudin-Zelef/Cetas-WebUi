@@ -1,4 +1,4 @@
-// --- Gestion des conversations via IndexedDB ---
+// Gestion des conversations via IndexedDB. © Marexsoft Corporation. Fondateur Kouassi Marius.
 // Compteur de writes en cours pour beforeunload
 var _pendingWrites = 0;
 var _pendingWritesResolve = null;

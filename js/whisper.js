@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Micro : dictée vocale via Whisper ---
 import { STATE } from './state.js';
 

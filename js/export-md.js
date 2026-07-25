@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Export Markdown / HTML ---
 import { STATE } from './state.js';
 import { escHtml, escHtmlAttr, safeUrl, getModelLabel } from './utils.js';

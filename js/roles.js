@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Rôles (System Prompts) : liste, modale, CRUD ---
 import { STATE } from './state.js';
 import { escHtml } from './utils.js';

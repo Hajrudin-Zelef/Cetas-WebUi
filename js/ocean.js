@@ -1,5 +1,4 @@
-// ============================================================
-// ocean.js — Canvas de fond aquatique + ripple handler
+// ocean.js — Canvas de fond aquatique. © Marexsoft Corporation. Fondateur Kouassi Marius.
 // Module ES, s'enregistre sur window.Ocean
 // ============================================================
 import { setOnThemeChange } from './theme.js';

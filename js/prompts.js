@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // --- Prompts enregistrés : sidebar, modale, picker ---
 import { STATE } from './state.js';
 import { escHtml } from './utils.js';

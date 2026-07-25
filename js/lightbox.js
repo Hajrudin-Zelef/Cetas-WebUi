@@ -1,3 +1,4 @@
+// © Marexsoft Corporation. Fondateur Kouassi Marius.
 // ============================================================
 // lightbox.js — Lightbox images + File viewer iframe
 // ============================================================

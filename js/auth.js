@@ -1,5 +1,4 @@
-// ============================================================
-// auth.js — Authentification Cetas (chargé avant app.js)
+// auth.js — Authentification Cetas. © Marexsoft Corporation. Fondateur Kouassi Marius.
 // Non-module — expose l'objet global Auth
 // ============================================================
 const Auth = (() => {

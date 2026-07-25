@@ -1,9 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════
-// api.js — Couche d'intégration multi-providers (Provider Pattern)
-// ═══════════════════════════════════════════════════════════════════
-
-// --- 1. Configuration & état global ---
-
 let API_KEYS = {
     openai: '',
     anthropic: '',
@@ -22,18 +16,15 @@ let API_KEYS = {
     llamacpp: ''        // URL du serveur LLaMA.cpp (ex: http://localhost:8080)
 };
 
-// Helper : un éditeur correspond-il à un fournisseur local (Ollama ou LM Studio) ?
 function isLocalEditeur(editeur) {
     return editeur === 'ollama' || editeur === 'lmstudio' || editeur === 'llamacpp';
 }
 
-// Préfixe du proxy backend (les providers cloud passent par /api/proxy/{provider}/...)
 const PROXY_PRIMARY = '/api/proxy';
 const PROXY_WORKER = 'https://cetas-backup.angeoulai2015.workers.dev/api/proxy';
 const PROXY_WORKER_TOKEN = 'aa7217a90bcf2a786d80720b4355d70e3fdca07c758dc7ea2d49ec96f619ee88';
 const PROXY_RETRY_MS = 30000; // retest le primary toutes les 30s
 
-// État du proxy — bascule automatique primary ↔ worker
 var _proxyDown = false;
 var _proxyDownSince = 0;
 
@@ -71,7 +62,6 @@ function proxyHeaders(provider, headers) {
 // L'utilisateur ne voit rien — le worker prend le relais automatiquement.
 async function _checkProxyHealth() {
     if (!_proxyDown) {
-        // Vérification proactive : ping le primary toutes les 30s
         try {
             const resp = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
             if (!resp.ok) throw new Error('unhealthy');
@@ -81,7 +71,6 @@ async function _checkProxyHealth() {
             _proxyDownSince = Date.now();
         }
     } else {
-        // Primary est down → on reteste
         if (Date.now() - _proxyDownSince >= PROXY_RETRY_MS) {
             try {
                 const resp = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
@@ -90,13 +79,12 @@ async function _checkProxyHealth() {
                     _proxyDown = false;
                 }
             } catch (e) {
-                _proxyDownSince = Date.now(); // reset timer, on réessaiera dans 30s
+                _proxyDownSince = Date.now();
             }
         }
     }
 }
 
-// Ping initial au chargement, puis toutes les 30 secondes
 _checkProxyHealth();
 setInterval(_checkProxyHealth, PROXY_RETRY_MS);
 
@@ -119,10 +107,7 @@ function _rebuildModelMaps() {
 let IMAGE_TARIFS = {};
 let SEARCH_TARIFS = {};
 
-// --- 2. Fonctions publiques utilitaires ---
-
 async function loadApiKeys() {
-    // 1. Coffre chiffré (prioritaire)
     if (typeof Auth !== 'undefined' && Auth.isVaultReady()) {
         try {
             const encrypted = localStorage.getItem('cetas-vault-keys');
@@ -142,7 +127,6 @@ async function loadApiKeys() {
             console.warn('Lecture du coffre impossible :', e);
         }
     }
-    // 2. Fallback : ancien stockage en clair (pré-migration)
     try {
         const stored = localStorage.getItem('minou-apikeys');
         if (stored) {
@@ -213,16 +197,13 @@ async function syncKeysFromProxy() {
         if (!resp.ok) return false;
         const keys = await resp.json();
         if (!keys || Object.keys(keys).length === 0) return false;
-        // Proxy disponible : garder en mémoire uniquement, pas de localStorage
         Object.assign(API_KEYS, keys);
         console.info('[proxy]', Object.keys(keys).length, 'clés chargées en mémoire');
         return true;
     } catch (e) {
-        return false; // Proxy injoignable, fallback localStorage
+        return false;
     }
 }
-
-// --- Catalogue de modèles (prefs + cache OpenRouter) ---
 
 function loadCatalogPrefs() {
     try {
@@ -437,7 +418,6 @@ function rebuildModelLists() {
         }
     }
 
-    // Cache image → IMAGE_MODELS
     if (_imageCache && _imageCache.models) {
         var _priceMap = (typeof getOrImagePrices === 'function') ? getOrImagePrices() : {};
         for (var _k = 0; _k < _imageCache.models.length; _k++) {
@@ -529,7 +509,6 @@ async function initConfig() {
     // Proxy actif ? → clés en mémoire seulement, localStorage ignoré
     const synced = await syncKeysFromProxy();
     if (!synced) {
-        // Proxy injoignable → fallback localStorage (coffre ou clair)
         await loadApiKeys();
     }
     // Migration des IDs renommés persistés (dernier modèle utilisé) — AVANT
@@ -796,8 +775,6 @@ function unloadLocalModel(modelId, editeur = null) {
     }
 }
 
-// --- 3. Générateur SSE partagé ---
-
 async function* readSSE(response) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -816,8 +793,6 @@ async function* readSSE(response) {
         }
     }
 }
-
-// --- 4. Utilitaires partagés pour Chat Completions ---
 
 // Parser de balises <think>...</think> (DeepSeek, Mistral, Perplexity)
 function createThinkTagParser() {
@@ -1056,11 +1031,8 @@ function chatCompletionsProvider(config) {
     };
 }
 
-// --- 5. Providers de streaming texte ---
-
 const PROVIDERS = {
 
-    // ===================== OpenAI =====================
     // Chat Completions par défaut ; bascule sur Responses API quand webSearch est actif
 
     openai: {
@@ -1116,8 +1088,6 @@ const PROVIDERS = {
             });
         }
     },
-
-    // ===================== Anthropic (Messages API) =====================
 
     anthropic: {
         getHeaders() {
@@ -1239,8 +1209,6 @@ const PROVIDERS = {
         }
     },
 
-    // ===================== Google Gemini (generateContent SSE) =====================
-
     google: {
         getHeaders() {
             return { 'Content-Type': 'application/json' };
@@ -1353,8 +1321,6 @@ const PROVIDERS = {
         }
     },
 
-    // ===================== Perplexity (Chat Completions) =====================
-
     perplexity: chatCompletionsProvider({
         getUrl: () => proxyUrl('perplexity', 'https://api.perplexity.ai/chat/completions'),
         getHeaders: () => ({ 'Content-Type': 'application/json' }),
@@ -1364,8 +1330,6 @@ const PROVIDERS = {
             extractCitations: (p) => (p.citations?.length > 0) ? p.citations : null
         }
     }),
-
-    // ===================== Mistral (Chat Completions) =====================
 
     mistral: chatCompletionsProvider({
         getUrl: () => proxyUrl('mistral', 'https://api.mistral.ai/v1/chat/completions'),
@@ -1384,8 +1348,6 @@ const PROVIDERS = {
         }
     }),
 
-    // ===================== DeepSeek (Chat Completions) =====================
-
     deepseek: chatCompletionsProvider({
         getUrl: () => proxyUrl('deepseek', 'https://api.deepseek.com/chat/completions'),
         getHeaders: () => ({ 'Content-Type': 'application/json' }),
@@ -1403,8 +1365,6 @@ const PROVIDERS = {
             extractReasoning: (p) => p.choices?.[0]?.delta?.reasoning_content || null
         }
     }),
-
-    // ===================== Grok / xAI (Chat Completions) =====================
 
     grok: chatCompletionsProvider({
         getUrl: () => proxyUrl('grok', 'https://api.x.ai/v1/chat/completions'),
@@ -1435,8 +1395,6 @@ const PROVIDERS = {
         }
     }),
 
-    // ===================== Z.ai / Zhipu GLM (Chat Completions) =====================
-
     zai: chatCompletionsProvider({
         getUrl: () => proxyUrl('zai', 'https://api.z.ai/api/paas/v4/chat/completions'),
         getHeaders: () => ({ 'Content-Type': 'application/json' }),
@@ -1454,16 +1412,12 @@ const PROVIDERS = {
         }
     }),
 
-    // ===================== Local — Ollama =====================
-
     ollama: chatCompletionsProvider({
         getUrl: () => `${API_KEYS.ollama.replace(/\/+$/, '')}/v1/chat/completions`,
         getHeaders: () => ({ 'Content-Type': 'application/json' }),
         formatOptions: { collapseTextOnly: true },
         bodyExtras: () => ({ stream_options: { include_usage: true } })
     }),
-
-    // ===================== Local — LM Studio =====================
 
     lmstudio: chatCompletionsProvider({
         getUrl: () => `${API_KEYS.lmstudio.replace(/\/+$/, '')}/v1/chat/completions`,
@@ -1472,8 +1426,6 @@ const PROVIDERS = {
         bodyExtras: () => ({ stream_options: { include_usage: true } })
     }),
 
-    // ===================== Local — LLaMA.cpp =====================
-
     llamacpp: chatCompletionsProvider({
         getUrl: () => `${API_KEYS.llamacpp.replace(/\/+$/, '')}/v1/chat/completions`,
         getHeaders: () => ({ 'Content-Type': 'application/json' }),
@@ -1481,28 +1433,20 @@ const PROVIDERS = {
         bodyExtras: () => ({ stream_options: { include_usage: true } })
     }),
 
-    // ===================== Groq =====================
-
     groq: chatCompletionsProvider({
         getUrl: () => proxyUrl('groq', 'https://api.groq.com/openai/v1/chat/completions'),
         getHeaders: () => ({ 'Content-Type': 'application/json' })
     }),
-
-    // ===================== Nvidia NIM =====================
 
     nvidia: chatCompletionsProvider({
         getUrl: () => proxyUrl('nvidia', 'https://integrate.api.nvidia.com/v1/chat/completions'),
         getHeaders: () => ({ 'Content-Type': 'application/json' })
     }),
 
-    // ===================== Cabreras =====================
-
     cabreras: chatCompletionsProvider({
         getUrl: () => proxyUrl('cabreras', 'https://api.cabreras.ai/v1/chat/completions'),
         getHeaders: () => ({ 'Content-Type': 'application/json' })
     }),
-
-    // ===================== OpenRouter (LLM & Images) =====================
 
     openrouter: chatCompletionsProvider({
         getUrl: () => proxyUrl('openrouter', 'https://openrouter.ai/api/v1/chat/completions'),
@@ -1533,8 +1477,6 @@ const PROVIDERS = {
         }
     })
 };
-
-// --- 6. streamModel() — dispatcher générique ---
 
 async function streamModel(modelId, conversationHistory, onChunk, onDone, onError, systemPrompt, webSearch, onThinkingChunk, signal, modelParams, fallbackModel) {
     const editeur = getModelEditeur(modelId) || getSearchModelEditeur(modelId);
@@ -1622,8 +1564,6 @@ async function streamModel(modelId, conversationHistory, onChunk, onDone, onErro
     }
 }
 
-// --- 7. Providers de génération d'images ---
-
 // Convertit une chaîne base64 en Blob (uploads multipart des images de référence)
 function _b64ToBlob(b64, mime) {
     const raw = atob(b64);
@@ -1633,8 +1573,6 @@ function _b64ToBlob(b64, mime) {
 }
 
 const IMAGE_PROVIDERS = {
-
-    // ===================== OpenAI Image =====================
 
     openai: {
         async generate(modelId, prompt, referenceImages, signal, format, imageParams) {
@@ -1679,7 +1617,6 @@ const IMAGE_PROVIDERS = {
                     signal
                 });
             } else {
-                // Sans images de référence : API Images classique
                 const body = {
                     model: modelId,
                     prompt: prompt,
@@ -1723,8 +1660,6 @@ const IMAGE_PROVIDERS = {
             return result;
         }
     },
-
-    // ===================== Google Gemini Image =====================
 
     google: {
         async generate(modelId, prompt, referenceImages, signal, format, imageParams) {
@@ -1797,7 +1732,6 @@ const IMAGE_PROVIDERS = {
     }
     ,
 
-    // ===================== OpenRouter (image generation) =====================
     // Spec : https://openrouter.ai/docs/guides/overview/multimodal/image-generation
 
     openrouter: {
@@ -1806,7 +1740,6 @@ const IMAGE_PROVIDERS = {
             // Priorité au ratio précis (rp-gemini-ratio-select) s'il est défini, sinon mapping des boutons format
             const aspectRatio = imageParams?.geminiAspectRatio || aspectMap[format] || '1:1';
 
-            // Construire le contenu du message
             const content = [];
             if (referenceImages && referenceImages.length > 0) {
                 for (const img of referenceImages) {
@@ -1910,8 +1843,6 @@ const IMAGE_PROVIDERS = {
     }
 };
 
-// --- 8. generateImage() — dispatcher générique ---
-
 async function generateImage(modelId, prompt, onDone, onError, referenceImages, signal, format, imageParams) {
     const editeur = getImageModelEditeur(modelId);
     const imageProvider = IMAGE_PROVIDERS[editeur];
@@ -1925,8 +1856,6 @@ async function generateImage(modelId, prompt, onDone, onError, referenceImages, 
         onError(err);
     }
 }
-
-// --- 9. Audio (TTS + STT) + Paramètres modèles ---
 
 let AUDIO_SETTINGS = { ttsProvider: 'system-tts', sttProvider: '', enhanceModel: '', summaryModel: '', errorExplainerModel: '', titleModel: '' };
 
@@ -2164,7 +2093,6 @@ async function ttsSpeak(text, onDone, onError, silent = false, onPlayingStart = 
         return;
     }
 
-    // OpenAI TTS (défaut)
     try {
         const openaiModel = ttsEditeur === 'openai' ? ttsModel : MODELS_DATA.tts.find(m => m.editeur === 'openai');
         const response = await fetch(proxyUrl('openai', 'https://api.openai.com/v1/audio/speech'), {
@@ -2244,7 +2172,6 @@ async function transcribeAudio(audioBlob, onDone, onError) {
         return;
     }
 
-    // OpenRouter Whisper (via proxy)
     if (sttEditeur === 'openrouter') {
         try {
             const formData = new FormData();
@@ -2266,7 +2193,6 @@ async function transcribeAudio(audioBlob, onDone, onError) {
         return;
     }
 
-    // OpenAI Whisper (défaut)
     try {
         const openaiSttModel = sttEditeur === 'openai' ? sttModel : MODELS_DATA.stt.find(m => m.editeur === 'openai');
         const formData = new FormData();
@@ -2286,8 +2212,6 @@ async function transcribeAudio(audioBlob, onDone, onError) {
         onDone(data.text);
     } catch (err) { onError(err); }
 }
-
-// --- 10. Streaming texte multi-provider (utilitaire partagé) ---
 
 async function streamText(modelId, prompt, onDelta) {
     const localModel = MODELS.find(m => m.id === modelId && isLocalEditeur(m.editeur));
@@ -2361,8 +2285,6 @@ async function streamText(modelId, prompt, onDelta) {
     const { usage } = parse.getResult();
     return { text: result, usage };
 }
-
-// --- 11. Amélioration de prompt ---
 
 const ENHANCE_PROMPT_TEMPLATE = `Tu es un expert en prompt engineering. Voici un prompt écrit par un utilisateur pour une IA conversationnelle :\n\n---\n{TEXT}\n---\n\nAméliore ce prompt pour obtenir un meilleur résultat de l'IA. Tu dois :\n- Conserver fidèlement l'intention et le sens du prompt original\n- Ne pas dénaturer ni changer le sujet ou la demande\n- Compléter, reformuler, structurer et préciser le prompt\n- Ajouter du contexte utile si nécessaire\n- Rendre les instructions plus claires et sans ambiguïté\n\nRéponds UNIQUEMENT avec le prompt amélioré. Pas d'introduction, pas de conclusion, pas de commentaire, pas de texte avant ou après. Ne commence pas par "Voici" ou toute autre phrase d'accroche. Retourne directement le contenu du prompt optimisé, rien d'autre.`;
 
