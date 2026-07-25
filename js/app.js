@@ -392,12 +392,11 @@ const SAMAGENT_BOOST_PROMPT = `Tu es SamAgent, l'assistant IA flagship de Cetas.
 
 1. ACCUEIL naturel : salue toujours l'utilisateur avec courtoisie. Pour un premier contact ("salut", "bonjour", "hello"), réponds avec une formule brève et chaleureuse : "Salut ! Comment allez-vous ?" ou "Bonjour ! Ravi de vous voir."
 
-2. PROPOSITIONS simples : après ton salut (et uniquement pour un premier contact), affiche exactement 3 choix numérotés, un par ligne, sans poser de question :
-   1. 💬 Chat général
-   2. 💻 Coder
-   3. 🔬 Avancé
-   Rien d'autre. Pas de description, pas de question, pas de phrase. Juste ces 3 lignes.
-   Si l'utilisateur clique sur l'un d'eux, il choisit ce domaine. Réponds avec un accusé de réception chaleureux et humain — varie toujours, ne répète jamais. Exemples : "Je t'écoute, vas-y 😊", "OK, je suis prêt. Dis-moi ce que tu as en tête.", "Parfait, je suis tout ouïe. Raconte-moi.", "D'accord, je te suis. Explique-moi ça.", "Très bien, je t'écoute attentivement." Sois court et précis.
+2. PROPOSITIONS interactives : après ton salut (et uniquement pour un premier contact), propose exactement 3 exemples de ce que tu peux faire, avec une courte description :
+   💬 Chat général : une question de conversation, conseil ou information du quotidien
+   💻 Coder : un problème de programmation, script, debug ou algorithme
+   🔬 Avancé : une analyse approfondie, maths, science ou rédaction
+   Présente-les clairement, une par ligne. L'utilisateur peut cliquer dessus pour choisir un domaine. S'il clique, réponds avec un accusé de réception chaleureux et humain — varie toujours, ne répète jamais. Exemples : "Je t'écoute, vas-y 😊", "OK, je suis prêt. Dis-moi ce que tu as en tête.", "Parfait, je suis tout ouïe. Raconte-moi." Sois court et précis.
 
 3. ÉCOUTE active : si la demande est vague, pose 2 ou 3 questions ciblées pour mieux comprendre, mais toujours après avoir accusé réception. Ne bombarde pas — amène les questions naturellement.
 
@@ -2944,20 +2943,16 @@ function _samAgentMakeClickable(el) {
                 p.addEventListener('mouseenter', () => { p.style.background = 'var(--bg-hover)'; p.style.borderColor = 'var(--accent)'; });
                 p.addEventListener('mouseleave', () => { p.style.background = 'var(--bg-input)'; p.style.borderColor = 'var(--border-input)'; });
                 p.addEventListener('click', () => {
-                    // Désactiver tous les boutons après le premier clic
                     el.querySelectorAll('.samagent-proposal').forEach(b => {
                         b.style.pointerEvents = 'none';
                         b.style.opacity = '0.5';
                     });
-                    // Envoyer silencieusement le choix du domaine
+                    // Envoyer le domaine choisi (1ère ligne seulement)
                     const promptInput = document.getElementById('prompt-input');
                     const sendBtn = document.getElementById('send-btn');
                     if (promptInput && sendBtn && !sendBtn.disabled) {
-                        const saved = promptInput.value;
-                        promptInput.value = txt.split('\n')[0]; // juste la 1ère ligne
+                        promptInput.value = txt.split(' : ')[0]; // juste "💬 Chat général"
                         sendBtn.click();
-                        // Restaurer l'input vide pour que l'utilisateur tape librement
-                        setTimeout(() => { if (promptInput.value === txt.split('\n')[0]) promptInput.value = ''; }, 50);
                     }
                 });
             }
