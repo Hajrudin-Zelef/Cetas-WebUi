@@ -9,7 +9,7 @@
 ## IDENTITÉ DE L'APP
 
 - **Nom :** Cetas (cétacés — cachalot)
-- **Version :** 3.6 (24/07/2026)
+- **Version :** 3.8 (26/07/2026) — SamAgent boutons cliquables, label Propositions, stop net après choix, formatage <p>
 - **Éditeur :** Marexsoft Corporation
 - **Tagline :** "Assistant IA multi-modèles"
 - **Langue :** Français
@@ -25,7 +25,7 @@
 
 ### Stack
 - **Frontend :** Vanilla JS (ES modules), CSS custom properties, HTML5 Canvas
-- **Architecture :** `app.js` (~5,300 lignes) point d'entrée module ES, importe 14 sous-modules. CSS modulaire : `style.css` point d'entrée → 8 modules @import (variables, layout, chat, components, canvas, catalog, storage, menu) — concaténés + minifiés au build Docker.
+- **Architecture :** `app.js` (~5,300 lignes) point d'entrée module ES, importe 15 sous-modules. CSS modulaire : `style.css` point d'entrée → 8 modules @import (variables, layout, chat, components, canvas, catalog, storage, menu) — concaténés + minifiés au build Docker.
 - **Backend proxy :** Python (`proxy/server.py`) — déchiffre les clés API depuis `.env` via vault AES-GCM, JWT auth
 - **Serveur :** Nginx alpine, Docker
 - **Pas de framework frontend** — DOM manipulation directe, mix scripts globaux + modules ES
@@ -84,6 +84,8 @@
 │   ├── prompts.js          # ★ prompts enregistrés CRUD
 │   ├── export-import.js    # ★ export/import sauvegardes
 │   ├── budget.js           # ★ suivi budget
+│   ├── quotas.js            # ★ quotas d'utilisation API (v3.7)
+│   ├── settings-sync.js     # ★ sync paramètres serveur (v3.7)
 │   ├── emoji-picker.js     # ★ sélecteur emojis
 │   ├── export-md.js        # ★ export Markdown/HTML
 │   ├── favorites.js        # ★ conversations favorites
@@ -378,8 +380,8 @@ Les mémoires persistent de session en session :
 ## BACKUPS
 
 - **Répertoire :** `/home/sam/backups/`
-- **Format :** `cetas-YYYY-MM-DD_HHhMM`
-- Dernier backup : 15/07/2026
+- **Format :** `kiro-YYYYMMDD-HHMM`
+- Dernier backup : 26/07/2026 (44 Mo, dossier complet)
 
 ---
 
@@ -721,6 +723,45 @@ docker run -d --name cetas-webui --restart unless-stopped \
 
 ---
 
+## v3.7 — QUOTAS + SYNC + SAMAGENT + CLEANUP (25/07/2026)
+
+> **Commits** : `0d4f521` → `40f7696` (18 commits) | **Status** : Déployé
+
+### Quotas d'utilisation (`js/quotas.js` ~460 lignes)
+
+Nouvel onglet "Quotas" entre Budget et Apparence. OpenRouter + DeepSeek via proxy. Recharge manuelle, barres progression, alertes seuil, toast, 10 providers grisés.
+
+### Sync paramètres serveur (`js/settings-sync.js` ~100 lignes)
+
+Endpoint `GET/PUT /api/settings` dans server.py. Pull au login, push debounce 1s. 9 clés sync (theme, budget, audio, quotas, categories, prompts, catalog). Stockage `_users[username].settings`.
+
+### SamAgent — personnalité polie + propositions cliquables
+
+SAMAGENT_BOOST_PROMPT réécrit : accueil chaleureux, 3 propositions (💬 Chat / 💻 Coder / 🔬 Avancé), accusé réception aléatoire. Boutons cliquables dans endStreaming → envoi automatique.
+
+### Effacer toutes les conversations
+
+Bouton 🗑️ rouge dans sidebar. Dialogue confirmation avec code 6 caractères. Suppression locale + serveur en parallèle.
+
+### FAQ dans sidebar
+
+Bouton FAQ dans menu utilisateur (avatar). Ouvre modale config sur l'onglet FAQ. FAQ complète 30 entrées alignée README.
+
+### Nettoyage code + crédits
+
+- −388 lignes commentaires décoratifs (quotas, settings-sync, api, app, config-providers)
+- `© Marexsoft Corporation. Fondateur Kouassi Marius.` dans 33 fichiers
+- Co-Authored-By retiré des 87 commits — réécriture historique
+
+### Corrections
+
+- Dockerfile : +bash (Alpine n'a pas /bin/bash)
+- proxyUrl : try/catch `new URL()` — évite crash titre SamAgent
+- SW : `.catch()` sur `cache.put()` — silence erreurs réseau
+- start.sh : crédit après shebang
+
+---
+
 ## v3.6 — SAMAGENT 4 TIERS + CLOUDFLARE WORKER ANTI-SPOF (24/07/2026)
 
 > **Commits** : `cd5eac9` → `14d6e2f` | **Status** : Déployé | **Fichiers** : 4 majeurs (router.js, api.js, cloudflare-worker.js, wrangler.toml)
@@ -785,3 +826,57 @@ b9b66a3 fix: corrige double déclaration const textCache/imageCache
 95d42fd fix: auto-enable tous les modèles des pools N4 Flash + N4
 cd5eac9 feat: SamAgent N4 Flash (free OR) + N4 (paid OR) + fallback DeepSeek
 ```
+
+---
+
+## v3.8 — SAMAGENT BOUTONS CLIQUABLES + RECHERCHE WEB (26/07/2026)
+
+> **Commits** : `e148605` → `2938381` (7 commits) | **Status** : Déployé | **Fichiers** : js/app.js
+
+### SamAgent — Boutons cliquables fonctionnels
+
+**3 bugs corrigés :**
+1. **keys élargis** : ajout de `question générale`, `conseil`, `programmation`, `script`, `débogage`, `raisonnement`, `analyse`, `maths`, `rédaction` — couvre le vocabulaire réel du modèle
+2. **`.msg-text` → `.message-text`** : la classe CSS correcte pour le conteneur de message
+3. **`#send-btn` → `#mobile-send-btn`** : le bouton desktop est caché, le vrai bouton est l'ID mobile
+
+**Appel dans `addMessage`** : `_samAgentMakeClickable(div)` ajouté pour que les conversations chargées depuis l'historique aient aussi les boutons.
+
+**Boutons masqués après choix de domaine** : scan DOM des wrappers précédents (`previousElementSibling`). Si un message utilisateur correspond à un label de domaine (💬 Chat général, 💻 Coder, 🔬 Avancé), les boutons ne sont plus affichés.
+
+### SamAgent — Prompt système amélioré
+
+**Règle #3 durcie** : après accusé de réception d'un choix de domaine, arrêt NET. Aucune question, suggestion ou relance. Le modèle dit juste « Ok, je vous écoute » et attend.
+
+**Formatage strict** : chaque option dans son propre `<p>`, pas de `<br>` ni de texte collé. Exemple HTML fourni dans le prompt.
+
+**Label « Propositions : »** : discret (0.75rem, gris `--text-muted`) au-dessus des 3 boutons.
+
+### Architecture recherche web
+
+La recherche web n'utilise AUCUN moteur externe (Google Custom Search, Bing, SerpAPI). Elle repose entièrement sur les **outils natifs des providers LLM** :
+
+| Provider | Mécanisme | Coût |
+|----------|-----------|------|
+| **OpenAI** | `web_search_preview` (Responses API) | $0.01/req |
+| **Anthropic** | `web_search_20250305` (Claude tool) | $0.01/req |
+| **Google** | `google_search` (Gemini grounding) | Gratuit (5000 req) |
+| **Grok** | `search_parameters: { mode: 'auto' }` | $0.035/source |
+| **OpenRouter** | `openrouter:web_search` + `web_fetch` | Variable |
+
+**Providers compatibles** : `['openai', 'anthropic', 'google', 'grok', 'openrouter']` (whitelist `WEB_SEARCH_EDITEURS`). Mistral, DeepSeek, Groq, Nvidia, locaux = pas de recherche web.
+
+**Intégration** : 
+1. Toggle globe 🌐 dans la barre d'outils + toggle dans le menu "+" (standard/deep)
+2. Injection d'outil dans le body de la requête API
+3. Extraction des citations depuis le stream SSE (annotations `url_citation`)
+4. Rendu d'un bloc `.citations-block` avec URLs cliquables sous le message
+5. Tracking coût via `calcWebSearchCost()`
+
+**Fichiers clés** : `js/web-search.js` (78 lignes), `js/api.js` (parsers citations), `js/app.js` (appendCitations, cost tracking)
+
+**Limites** :
+- Pas de fallback si le provider ne supporte pas la recherche
+- Pas de RAG/local search — dépendance totale aux providers
+- Les citations sont extraites du stream, pas stockées/indexées
+- Aucune mise en cache des résultats de recherche

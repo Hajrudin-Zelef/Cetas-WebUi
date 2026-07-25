@@ -652,3 +652,153 @@ b9b66a3 fix: corrige double déclaration const textCache/imageCache
 95d42fd fix: auto-enable tous les modèles des pools N4 Flash + N4
 cd5eac9 feat: SamAgent N4 Flash (free OR) + N4 (paid OR) + fallback DeepSeek
 ```
+
+## v3.7 — Quotas d'utilisation (25/07/2026)
+
+> **Commit** : `3bcbb7a` | **Status** : Déployé | **Fichiers** : 5 (quotas.js, components.css, index.html, config-providers.js, Dockerfile)
+
+### Résumé
+
+Nouvel onglet "Quotas" dans la modale Configuration pour visualiser les crédits API restants et recevoir des alertes quand ils sont presque épuisés.
+
+### Module `js/quotas.js` (~530 lignes)
+
+Module ES chargé dynamiquement (`import('./quotas.js')`) quand l'utilisateur clique sur l'onglet Quotas.
+
+**Providers avec API de crédits :**
+| Provider | Endpoint | Réponse parsée |
+|----------|----------|----------------|
+| OpenRouter | `/api/v1/auth/key` | `usage` (dépensé), `limit` (null si pas de limite) |
+| DeepSeek | `/user/balance` | `balance_infos[{total_balance, topped_up_balance, granted_balance}]` |
+
+**Providers sans API (10) :** Google, OpenAI, Anthropic, Mistral, Grok, Perplexity, Nvidia, Z.ai, Cabreras, Groq — affichés en grisé avec lien dashboard.
+
+### Fonctionnalités
+
+- **Fetch via proxy** : utilise `proxyUrl()`/`proxyHeaders()` existants → zéro modification backend
+- **Cache 5min** : localStorage (`cetas-quotas`), TTL 300s
+- **Recharge manuelle** : champ `💰 Recharge` pour saisir le montant (ex: 10€) → calcul `recharge − dépensé = restant`
+- **Barre de progression** : % utilisé avec couleur (vert <75%, jaune <90%, rouge ≥90%)
+- **Alertes seuil** : configurables par provider, toast non-bloquant 6s, ack quotidien
+- **Actualisation** : bouton manuel, invalidation du cache
+
+### Fichiers modifiés
+
+| Fichier | Changement |
+|---------|-----------|
+| `js/quotas.js` | Nouveau module ES (530 lignes) |
+| `index.html` | Onglet + panel HTML (15 lignes) |
+| `css/components.css` | Styles quotas (300 lignes) |
+| `js/config-providers.js` | Lazy-load panel (+4 lignes) |
+| `Dockerfile` | Terser quotas.js (+1 ligne) |
+
+### Endpoints via proxy
+
+```
+GET /api/proxy/openrouter/api/v1/auth/key  → OpenRouter
+GET /api/proxy/deepseek/user/balance       → DeepSeek
+```
+
+## v3.7 — Sync paramètres serveur (25/07/2026)
+
+> **Commit** : `c45dfe8` | **Status** : Déployé | **Fichiers** : 8 (server.py, settings-sync.js, app.js, quotas.js, budget.js, theme.js, api.js, Dockerfile)
+
+### Endpoint /api/settings
+
+- GET : retourne les settings de l'utilisateur authentifié
+- PUT : merge partiel des settings (une ou plusieurs clés)
+- Stockage dans `_users.json` → `users[username].settings`
+
+### Module settings-sync.js (~100 lignes)
+
+- Pull au login (syncPullSettings) — merge localStorage uniquement si absent localement
+- Push debounce 1s (syncPushSetting) — appelé par chaque module après sauvegarde
+- Exposé sur `window._syncPushSetting`, `_syncPushAll`
+- Clés sync : theme, budget, audio, quotas_alerts, quotas_topups, categories, saved_prompts, system_prompts, catalog_prefs
+
+## v3.7 — SamAgent personnalité + propositions cliquables (25/07/2026)
+
+> **Commit** : `40f7696` | **Fichier** : app.js
+
+### SAMAGENT_BOOST_PROMPT réécrit
+
+6 règles : accueil poli, 3 propositions interactives (💬 Chat / 💻 Coder / 🔬 Avancé), écoute active, compétence experte, efficacité élégante, adaptation fluide.
+
+### Propositions cliquables
+
+- `_samAgentMakeClickable()` : détecte les `<p>` commençant par 💬 💻 🔬 → boutons CSS
+- Au clic : remplit l'input + déclenche l'envoi → SamAgent accuse réception
+- Accusé de réception aléatoire et adapté au domaine
+
+## v3.7 — Effacer toutes les conversations (25/07/2026)
+
+> **Commit** : `91e7c82` | **Fichiers** : index.html, app.js
+
+- Bouton 🗑️ rouge dans la sidebar (sous l'engrenage Configuration)
+- Dialogue de confirmation avec code aléatoire 6 caractères
+- Suppression locale (IndexedDB) + serveur (sync) en parallèle
+
+## v3.7 — FAQ dans sidebar + mise à jour complète (25/07/2026)
+
+> **Commits** : `088887f` → `2922aba` | **Fichiers** : faq.js, index.html, app.js
+
+- Bouton FAQ dans le menu utilisateur (sidebar, avatar)
+- 30 entrées couvrant Général, Usage, Problèmes
+- Alignée README : 18 providers, SamAgent, quotas, sync, mode réflexion
+
+## v3.7 — Nettoyage code + crédits (25/07/2026)
+
+> **Commits** : `8345f78` → `b130d35` | **Fichiers** : 33
+
+- Commentaires décoratifs et évidences supprimés (−388 lignes)
+- `© Marexsoft Corporation. Fondateur Kouassi Marius.` dans tous les fichiers
+- quotas.js 568→460, settings-sync.js 161→100, api.js 2406→2328, config-providers 2147→2118
+
+## v3.7 — Corrections (25/07/2026)
+
+- **Dockerfile** : ajout bash (Alpine n'a pas /bin/bash → start.sh échouait)
+- **proxyUrl** : try/catch sur `new URL()` — évite crash si URL mal formée
+- **SW** : `.catch(() => {})` sur `cache.put()` — silence les erreurs réseau
+- **Credits** : retrait `Co-Authored-By` des 87 commits — réécriture historique
+- **start.sh** : crédit après shebang, pas avant
+
+## v3.8 — SamAgent boutons cliquables + recherche web (26/07/2026)
+
+> **Commits** : `e148605` → `2938381` (7 commits) | **Status** : Déployé | **Fichier** : js/app.js
+
+### SamAgent — Corrections frontend
+
+**4 bugs résolus dans `_samAgentMakeClickable()` :**
+1. `keys` élargis pour matcher le vocabulaire réel du modèle (question générale, programmation, raisonnement...)
+2. `.msg-text` → `.message-text` (la classe CSS du DOM)
+3. `#send-btn` → `#mobile-send-btn` (le bouton desktop est `display:none`)
+4. Appel ajouté dans `addMessage()` pour les conversations chargées depuis l'historique
+
+**Boutons masqués après choix :** scan DOM via `previousElementSibling` — si un message user précédent est un label de domaine, pas de boutons.
+
+### SamAgent — Prompt système (SAMAGENT_BOOST_PROMPT)
+
+**Règle #3** : après accusé réception → stop net, 0 question, 0 relance.
+**Règle #2** : formatage strict — chaque option dans son propre `<p>`, pas de inline.
+**Label « Propositions : »** : ajouté en gris discret (`0.75rem`, `--text-muted`) au-dessus des boutons.
+
+### Architecture recherche web
+
+**Principe :** pas de moteur externe (Google CSE, Bing, SerpAPI). Utilise les outils natifs des providers LLM.
+
+| Provider | Mécanisme | Coût |
+|----------|-----------|------|
+| OpenAI | `web_search_preview` (Responses API) | $0.01/req |
+| Anthropic | `web_search_20250305` | $0.01/req |
+| Google | `google_search` (Gemini grounding) | Gratuit (5k req) |
+| Grok | `search_parameters` auto | $0.035/source |
+| OpenRouter | `openrouter:web_search` + `web_fetch` | Variable |
+
+**Fichiers :** `js/web-search.js` (78 lignes), `js/api.js` (parsers citations), `js/app.js` (appendCitations)
+**Whitelist providers :** `['openai', 'anthropic', 'google', 'grok', 'openrouter']`
+**Pas de recherche pour :** Mistral, DeepSeek, Groq, Nvidia, locaux (Ollama/LM Studio)
+
+**Limites :**
+- Dépendance totale aux providers — pas de fallback RAG/local
+- Pas de cache des résultats de recherche
+- Citations extraites du stream, non indexées
