@@ -1177,8 +1177,18 @@ Auth.init().then(() => {
     if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().catch(function(){});
     }
-    // Sync silencieuse des paramètres utilisateur depuis le serveur
-    import('./settings-sync.js').then(function(m) { m.syncPullSettings(); }).catch(function(){});
+    // Sync silencieuse des paramètres utilisateur depuis le serveur.
+    // Si le thème ou d'autres settings sont restaurés, on les applique immédiatement.
+    import('./settings-sync.js').then(async function(m) {
+        const n = await m.syncPullSettings();
+        if (n > 0) {
+            // Des paramètres ont été restaurés depuis le serveur → ré-appliquer le thème
+            var saved = localStorage.getItem('minou-theme');
+            if (saved && saved !== 'light') applyTheme(saved);
+            // Recharger les autres settings dans l'UI si déjà affichée
+            if (typeof updateBudgetPreview === 'function') updateBudgetPreview();
+        }
+    }).catch(function(){});
 initConfig().then(async () => {
     // upgradeToCustomSelect + populateUnifiedSelect retirés — sélecteur dans le menu "+"
     // updateTriggerDisplay() utilise maintenant #input-hint
