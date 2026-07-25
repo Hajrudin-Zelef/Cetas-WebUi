@@ -4620,6 +4620,76 @@ if (sidebarFaqBtn) {
     });
 }
 
+// ── Effacer toutes les conversations ──────────────────────────────
+const clearAllBtn = document.getElementById('clear-all-btn');
+const clearAllOverlay = document.getElementById('clear-all-overlay');
+const clearAllCancel = document.getElementById('clear-all-cancel');
+const clearAllConfirm = document.getElementById('clear-all-confirm');
+const clearAllCodeInput = document.getElementById('clear-all-code-input');
+const clearAllCodeDisplay = document.getElementById('clear-all-code');
+let _clearAllExpectedCode = '';
+
+if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', () => {
+        _clearAllExpectedCode = _generateClearCode();
+        clearAllCodeDisplay.textContent = _clearAllExpectedCode;
+        clearAllCodeInput.value = '';
+        clearAllConfirm.disabled = true;
+        clearAllOverlay.style.display = 'flex';
+    });
+}
+
+clearAllCancel.addEventListener('click', () => {
+    clearAllOverlay.style.display = 'none';
+});
+
+clearAllOverlay.addEventListener('click', (e) => {
+    if (e.target === clearAllOverlay) clearAllOverlay.style.display = 'none';
+});
+
+clearAllCodeInput.addEventListener('input', () => {
+    clearAllConfirm.disabled = clearAllCodeInput.value.toUpperCase() !== _clearAllExpectedCode;
+});
+
+clearAllConfirm.addEventListener('click', async () => {
+    if (clearAllCodeInput.value.toUpperCase() !== _clearAllExpectedCode) return;
+    clearAllConfirm.textContent = 'Suppression...';
+    clearAllConfirm.disabled = true;
+    try {
+        await _deleteAllConversations();
+        clearAllOverlay.style.display = 'none';
+        customAlert('Toutes les conversations ont été supprimées.', 'success');
+    } catch (e) {
+        customAlert('Erreur : ' + (e.message || 'inconnue'), 'error');
+    }
+    clearAllConfirm.textContent = 'Effacer tout';
+    clearAllConfirm.disabled = false;
+});
+
+function _generateClearCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+}
+
+async function _deleteAllConversations() {
+    const convs = await listAllConvStats();
+    // Supprimer localement (IndexedDB) + côté serveur en parallèle
+    for (const c of convs) {
+        if (!c.filename) continue;
+        if (typeof deleteConversation === 'function') {
+            await deleteConversation(c.filename).catch(() => {});
+        }
+        if (typeof syncDeleteFromServer === 'function') {
+            await syncDeleteFromServer(c.filename).catch(() => {});
+        }
+    }
+    refreshConvList();
+    renderFavList();
+    refreshCatBar();
+}
+
 saveModalClose.addEventListener('click', () => {
     saveModalOverlay.style.display = 'none';
 });

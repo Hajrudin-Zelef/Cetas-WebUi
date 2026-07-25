@@ -193,6 +193,9 @@
             <button id="apikeys-btn" class="sidebar-config-btn" title="Configuration">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
+            <button id="clear-all-btn" class="sidebar-config-btn" title="Effacer toutes les conversations" style="color:var(--danger,#dc2626);margin-top:4px">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </button>
             <input type="file" id="import-file-input" accept=".json" hidden>
         </div>
     </aside>
@@ -203,6 +206,24 @@
                 <div class="budget-alert-icon">⚠️</div>
                 <div id="budget-alert-text" class="budget-alert-text"></div>
                 <button id="budget-alert-close" class="budget-alert-close">Compris</button>
+            </div>
+        </div>
+        <div id="clear-all-overlay" class="budget-alert-overlay" style="display:none">
+            <div class="budget-alert-popup" style="max-width:440px">
+                <div class="budget-alert-icon">🗑️</div>
+                <div class="budget-alert-text">
+                    <strong>Effacer TOUTES les conversations ?</strong><br><br>
+                    Cette action est <strong style="color:#ef4444">irréversible</strong>.
+                    Toutes vos conversations seront supprimées définitivement.
+                </div>
+                <div style="text-align:left;margin-bottom:10px">
+                    <label style="font-size:0.82rem;color:var(--text-secondary)">Recopiez ce code pour confirmer :<br><strong id="clear-all-code" style="font-family:monospace;letter-spacing:3px;font-size:1.2rem;color:var(--text)"></strong></label>
+                    <input type="text" id="clear-all-code-input" class="sp-modal-input" placeholder="Code à 6 caractères" maxlength="6" style="width:100%;box-sizing:border-box;margin-top:8px;font-family:monospace;letter-spacing:2px;font-size:1.1rem;text-align:center">
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                    <button id="clear-all-cancel" class="models-cancel-btn">Annuler</button>
+                    <button id="clear-all-confirm" class="models-save-btn" style="background:var(--danger,#ef4444);color:#fff;border-color:var(--danger,#ef4444)" disabled>Effacer tout</button>
+                </div>
             </div>
         </div>
         <div id="no-model-alert-overlay" class="budget-alert-overlay" style="display:none">
