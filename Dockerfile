@@ -35,6 +35,7 @@ RUN terser /usr/share/nginx/html/js/user-management.js -o /usr/share/nginx/html/
 RUN terser /usr/share/nginx/html/js/web-search.js -o /usr/share/nginx/html/js/web-search.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/export-md.js -o /usr/share/nginx/html/js/export-md.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/budget.js -o /usr/share/nginx/html/js/budget.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/quotas.js -o /usr/share/nginx/html/js/quotas.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/categories.js -o /usr/share/nginx/html/js/categories.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/roles.js -o /usr/share/nginx/html/js/roles.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/js/prompts.js -o /usr/share/nginx/html/js/prompts.js -c -m --comments false --module

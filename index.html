@@ -676,6 +676,7 @@
                 <button class="apikeys-tab active" data-tab="apimodeles">API et Modèles</button>
                 <button class="apikeys-tab" data-tab="models">Fonctionnalités</button>
                 <button class="apikeys-tab" data-tab="budget">Budget</button>
+                <button class="apikeys-tab" data-tab="quotas">Quotas</button>
                 <button class="apikeys-tab" data-tab="appearance">Apparence</button>
                 <button class="apikeys-tab" data-tab="stockage">Stockage</button>
                 <button class="apikeys-tab" data-tab="users" id="tab-users" style="display:none">Utilisateurs</button>
@@ -797,6 +798,20 @@
                     <div class="models-save-row">
                         <button type="button" id="budget-cancel-btn" class="models-cancel-btn">Annuler</button>
                         <button type="button" id="budget-save-btn" class="models-save-btn" disabled>Sauvegarder</button>
+                    </div>
+                </div>
+                <!-- Panel Quotas -->
+                <div class="apikeys-panel" id="panel-quotas">
+                    <h3>Quotas d'utilisation</h3>
+                    <p class="apikey-intro">Crédits restants chez vos fournisseurs API. Données mises en cache 5 minutes.</p>
+                    <div class="apikeys-panel-body">
+                        <div id="quotas-list">
+                            <!-- Rempli dynamiquement par js/quotas.js -->
+                        </div>
+                        <div id="quotas-global-alert" class="quotas-global-alert" style="display:none"></div>
+                    </div>
+                    <div class="models-save-row">
+                        <button type="button" id="quotas-refresh-btn" class="models-save-btn">Actualiser</button>
                     </div>
                 </div>
                 <!-- Panel Apparence -->

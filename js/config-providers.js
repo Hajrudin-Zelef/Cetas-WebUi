@@ -942,6 +942,10 @@ document.querySelectorAll('.apikeys-tab').forEach(tab => {
             if (tabName === 'stockage') {
                 await _initStoragePanel();
             }
+            if (tabName === 'quotas') {
+                const m = await import('./quotas.js');
+                await m.fetchAndRenderQuotas();
+            }
         }, 60);
     });
 });
