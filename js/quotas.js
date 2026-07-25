@@ -7,6 +7,10 @@ const ALERTS_KEY = 'cetas-quotas-alerts';
 const TOPUP_KEY = 'cetas-quotas-topups';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+// Logging debug — désactivé en production. Passer à true pour débugger.
+const DBG = false;
+const debugLog = (...args) => { if (DBG) console.log(...args); };
+
 // Providers qui exposent une API de crédits
 const QUOTA_PROVIDERS = [
     {
@@ -15,7 +19,7 @@ const QUOTA_PROVIDERS = [
         icon: 'images/OpenRouter.svg',
         endpoint: 'https://openrouter.ai/api/v1/auth/key',
         parseResponse: (data) => {
-            console.log('[Quotas] OpenRouter raw:', JSON.stringify(data));
+            debugLog('[Quotas] OpenRouter raw:', JSON.stringify(data));
             // OpenRouter retourne { data: { usage, limit (null si pas de limite), ... } }
             // Pas de champ "credits" — on dérive credits = limit - usage si limit existe
             const d = data && data.data ? data.data : null;
@@ -34,7 +38,7 @@ const QUOTA_PROVIDERS = [
         icon: 'images/DeepSeek.svg',
         endpoint: 'https://api.deepseek.com/user/balance',
         parseResponse: (data) => {
-            console.log('[Quotas] DeepSeek raw:', JSON.stringify(data));
+            debugLog('[Quotas] DeepSeek raw:', JSON.stringify(data));
             // DeepSeek retourne { is_available, balance_infos: [{ total_balance, topped_up_balance, granted_balance }] }
             const infos = data && data.balance_infos ? data.balance_infos : null;
             if (!infos || !infos.length) {
@@ -191,18 +195,18 @@ async function fetchQuota(provider) {
             ? window.proxyHeaders(provider.id, {})
             : {};
 
-        console.log(`[Quotas] Fetch ${provider.id}:`, url);
+        debugLog(`[Quotas] Fetch ${provider.id}:`, url);
         const resp = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
         if (!resp.ok) {
             const text = await resp.text().catch(() => '');
-            console.warn(`[Quotas] ${provider.id} HTTP ${resp.status}:`, text.slice(0, 200));
+            console.warn(`[Quotas] ${provider.id} HTTP ${resp.status} — ${text.slice(0, 100).replace(/sk-[a-zA-Z0-9\-]+/g, 'sk-***')}`);
             throw new Error(`HTTP ${resp.status}`);
         }
         const data = await resp.json();
-        console.log(`[Quotas] ${provider.id} response keys:`, Object.keys(data));
+        debugLog(`[Quotas] ${provider.id} response keys:`, Object.keys(data));
         const parsed = provider.parseResponse(data);
         if (!parsed) {
-            console.warn(`[Quotas] ${provider.id} parse failed, raw:`, JSON.stringify(data).slice(0, 300));
+            console.warn(`[Quotas] ${provider.id} parse failed — expected format mismatch`);
             throw new Error('Format de réponse invalide');
         }
         return {
