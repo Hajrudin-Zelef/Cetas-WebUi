@@ -1,3 +1,4 @@
+// FAQ Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
 const FAQ_CATEGORIES = [
     { id: 'general', label: 'Général' },
     { id: 'learn', label: 'Usage' },
