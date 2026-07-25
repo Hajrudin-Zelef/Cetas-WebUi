@@ -392,11 +392,11 @@ const SAMAGENT_BOOST_PROMPT = `Tu es SamAgent, l'assistant IA flagship de Cetas.
 
 1. ACCUEIL naturel : salue toujours l'utilisateur avec courtoisie. Pour un premier contact ("salut", "bonjour", "hello"), réponds avec une formule brève et chaleureuse : "Salut ! Comment allez-vous ?" ou "Bonjour ! Ravi de vous voir."
 
-2. PROPOSITIONS inspirantes : après ton salut (et uniquement pour un premier contact), propose exactement 3 questions concrètes et attrayantes que l'utilisateur pourrait vouloir te poser, dans 3 domaines différents :
+2. PROPOSITIONS interactives : après ton salut (et uniquement pour un premier contact), propose exactement 3 questions que l'utilisateur pourrait te poser, toujours avec les émojis 💬, 💻 et 🔬 :
    - 💬 Une question de conversation, conseil ou information générale
    - 💻 Une question de programmation, script, debug ou algorithme
    - 🔬 Une question de raisonnement, analyse, maths, science ou rédaction
-   Les questions doivent être réalistes, engageantes, et donner envie de cliquer. L'utilisateur peut cliquer sur l'une d'elles ou poser sa propre question.
+   Les questions doivent être concrètes et engageantes. L'utilisateur peut cliquer dessus — quand il le fait, il t'envoie cette question. Réponds-y normalement.
 
 3. ÉCOUTE active : si la demande est vague, pose 2 ou 3 questions ciblées pour mieux comprendre, mais toujours après avoir accusé réception. Ne bombarde pas — amène les questions naturellement.
 
@@ -2913,19 +2913,50 @@ function collapseThinkBlock(thinkBlock) {
 // --- Fin de streaming avec transition douce ---
 function endStreaming(el) {
     if (window.Ocean?.setPaused) window.Ocean.setPaused(false);
-    // Figer la largeur actuelle (inclut le min-width éventuel du collapseThinkBlock)
     const currentW = el.offsetWidth;
     el.classList.remove('streaming');
     el.classList.add('streaming-done');
     el.style.minWidth = currentW + 'px';
     el.style.transition = 'min-width 0.4s ease-out';
-    requestAnimationFrame(() => {
-        el.style.minWidth = '';
-    });
+    requestAnimationFrame(() => { el.style.minWidth = ''; });
     el.addEventListener('animationend', () => el.classList.remove('streaming-done'), { once: true });
-    setTimeout(() => {
-        el.style.transition = '';
-    }, 500);
+    setTimeout(() => { el.style.transition = ''; }, 500);
+    // Transformer les propositions SamAgent en boutons cliquables
+    _samAgentMakeClickable(el);
+}
+
+function _samAgentMakeClickable(el) {
+    if (!el) return;
+    const model = STATE.currentModel || '';
+    if (model.indexOf('samagent-') !== 0) return;
+    // Détecte les <p> qui commencent par 💬, 💻 ou 🔬
+    const emojis = ['💬', '💻', '🔬'];
+    const allP = el.querySelectorAll('p');
+    let found = false;
+    for (const p of allP) {
+        const txt = p.textContent.trim();
+        for (const em of emojis) {
+            if (txt.startsWith(em)) {
+                found = true;
+                p.classList.add('samagent-proposal');
+                p.style.cssText = 'cursor:pointer;padding:8px 12px;margin:4px 0;border:1px solid var(--border-input);border-radius:8px;background:var(--bg-input);transition:background 0.15s,border-color 0.15s';
+                p.addEventListener('mouseenter', () => { p.style.background = 'var(--bg-hover)'; p.style.borderColor = 'var(--accent)'; });
+                p.addEventListener('mouseleave', () => { p.style.background = 'var(--bg-input)'; p.style.borderColor = 'var(--border-input)'; });
+                p.addEventListener('click', () => {
+                    const promptInput = document.getElementById('prompt-input');
+                    if (promptInput) {
+                        promptInput.value = txt;
+                        promptInput.focus();
+                        // Scroll en bas
+                        const chatContainer = document.getElementById('chat-container');
+                        if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                });
+            }
+        }
+    }
+    // Marquer le conteneur pour éviter le double traitement
+    if (found) el.querySelector('.msg-text')?.classList.add('samagent-proposals-rendered');
 }
 
 // --- Streaming animé : typewriter + expansion douce ---
