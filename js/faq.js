@@ -56,7 +56,7 @@ const FAQ_DATA = [
     {
         category: 'general',
         question: "Puis-je utiliser des modèles en local ?",
-        answer: "<strong>Oui !</strong> Cetas supporte <strong>Ollama</strong> et <strong>LM Studio</strong>.<ol><li>Rendez-vous dans l'onglet <strong>API et Modèles</strong> pour paramétrer LM Studio ou Ollama."
+        answer: "<strong>Oui !</strong> Cetas supporte <strong>Ollama</strong>, <strong>LM Studio</strong> et <strong>LLaMA.cpp</strong>. Ces modèles fonctionnent entièrement sur votre machine, sans connexion internet une fois le modèle téléchargé.<ol><li>Lancez votre serveur local (Ollama, LM Studio ou LLaMA.cpp).</li><li>Dans <strong>Configuration > API et Modèles</strong>, renseignez l'URL du serveur.</li><li>Cliquez sur <strong>« Rafraîchir »</strong> pour détecter les modèles disponibles.</li></ol>Les modèles locaux apparaissent ensuite dans le sélecteur avec une icône spécifique. Vous pouvez aussi définir un <strong>modèle de secours</strong> dans Configuration > Fonctionnalités, utilisé automatiquement si votre modèle local est injoignable."
     },
     // ==========================================
     //                APPRENDRE
