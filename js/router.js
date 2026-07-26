@@ -316,9 +316,8 @@ function classifyIntent(prompt) {
     for (var j = 0; j < reasoningPatterns.length; j++) {
         if (reasoningPatterns[j].test(text)) reasoningMatches++;
     }
-
-    if (codeMatches > reasoningMatches && codeMatches >= 1) return 'coder';
-    if (reasoningMatches > codeMatches && reasoningMatches >= 1) return 'raisonnement';
+    if (codeMatches >= 1 && codeMatches >= reasoningMatches) return 'coder';
+    if (reasoningMatches >= 1) return 'raisonnement';
     return 'chat';
 }
 
