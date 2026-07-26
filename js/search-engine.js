@@ -6,6 +6,16 @@
 var SEARXNG_URL = '/search';  // proxied via nginx → http://127.0.0.1:8084
 var SEARXNG_TIMEOUT = 5000;
 
+// Nettoie une string pour éviter les caractères qui cassent le JSON
+function _sanitize(str) {
+    if (!str) return '';
+    // Supprime les caractères de contrôle (sauf \n \r \t) et les invalid unicode escapes
+    return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+              .replace(/\\x[0-9a-fA-F]?/g, '')
+              .replace(/\\u[0-9a-fA-F]{0,3}$/g, '')
+              .trim();
+}
+
 // --- web_search (globale) --------------------------------------------------
 
 async function executeWebSearch(query) {
@@ -61,7 +71,7 @@ async function _searchSearXNG(query) {
     var json = await resp.json();
     if (!json.results || !Array.isArray(json.results)) return [];
     return json.results.slice(0, 10).map(function(r) {
-        return { title: r.title || '', url: r.url || '', snippet: r.content || '' };
+        return { title: _sanitize(r.title), url: _sanitize(r.url), snippet: _sanitize(r.content) };
     });
 }
 
@@ -82,7 +92,7 @@ async function _searchBrave(query) {
     var json = await resp.json();
     if (!json.web || !json.web.results) return [];
     return json.web.results.slice(0, 10).map(function(r) {
-        return { title: r.title || '', url: r.url || '', snippet: r.description || '' };
+        return { title: _sanitize(r.title), url: _sanitize(r.url), snippet: _sanitize(r.description) };
     });
 }
 
@@ -118,7 +128,7 @@ function _parseDdgHtml(html) {
             ? snippetMatches[i][1].replace(/<[^>]*>/g, '').trim()
             : '';
         if (url && title) {
-            results.push({ title: title, url: url, snippet: snippet });
+            results.push({ title: _sanitize(title), url: _sanitize(url), snippet: _sanitize(snippet) });
         }
     }
     return results;
