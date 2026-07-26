@@ -3021,11 +3021,8 @@ function _wrapNewChars(textEl, newCharsCount) {
     }
     const text = last.nodeValue;
     const take = Math.min(wrapLen, text.length);
-    const startColor = document.body.classList.contains('dark') ? '#000000' : '#ffffff';
     const span = document.createElement('span');
     span.className = 'char-flash';
-    span.style.color = startColor;
-    span.style.transition = 'color 600ms linear';
     if (take >= text.length) {
         span.textContent = text;
         last.parentNode.replaceChild(span, last);
@@ -3037,15 +3034,10 @@ function _wrapNewChars(textEl, newCharsCount) {
         parent.insertBefore(span, last);
         parent.removeChild(last);
     }
-    // Double rAF : la 1re tick force le moteur à peindre l'état initial (color
-    // blanc/noir inline) ; la 2e retire l'inline → transition CSS vers la
-    // couleur héritée. Sans ce double rAF, certains navigateurs court-circuitent
-    // la transition parce que la modification a lieu dans la même frame.
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            if (span.isConnected) span.style.color = '';
-        });
-    });
+    // L'animation d'apparition (fade + blur + léger déplacement) est gérée en
+    // CSS pur via la classe .char-flash (cf. wordReveal dans chat.css) : pas
+    // besoin de rAF ni de manipulation de style inline ici, l'animation se
+    // déclenche automatiquement dès l'insertion du span dans le DOM.
 }
 
 function createStreamRenderer(resizeEl, getTextEl, seedText) {
@@ -3077,31 +3069,65 @@ function createStreamRenderer(resizeEl, getTextEl, seedText) {
     function render() {
         const textEl = getTextEl();
         if (!textEl) return;
-        // Ne reparse que si au moins 20 nouveaux chars ou flush final (buffer vide)
-        if (displayed.length - lastParsedLen >= 20 || buffer.length === 0) {
-            lastParsedLen = displayed.length;
-            textEl.innerHTML = marked.parse(displayed);
-            scrollToBottom();
-            _ensureStickyHandler(textEl);
-            // Scroll interne du textEl (pour les blocs scrollables comme .thinking-content)
-            if (!_userScrolledUp && textEl.scrollHeight > textEl.clientHeight) {
-                textEl.scrollTop = textEl.scrollHeight;
-            }
+        // Reparse à chaque mot libéré : le débit est déjà lissé en amont par le
+        // tick mot-par-mot, donc plus besoin d'attendre un seuil de caractères ici.
+        lastParsedLen = displayed.length;
+        const prevLen = textEl.textContent.length;
+        textEl.innerHTML = marked.parse(displayed);
+        _wrapNewChars(textEl, textEl.textContent.length - prevLen);
+        scrollToBottom();
+        _ensureStickyHandler(textEl);
+        // Scroll interne du textEl (pour les blocs scrollables comme .thinking-content)
+        if (!_userScrolledUp && textEl.scrollHeight > textEl.clientHeight) {
+            textEl.scrollTop = textEl.scrollHeight;
         }
     }
 
-    function _flush() {
+    // Libère le buffer mot par mot à intervalle fixe, plutôt que par paquets de
+    // ~20 caractères toutes les 80ms. Le débit d'affichage devient indépendant
+    // de la taille des chunks réseau (le LLM peut envoyer 50 caractères d'un
+    // coup, l'écran ne montre qu'un mot de plus à la fois) => sensation de
+    // vitesse régulière et fluide, façon "machine à écrire ultra rapide".
+    const WORD_TICK_MS = 55;
+
+    // Nombre de "mots" libérés à chaque tick. Regrouper plusieurs mots par
+    // paquet donne un rendu plus doux avec l'effet de fondu (chaque paquet
+    // apparaît comme un petit bloc qui se fond à l'écran) plutôt qu'un
+    // clignotement mot par mot trop rapide à l'œil.
+    const WORDS_PER_TICK = 4;
+
+    function _tick() {
         timer = null;
         if (buffer.length === 0) return;
-        displayed += buffer;
-        buffer = '';
+        // Cherche jusqu'à WORDS_PER_TICK coupures de mot (espace, saut de ligne)
+        // consécutives dans le buffer.
+        const re = /\s*\S+\s*/g;
+        let count = 0;
+        let endIdx = 0;
+        let match;
+        while (count < WORDS_PER_TICK && (match = re.exec(buffer)) !== null) {
+            endIdx = re.lastIndex;
+            count++;
+        }
+        let piece;
+        if (endIdx > 0) {
+            piece = buffer.slice(0, endIdx);
+        } else {
+            // Pas de coupure trouvée : le mot courant continue d'arriver dans un futur
+            // chunk réseau, ou c'est la fin du flux -> on prend tout ce qu'il reste
+            // pour ne pas bloquer l'affichage indéfiniment.
+            piece = buffer;
+        }
+        displayed += piece;
+        buffer = buffer.slice(piece.length);
         render();
+        if (buffer.length > 0) timer = setTimeout(_tick, WORD_TICK_MS);
     }
 
     return {
         add(chunk) {
             buffer += chunk;
-            if (!timer) timer = setTimeout(_flush, 80);
+            if (!timer) timer = setTimeout(_tick, WORD_TICK_MS);
         },
         flush() {
             if (timer) { clearTimeout(timer); timer = null; }
