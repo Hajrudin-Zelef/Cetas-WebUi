@@ -12,6 +12,9 @@ async function _executeToolCall(toolCall) {
 
     if (name === 'web_search') {
         var results = await executeWebSearch(args.query || '');
+        if (!results || results.length === 0) {
+            return { id: toolCall.id, name: name, result: { error: 'Recherche web indisponible actuellement (tous les moteurs ont échoué). Ne pas affirmer qu il n y a aucun résultat sur ce sujet -- informe l utilisateur que la recherche web est temporairement indisponible.' } };
+        }
         return { id: toolCall.id, name: name, result: results };
     }
     if (name === 'web_fetch') {
@@ -164,7 +167,7 @@ async function streamModelWithTools(modelId, conversationHistory, onChunk, onDon
 
     } catch (err) {
         if (err && err.name === 'AbortError') { onDone(null, []); return; }
-        if (_iteration > 0 && fallbackModel && fallbackModel.model && fallbackModel.provider) {
+        if (fallbackModel && fallbackModel.model && fallbackModel.provider) {
             console.warn('[tool-search] échec ' + modelId + ' → fallback ' + fallbackModel.model);
             return streamModelWithTools(fallbackModel.model, conversationHistory, onChunk, onDone, onError, systemPrompt, false, onThinkingChunk, signal, modelParams, fallbackModel._nextFallback || null, 0);
         }
