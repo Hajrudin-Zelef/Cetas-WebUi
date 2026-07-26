@@ -3507,7 +3507,8 @@ async function regenerateLastResponse() {
                 thinkSr.add(thinkChunk);
             },
             STATE.currentAbortController.signal,
-            getModelParams()
+            getModelParams(),
+            _routerFallback
         );
     }
 }
