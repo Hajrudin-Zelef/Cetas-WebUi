@@ -45,7 +45,6 @@ var ROUTER_CONFIG = {
         chat: [
             { model: 'google/gemma-4-31b-it:free',                   provider: 'openrouter', thinking: false },
             { model: 'nvidia/nemotron-3-super-120b-a12b:free',       provider: 'openrouter', thinking: false },
-            { model: 'google/lyria-3-pro-preview',                   provider: 'openrouter', thinking: false },
             { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', provider: 'openrouter', thinking: false },
             { model: 'poolside/laguna-s-2.1:free',                   provider: 'openrouter', thinking: false },
             { model: 'inclusionai/ling-3.0-flash:free',              provider: 'openrouter', thinking: false }
@@ -62,7 +61,6 @@ var ROUTER_CONFIG = {
             { model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', provider: 'openrouter', thinking: true },
             { model: 'google/gemma-4-31b-it:free',                   provider: 'openrouter', thinking: false },
             { model: 'nvidia/nemotron-3-ultra-550b-a55b:free',       provider: 'openrouter', thinking: false },
-            { model: 'google/lyria-3-pro-preview',                   provider: 'openrouter', thinking: false },
             { model: 'google/gemma-4-26b-a4b-it:free',               provider: 'openrouter', thinking: false },
             { model: 'nvidia/nemotron-3-super-120b-a12b:free',       provider: 'openrouter', thinking: false }
         ]
