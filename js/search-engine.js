@@ -55,7 +55,7 @@ async function executeWebFetch(url) {
 // --- Implémentations internes ---------------------------------------------
 
 async function _searchSearXNG(query) {
-    var url = SEARXNG_URL + '/?format=json&q=' + encodeURIComponent(query);
+    var url = SEARXNG_URL + '?format=json&q=' + encodeURIComponent(query);
     var resp = await fetch(url, { signal: AbortSignal.timeout(SEARXNG_TIMEOUT) });
     if (!resp.ok) throw new Error('SearXNG returned ' + resp.status);
     var json = await resp.json();
