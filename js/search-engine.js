@@ -128,11 +128,13 @@ async function _searchBrave(query) {
 }
 
 async function _searchDuckDuckGo(query) {
-    // DuckDuckGo HTML — dernier recours. Bloqué CORS depuis le navigateur
-    // sauf si un proxy est configuré.
+    // DuckDuckGo HTML — dernier recours. Passe par le proxy nginx /ddg-proxy/
+    // (voir nginx.conf) pour contourner le blocage CORS du navigateur vers
+    // html.duckduckgo.com. Garde un override localStorage pour déploiements
+    // qui n'ont pas encore la route proxy en place.
     var ddgProxy = '';
     try { ddgProxy = localStorage.getItem('cetas-ddg-proxy') || ''; } catch (e) {}
-    var baseUrl = ddgProxy || 'https://html.duckduckgo.com';
+    var baseUrl = ddgProxy || '/ddg-proxy';
     var url = baseUrl + '/html/?q=' + encodeURIComponent(query);
     var resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!resp.ok) throw new Error('DuckDuckGo returned ' + resp.status);
