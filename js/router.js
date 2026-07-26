@@ -268,7 +268,7 @@ async function _fetchRouterLLM(routerModel, userMessage) {
     var proxyPath = '/api/proxy/' + routerModel.provider + upstreamPath;
     var resp = await fetch(proxyPath, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: (typeof proxyHeaders === 'function' ? proxyHeaders(routerModel.provider, { 'Content-Type': 'application/json' }) : { 'Content-Type': 'application/json' }),
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(5000)
     });
