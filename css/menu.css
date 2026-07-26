@@ -457,6 +457,6 @@ body.dark .plus-menu-dropdown {
    à sa position normale en bas automatiquement. */
 @media (max-width: 768px) {
     body:has(#empty-chat-placeholder) .input-area {
-        margin-bottom: 15vh;
+        margin-bottom: 15dvh;
     }
 }
