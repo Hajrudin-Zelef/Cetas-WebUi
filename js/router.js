@@ -175,24 +175,19 @@ async function callRouterLLM(prompt, targetPool) {
         '',
         'Choisis le meilleur modèle. Réponds UNIQUEMENT avec le JSON.'
     ].join('\n');
-
-    // Essaie chaque router LLM en séquence (fallback multi-provider)
-    for (var i = 0; i < ROUTER_LLM_POOL.length; i++) {
-        var routerModel = ROUTER_LLM_POOL[i];
-        try {
-            console.log('[Router LLM] tentative ' + (i + 1) + '/' + ROUTER_LLM_POOL.length + ' avec ' + routerModel.label + ' (' + routerModel.provider + ')');
-
+    // Lance tous les router LLM EN PARALLÈLE (au lieu d'en séquence) et prend
+    // la première réponse valide qui arrive. Avant : pire cas = 5s + 5s = 10s
+    // (si DeepSeek échoue, on attendait son timeout complet avant de tenter
+    // Google). Maintenant : pire cas ≈ timeout d'une seule tentative (~3.5s),
+    // et le cas normal (un des deux répond vite) n'attend jamais l'autre.
+    function _tryRouter(routerModel) {
+        return (async function() {
+            console.log('[Router LLM] tentative parallèle avec ' + routerModel.label + ' (' + routerModel.provider + ')');
             var response = await _fetchRouterLLM(routerModel, userMessage);
-
-            // Parse la réponse JSON
             var jsonStr = response.trim();
-            // Nettoie les wrappers markdown éventuels
             jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
             var parsed = JSON.parse(jsonStr);
-
             if (!parsed.model) throw new Error('JSON sans champ "model"');
-
-            // Cherche le modèle choisi dans le pool cible
             var chosen = null;
             for (var j = 0; j < targetPool.length; j++) {
                 if (targetPool[j].model === parsed.model) {
@@ -200,25 +195,20 @@ async function callRouterLLM(prompt, targetPool) {
                     break;
                 }
             }
-
             if (!chosen) {
-                // Modèle suggéré hors pool → prendre le 1er du pool (safe fallback)
                 console.warn('[Router LLM] modèle ' + parsed.model + ' hors pool → fallback 1er du pool');
                 chosen = targetPool[0];
             }
-
-            console.log('[Router LLM] ✓ choisi ' + chosen.model + ' (' + chosen.provider + ') raison: ' + (parsed.reason || 'N/A'));
+            console.log('[Router LLM] ✓ choisi ' + chosen.model + ' (' + chosen.provider + ') via ' + routerModel.label + ' — raison: ' + (parsed.reason || 'N/A'));
             return chosen;
-
-        } catch (err) {
-            console.warn('[Router LLM] échec avec ' + routerModel.label + ': ' + err.message);
-            // Continue avec le prochain router LLM
-        }
+        })();
     }
-
-    // Tous les router LLM ont échoué → fallback algo regex (_pickFromPool)
-    console.warn('[Router LLM] tous les routeurs LLM ont échoué → fallback rotation');
-    return null;
+    try {
+        return await Promise.any(ROUTER_LLM_POOL.map(_tryRouter));
+    } catch (aggregateErr) {
+        console.warn("[Router LLM] tous les routeurs LLM ont échoué → fallback rotation");
+        return null;
+    }
 }
 
 /**
@@ -268,7 +258,7 @@ async function _fetchRouterLLM(routerModel, userMessage) {
         method: 'POST',
         headers: (typeof proxyHeaders === 'function' ? proxyHeaders(routerModel.provider, { 'Content-Type': 'application/json' }) : { 'Content-Type': 'application/json' }),
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(3500)
     });
 
     if (!resp.ok) {
