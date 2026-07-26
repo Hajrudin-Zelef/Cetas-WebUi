@@ -74,10 +74,40 @@ async function _searchSearXNG(query) {
         return { title: _sanitize(r.title), url: _sanitize(r.url), snippet: _sanitize(r.content) };
     });
 }
+// Quota Brave : 2000 req/mois gratuites. Seuil de sécurité à 1900 pour
+// laisser de la marge (autres onglets/process partageant la même clé).
+// Compteur par année-mois dans localStorage -> reset automatique chaque
+// mois sans logique explicite (nouvelle clé = compteur reparti à 0).
+var BRAVE_MONTHLY_QUOTA = 1900;
+
+function _braveQuotaKey() {
+    var d = new Date();
+    return 'cetas-brave-quota-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function _getBraveUsage() {
+    try {
+        var v = localStorage.getItem(_braveQuotaKey());
+        return v ? parseInt(v, 10) || 0 : 0;
+    } catch (e) { return 0; }
+}
+
+function _incrementBraveUsage() {
+    try {
+        var key = _braveQuotaKey();
+        var current = _getBraveUsage();
+        localStorage.setItem(key, String(current + 1));
+    } catch (e) {}
+}
 
 async function _searchBrave(query) {
     var braveKey = _getBraveKey();
     if (!braveKey) throw new Error('Pas de clé Brave API');
+
+    var usage = _getBraveUsage();
+    if (usage >= BRAVE_MONTHLY_QUOTA) {
+        throw new Error('Quota Brave mensuel atteint (' + usage + '/' + BRAVE_MONTHLY_QUOTA + ') — bascule sur DuckDuckGo');
+    }
 
     var url = 'https://api.search.brave.com/res/v1/web/search?q=' + encodeURIComponent(query) + '&count=10';
     var resp = await fetch(url, {
@@ -90,6 +120,7 @@ async function _searchBrave(query) {
     });
     if (!resp.ok) throw new Error('Brave returned ' + resp.status);
     var json = await resp.json();
+    _incrementBraveUsage();
     if (!json.web || !json.web.results) return [];
     return json.web.results.slice(0, 10).map(function(r) {
         return { title: _sanitize(r.title), url: _sanitize(r.url), snippet: _sanitize(r.description) };
