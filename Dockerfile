@@ -74,6 +74,12 @@ RUN npm uninstall -g terser clean-css-cli && rm -rf /root/.npm /usr/lib/node_mod
 RUN rm -f /usr/share/nginx/html/core/api-keys-seed.json
 
 # Configuration nginx
+
+# Rate-limit sur /ddg-proxy/ (10 req/min par IP) — évite l'abus de la route
+# comme relais anonyme vers DuckDuckGo. La zone doit être déclarée au niveau
+# http{}, donc injectée dans le nginx.conf de base de l'image (pas dans
+# conf.d/, réservé aux blocs server{}).
+RUN sed -i '/include \/etc\/nginx\/conf.d\/\*.conf;/i\\    limit_req_zone \$binary_remote_addr zone=ddgproxy:10m rate=10r/m;' /etc/nginx/nginx.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Script de démarrage
