@@ -143,8 +143,8 @@ USERS_SEED_PATH = os.path.join(BASE_DIR, "core", "users-seed.json")
 _jwt_secret: str = ""
 _users: dict[str, dict] = {}
 
-# Paramètres scrypt conformes OWASP 2025 (N >= 2^17)
-_SCRYPT_N = 131072
+# Paramètres scrypt — N=65536 = 64 MB RAM (compromis sécurité/conteneur)
+_SCRYPT_N = 65536
 _SCRYPT_R = 8
 _SCRYPT_P = 1
 
