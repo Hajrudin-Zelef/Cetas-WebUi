@@ -5,7 +5,7 @@ FROM nginx:alpine
 RUN adduser -D -h /app -u 1001 cetas
 
 # Python + cryptography pour le proxy API
-RUN apk add --no-cache python3 py3-cryptography py3-pip curl nodejs npm bash && pip3 install --break-system-packages pyjwt
+RUN apk add --no-cache python3 py3-cryptography py3-pip curl nodejs npm bash pngquant && pip3 install --break-system-packages pyjwt
 
 # Minifier JS/CSS pour réduire le poids (40-60% de gain)
 RUN npm install -g terser clean-css-cli
@@ -16,6 +16,9 @@ COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
 
 # Fichiers de l'application (copiés avant minification)
 COPY . /usr/share/nginx/html
+
+# Compresser les PNGs lourds (80% de réduction, qualité visuelle identique)
+RUN pngquant --quality=80-95 --speed 1 --force --ext .png /usr/share/nginx/html/images/Cetas42.png /usr/share/nginx/html/images/cetas3.png /usr/share/nginx/html/images/icon-512.png /usr/share/nginx/html/images/icon-maskable-512.png /usr/share/nginx/html/images/icon-192.png /usr/share/nginx/html/images/icon-maskable-192.png /usr/share/nginx/html/images/apple-touch-icon.png /usr/share/nginx/html/images/kiro-base.png 2>/dev/null || echo "pngquant: fichiers déjà optimisés ou absents"
 
 # S'assurer que .env est lisible uniquement par cetas (proxy)
 RUN chmod 600 /usr/share/nginx/html/.env 2>/dev/null || true
