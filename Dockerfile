@@ -55,7 +55,6 @@ RUN terser /usr/share/nginx/html/js/conversations.js -o /usr/share/nginx/html/js
 RUN terser /usr/share/nginx/html/js/filemanager.js -o /usr/share/nginx/html/js/filemanager.js -c -m --comments false
 RUN terser /usr/share/nginx/html/js/faq.js -o /usr/share/nginx/html/js/faq.js -c -m --comments false
 RUN terser /usr/share/nginx/html/models.js -o /usr/share/nginx/html/models.js -c -m --comments false
-RUN terser /usr/share/nginx/html/images/ee.js -o /usr/share/nginx/html/images/ee.js -c -m --comments false
 
 # Minifier le CSS — style.css est un point d'entrée @import, on concatène
 # dans l'ordre de cascade avant minification

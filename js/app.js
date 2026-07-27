@@ -5236,7 +5236,7 @@ initLightbox();
 
         // Coucou1 (corps) — à l'intérieur du masque, commence en bas (caché)
         const body = document.createElement('img');
-        body.src = _ea;
+        body.src = 'images/ee.svg';
         body.style.cssText = `
             position:absolute;
             width:100%;
@@ -5297,7 +5297,7 @@ initLightbox();
             } else if (!inTop && hovered) {
                 hovered = false;
                 reopenTimer = setTimeout(() => {
-                    body.src = _ea;
+                    body.src = 'images/ee.svg';
                     setTimeout(() => { startExit(); }, 3000);
                 }, 1000);
             }
@@ -5321,7 +5321,7 @@ initLightbox();
                 hovered = false;
                 moveCount = 0;
                 reopenTimer = setTimeout(() => {
-                    body.src = _ea;
+                    body.src = 'images/ee.svg';
                     setTimeout(() => { startExit(); }, 3000);
                 }, 1000);
             }
@@ -5373,7 +5373,7 @@ initLightbox();
         const blinkTimer = setTimeout(() => {
             if (!hovered) {
                 body.src = _ec;
-                setTimeout(() => { if (!hovered) body.src = _ea; }, 150);
+                setTimeout(() => { if (!hovered) body.src = 'images/ee.svg'; }, 150);
             }
         }, 1400);
 
