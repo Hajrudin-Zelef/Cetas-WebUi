@@ -567,6 +567,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._respond_json({"error": str(e)}, 500)
 
     def _conv_save(self, filename: str):
+        if not _rate_check("conv:" + self.client_address[0], 30, 60):
+            self._respond_json({"error": "Trop de requêtes. Réessayez dans une minute."}, 429)
+            return
         username = self._get_authenticated_user()
         if not username:
             return
@@ -649,6 +652,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
         password = data.get("password", "").strip()
         if not uname or not password:
             self._respond_json({"error": "Username et mot de passe requis."}, 400)
+            return
+        if len(password) < 8:
+            self._respond_json({"error": "Mot de passe trop court (minimum 8 caractères)."}, 400)
             return
         users = _load_users()
         if len(users) == 0:
@@ -893,6 +899,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def _proxy_request(self, method: str):
+        if not _rate_check("proxy:" + self.client_address[0], 30, 60):
+            self._respond_json({"error": "Trop de requêtes. Réessayez dans une minute."}, 429)
+            return
         username = self._get_authenticated_user()
         if not username:
             return

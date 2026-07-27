@@ -17,8 +17,8 @@ COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
 # Fichiers de l'application (copiés avant minification)
 COPY . /usr/share/nginx/html
 
-# S'assurer que .env est lisible par l'utilisateur cetas (proxy)
-RUN chmod 644 /usr/share/nginx/html/.env 2>/dev/null || true
+# S'assurer que .env est lisible uniquement par cetas (proxy)
+RUN chmod 600 /usr/share/nginx/html/.env 2>/dev/null || true
 
 # Répertoire de données (hors racine web)
 RUN mkdir -p /app/data && chown -R cetas:cetas /app/data
