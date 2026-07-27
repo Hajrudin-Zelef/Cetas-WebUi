@@ -88,7 +88,17 @@ PROVIDER_CONFIG = {
 # ── État global ──────────────────────────────────────────────────────
 api_keys: dict[str, str] = {}
 
-# ── Rate limiter simple (IP → timestamps) ────────────────────────────
+# ── Configuration CORS ────────────────────────────────────────────────
+ALLOWED_ORIGINS = os.environ.get("CETAS_CORS_ORIGINS", "https://samui.neva-ci.pro").split(",")
+
+def _cors_origin(requested_origin: str | None) -> str:
+    """Retourne l'origine si autorisée, sinon la première origine de la liste."""
+    if not requested_origin:
+        return ALLOWED_ORIGINS[0]
+    for allowed in ALLOWED_ORIGINS:
+        if allowed == "*" or allowed == requested_origin:
+            return requested_origin
+    return ALLOWED_ORIGINS[0]  # fallback safe
 _rate_buckets: dict[str, list] = {}
 
 def _rate_check(key: str, max_req: int = 10, window: int = 60) -> bool:
@@ -108,10 +118,15 @@ USERS_SEED_PATH = os.path.join(BASE_DIR, "core", "users-seed.json")
 _jwt_secret: str = ""
 _users: dict[str, dict] = {}
 
+# Paramètres scrypt conformes OWASP 2025 (N >= 2^17)
+_SCRYPT_N = 131072
+_SCRYPT_R = 8
+_SCRYPT_P = 1
+
 def _hash_password(password: str) -> str:
     salt = os.urandom(16)
-    h = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=16384, r=8, p=1)
-    return f"scrypt${salt.hex()}${h.hex()}"
+    h = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=_SCRYPT_N, r=_SCRYPT_R, p=_SCRYPT_P)
+    return f"scrypt${_SCRYPT_N}${_SCRYPT_R}${_SCRYPT_P}${salt.hex()}${h.hex()}"
 
 def _verify_password(password: str, stored: str) -> bool:
     if "$" not in stored:
@@ -121,21 +136,42 @@ def _verify_password(password: str, stored: str) -> bool:
     if algo == "sha256":
         return hashlib.sha256(password.encode("utf-8")).hexdigest() == rest
     if algo == "scrypt":
-        parts = rest.split("$", 1)
-        if len(parts) != 2:
+        parts = rest.split("$")
+        if len(parts) == 2:
+            # Legacy: scrypt$salt$hash (n=16384, r=8, p=1)
+            salt_hex, hash_hex = parts
+            n, r, p = 16384, 8, 1
+        elif len(parts) == 5:
+            # Nouveau: scrypt$n$r$p$salt$hash
+            try:
+                n, r, p = int(parts[0]), int(parts[1]), int(parts[2])
+                salt_hex, hash_hex = parts[3], parts[4]
+            except (ValueError, IndexError):
+                return False
+        else:
             return False
-        salt_hex, hash_hex = parts
         try:
             salt = bytes.fromhex(salt_hex)
-            h = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=16384, r=8, p=1)
+            h = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=n, r=r, p=p)
             return h.hex() == hash_hex
         except Exception:
             return False
     return False
 
 def _needs_password_upgrade(stored: str) -> bool:
-    """Retourne True si le hash n'est pas en scrypt (migration nécessaire)."""
-    return not stored.startswith("scrypt$")
+    """Retourne True si le hash est faible (SHA-256 ou scrypt N<131072)."""
+    if not stored.startswith("scrypt$"):
+        return True  # SHA-256 → migrer vers scrypt
+    parts = stored.count("$")
+    if parts == 2:
+        return True  # Legacy scrypt sans params → N=16384 trop faible
+    if parts == 4:
+        try:
+            n = int(stored.split("$")[1])
+            return n < _SCRYPT_N
+        except (ValueError, IndexError):
+            return True
+    return False
 
 def _load_users() -> dict[str, dict]:
     global _users
@@ -179,9 +215,7 @@ def _load_users() -> dict[str, dict]:
     return _users
 
 def _save_users() -> None:
-    data = {"version": 1, "users": _users}
-    if _jwt_secret:
-        data["jwt_secret"] = _jwt_secret
+    data = {"version": 2, "users": _users}
     with open(USERS_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -189,26 +223,41 @@ def _get_jwt_secret() -> str:
     global _jwt_secret
     if _jwt_secret:
         return _jwt_secret
-    # Essayer de charger depuis users.json (persistant)
-    if os.path.exists(USERS_PATH):
+    # 1) Nouvel emplacement : .jwt_secret (fichier dédié, 0o600)
+    if os.path.exists(JWT_SECRET_PATH):
         try:
-            with open(USERS_PATH, "r", encoding="utf-8") as f:
-                meta = json.load(f)
-            _jwt_secret = meta.get("jwt_secret", "")
+            with open(JWT_SECRET_PATH, "r", encoding="utf-8") as f:
+                _jwt_secret = f.read().strip()
             if _jwt_secret:
                 return _jwt_secret
         except Exception:
             pass
-    # Générer un nouveau secret et le persister
+    # 2) Migration depuis l'ancien users.json (v1)
+    if os.path.exists(USERS_PATH):
+        try:
+            with open(USERS_PATH, "r", encoding="utf-8") as f:
+                meta = json.load(f)
+            legacy = meta.get("jwt_secret", "")
+            if legacy:
+                _jwt_secret = legacy
+                _persist_jwt_secret()
+                _save_users()  # nettoie jwt_secret du users.json
+                log.info("JWT secret migré vers .jwt_secret")
+                return _jwt_secret
+        except Exception:
+            pass
+    # 3) Générer un nouveau secret
     import secrets
     _jwt_secret = secrets.token_hex(32)
-    log.info("Nouveau secret JWT généré et persisté.")
-    # Sauver dans users.json
-    data = {"version": 1, "users": _users, "jwt_secret": _jwt_secret}
-    os.makedirs(os.path.dirname(USERS_PATH), exist_ok=True)
-    with open(USERS_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    _persist_jwt_secret()
+    log.info("Nouveau secret JWT généré.")
     return _jwt_secret
+
+def _persist_jwt_secret() -> None:
+    os.makedirs(os.path.dirname(JWT_SECRET_PATH), exist_ok=True)
+    with open(JWT_SECRET_PATH, "w", encoding="utf-8") as f:
+        f.write(_jwt_secret)
+    os.chmod(JWT_SECRET_PATH, 0o600)
 
 def _create_jwt(username: str, role: str) -> str:
     now = int(time.time())
@@ -305,6 +354,7 @@ def load_api_keys():
 
 # ── Stockage conversations (sync multi-appareils) ──────────────────
 DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
+JWT_SECRET_PATH = os.path.join(DATA_DIR, ".jwt_secret")
 CONV_DIR = os.path.join(BASE_DIR, "conversations")
 os.makedirs(CONV_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -339,8 +389,14 @@ def _conv_user_dir(username: str) -> str:
     return d
 
 def _conv_file_path(username: str, filename: str) -> str:
-    safe_fn = filename.replace("/", "_").replace("\\", "_")
-    return os.path.join(_conv_user_dir(username), safe_fn)
+    safe_fn = os.path.basename(filename)
+    if not safe_fn or safe_fn.startswith('.'):
+        raise ValueError("Nom de fichier invalide")
+    full = os.path.realpath(os.path.join(_conv_user_dir(username), safe_fn))
+    expected = os.path.realpath(_conv_user_dir(username))
+    if not full.startswith(expected + os.sep) and full != expected:
+        raise ValueError("Path traversal détecté")
+    return full
 
 def load_user_conversations(username: str) -> dict[str, dict]:
     """Charge toutes les conversations d'un utilisateur (depuis disque ou cache)."""
@@ -595,10 +651,13 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._respond_json({"error": "Username et mot de passe requis."}, 400)
             return
         users = _load_users()
+        if len(users) == 0:
+            self._respond_json({"error": "Aucun admin configuré. Lancez setup.py d'abord."}, 403)
+            return
         if uname in users:
             self._respond_json({"error": "Cet utilisateur existe déjà."}, 409)
             return
-        role = "admin" if len(users) == 0 else "user"
+        role = "user"
         users[uname] = {
             "username": uname,
             "email": email,
@@ -692,7 +751,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin", "")
+        self.send_header("Access-Control-Allow-Origin", _cors_origin(origin))
+        self.send_header("Vary", "Origin")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
@@ -700,7 +761,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin", "")
+        self.send_header("Access-Control-Allow-Origin", _cors_origin(origin))
+        self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS, HEAD")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.send_header("X-Frame-Options", "DENY")
@@ -905,7 +968,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        origin = self.headers.get("Origin", "")
+        self.send_header("Access-Control-Allow-Origin", _cors_origin(origin))
+        self.send_header("Vary", "Origin")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()

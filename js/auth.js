@@ -201,18 +201,9 @@ const Auth = (() => {
 
     if (users.length > 0) return users;
 
-    // Fallback — compte admin par défaut (PBKDF2)
-    const defaultHash = await _hashPassword('admin');
-    users = [{
-      username: 'admin',
-      email: 'admin@cetas.local',
-      password_hash: defaultHash,
-      role: 'admin',
-      created_at: new Date().toISOString(),
-      must_change_password: true   // Forcer le changement du mot de passe par défaut
-    }];
-    _writeUsers(users);
-    return users;
+    // Aucun compte — l'app nécessite setup.py
+    console.warn('Aucun compte utilisateur trouvé. Lancez setup.py pour créer un admin.');
+    return [];
   }
 
   /** Vérifie si l'admin a toujours le mot de passe par défaut et le marque.
