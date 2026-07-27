@@ -143,8 +143,8 @@ USERS_SEED_PATH = os.path.join(BASE_DIR, "core", "users-seed.json")
 _jwt_secret: str = ""
 _users: dict[str, dict] = {}
 
-# Paramètres scrypt — N=65536 = 64 MB RAM (compromis sécurité/conteneur)
-_SCRYPT_N = 65536
+# Paramètres scrypt — N=16384 = 16 MB (limite OpenSSL Alpine)
+_SCRYPT_N = 16384
 _SCRYPT_R = 8
 _SCRYPT_P = 1
 
