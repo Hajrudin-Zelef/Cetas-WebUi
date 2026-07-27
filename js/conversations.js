@@ -258,7 +258,7 @@ function showCatPopup(btn, filename, currentCategoryId) {
             if (currentCategoryId === cat.id && cat.couleur) {
                 catItem.style.background = cat.couleur + '22';
             }
-            catItem.innerHTML = `<span>${cat.icone || '📁'}</span><span>${cat.nom}</span>`;
+            catItem.innerHTML = `<span>${window.escHtml ? window.escHtml(cat.icone) || '📁' : (cat.icone || '📁')}</span><span>${window.escHtml ? window.escHtml(cat.nom) : cat.nom}</span>`;
             catItem.addEventListener('click', async () => {
                 await updateConversationCategory(filename, cat.id);
                 const expectedFn = STATE.conversationId

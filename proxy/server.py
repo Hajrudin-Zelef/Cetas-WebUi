@@ -648,7 +648,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if _needs_password_upgrade(u.get("password_hash", "")):
             u["password_hash"] = _hash_password(password)
             _save_users()
-            log.info("Hash du compte %s migré vers scrypt.", uname)
+            log.debug("Hash du compte %s migré vers scrypt.", uname)
         token = _create_jwt(uname, u.get("role", "user"))
         self._respond_json({
             "token": token,
@@ -698,7 +698,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         }
         _save_users()
         token = _create_jwt(uname, role)
-        log.info("Utilisateur créé: %s (role=%s)", uname, role)
+        log.debug("Utilisateur créé: %s (role=%s)", uname, role)
         self._respond_json({
             "token": token,
             "user": {
@@ -772,7 +772,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             return
         del users[target]
         _save_users()
-        log.info("Utilisateur supprimé: %s", target)
+        log.debug("Utilisateur supprimé: %s", target)
         self._respond_json({"ok": True})
 
     # ── Helpers HTTP ──────────────────────────────────────────────────
