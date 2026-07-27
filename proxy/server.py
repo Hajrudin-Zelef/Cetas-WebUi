@@ -85,6 +85,31 @@ PROVIDER_CONFIG = {
     },
 }
 
+# ── Paths autorisés par provider (évite l'abus du proxy) ─────────────
+PROXY_ALLOWED_PATHS: dict[str, list[str]] = {
+    "openai":     ["/v1/chat/completions", "/v1/models", "/v1/images/"],
+    "anthropic":  ["/v1/messages"],
+    "google":     ["/v1beta/models/"],
+    "deepseek":   ["/chat/completions", "/v1/chat/completions"],
+    "openrouter": ["/api/v1/chat/completions", "/api/v1/models"],
+    "groq":       ["/openai/v1/chat/completions", "/openai/v1/models", "/openai/v1/audio/"],
+    "nvidia":     ["/v1/chat/completions", "/v1/models"],
+    "mistral":    ["/v1/chat/completions"],
+    "perplexity": ["/chat/completions"],
+    "grok":       ["/v1/chat/completions"],
+    "zai":        ["/api/paas/v4/chat/completions"],
+    "cabreras":   ["/v1/chat/completions"],
+}
+
+def _is_path_allowed(provider: str, path: str) -> bool:
+    allowed = PROXY_ALLOWED_PATHS.get(provider, [])
+    if not allowed:
+        return False
+    for prefix in allowed:
+        if path.startswith(prefix):
+            return True
+    return False
+
 # ── État global ──────────────────────────────────────────────────────
 api_keys: dict[str, str] = {}
 
@@ -265,7 +290,7 @@ def _create_jwt(username: str, role: str) -> str:
         "sub": username,
         "role": role,
         "iat": now,
-        "exp": now + 604800  # 7 jours
+        "exp": now + 86400  # 24 heures
     }
     return jwt.encode(payload, _get_jwt_secret(), algorithm="HS256")
 
@@ -922,6 +947,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
             return
 
         upstream_path = "/" + upstream_path
+        if not _is_path_allowed(provider, upstream_path):
+            self._error(403, f"Path non autorisé pour {provider}: {upstream_path}")
+            return
 
         # Lire le body
         content_length = int(self.headers.get("Content-Length", 0))
