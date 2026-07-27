@@ -9,3 +9,4 @@ memory_session.md
 .env
 .docker-env
 proxy/server.py.back
+.env.docker

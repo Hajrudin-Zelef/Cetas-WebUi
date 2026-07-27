@@ -23,7 +23,7 @@ function isLocalEditeur(editeur) {
 
 const PROXY_PRIMARY = '/api/proxy';
 const PROXY_WORKER = 'https://cetas-backup.angeoulai2015.workers.dev/api/proxy';
-const PROXY_WORKER_TOKEN = 'aa7217a90bcf2a786d80720b4355d70e3fdca07c758dc7ea2d49ec96f619ee88';
+const PROXY_WORKER_TOKEN = (typeof window !== 'undefined' && window.CETAS_CONFIG && window.CETAS_CONFIG.workerToken) || '';
 const PROXY_RETRY_MS = 30000; // retest le primary toutes les 30s
 
 // Providers avec recherche web native (outil géré côté serveur par le provider)

@@ -8,8 +8,8 @@ services:
     ports:
       - "8080:80"
     restart: unless-stopped
-    environment:
-      - CETAS_VAULT_PASSWORD=${CETAS_VAULT_PASSWORD:-Yoroboul2026!+}
+    env_file:
+      - .env.docker
     volumes:
       - /home/sam/kiro/.vault:/usr/share/nginx/html/.vault
       - /home/sam/kiro/.env:/usr/share/nginx/html/.env

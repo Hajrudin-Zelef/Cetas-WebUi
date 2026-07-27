@@ -2,6 +2,15 @@
 # Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
 set -e
 
+# Générer la config JS runtime (token worker Cloudflare)
+cat > /usr/share/nginx/html/js/config.js << EOF
+// Généré au démarrage — NE PAS COMMITTER
+window.CETAS_CONFIG = {
+  workerToken: "${CETAS_WORKER_TOKEN:-}"
+};
+EOF
+chmod 644 /usr/share/nginx/html/js/config.js
+
 # S'assurer que les répertoires de données sont accessibles
 mkdir -p /usr/share/nginx/html/conversations /app/data
 chown -R cetas:cetas /usr/share/nginx/html/conversations /app/data 2>/dev/null || true
