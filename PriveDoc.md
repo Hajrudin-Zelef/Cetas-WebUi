@@ -1,5 +1,9 @@
 # Cetas — Documentation privée
 
+> **Version :** v3.8 | **Branche :** `feat/auth-server-side`  
+> **Guide déploiement :** [DEPLOY.md](./DEPLOY.md)  
+> **Guide public :** [README.md](./README.md)
+
 ## Login par défaut
 - **Utilisateur** : `admin`
 - **Mot de passe** : `admin`
@@ -420,65 +424,135 @@ Routeur hybride intégré dans `js/router.js` (~509 lignes). 4 tiers indépendan
 
 ## Déploiement
 
-### Docker (production — v3.3 avec volumes)
-```bash
-docker build -t cetas:latest .
-docker rm -f cetas-webui
-docker run -d --name cetas-webui --restart unless-stopped \
-  -p 8080:80 \
-  -v /home/sam/kiro/.vault:/usr/share/nginx/html/.vault \
-  -v /home/sam/kiro/.env:/usr/share/nginx/html/.env \
-  -v cetas-data:/usr/share/nginx/html/conversations \
-  -v cetas-data:/app/data \
-  -e CETAS_VAULT_PASSWORD="Yoroboul2026!+" \
-  cetas:latest
+### Architecture de déploiement (VPS)
+
+```
+Internet (HTTPS :443)
+    │
+    ▼
+Caddy (reverse proxy, Let's Encrypt auto)
+    │  reverse_proxy localhost:8080
+    ▼
+Docker Compose
+┌─────────────────────────────────┐
+│ cetas (container)               │
+│   nginx :80 ← /api/* → proxy   │
+│   Python :8080 (interne)        │
+│   static files                  │
+├─────────────────────────────────┤
+│ searxng (container)             │
+│   SearXNG :8080                 │
+│   (127.0.0.1:8084 sur l'hôte)   │
+└─────────────────────────────────┘
 ```
 
-**Volumes requis :**
-- `.vault/.enc` → `/usr/share/nginx/html/.vault` (coffre-fort chiffré)
-- `.env` → `/usr/share/nginx/html/.env` (clés API chiffrées)
-- `cetas-data` → `/usr/share/nginx/html/conversations` (conversations JSON)
-- `cetas-data` → `/app/data` (users.json, JWT secret)
+### docker-compose.yml
+
+```yaml
+# Cetas + SearXNG — © Marexsoft Corporation
+services:
+  cetas:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    volumes:
+      - ./.vault:/usr/share/nginx/html/.vault:ro
+      - ./.env:/usr/share/nginx/html/.env:ro
+      - cetas-data:/usr/share/nginx/html/conversations
+      - cetas-data:/app/data
+
+  searxng:
+    image: searxng/searxng:latest
+    ports:
+      - "127.0.0.1:8084:8080"
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8084/
+      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:?SEARXNG_SECRET_KEY requis}
+    volumes:
+      - ./searxng-data:/etc/searxng
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID]
+
+volumes:
+  cetas-data:
+```
+
+### Déploiement rapide
+
+```bash
+# Build + démarrage
+export SEARXNG_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+docker compose build --no-cache
+docker compose up -d
+```
+
+### .env.docker
+
+```bash
+CETAS_VAULT_PASSWORD=mot_de_passe_vault
+CETAS_WORKER_TOKEN=token_cloudflare_worker
+CETAS_CORS_ORIGINS=https://mon.domaine.com,http://localhost:8080
+```
+
+### Volumes Docker
+
+| Volume / Bind | Container | Contenu |
+|---------------|-----------|---------|
+| `./.vault` (ro) | `/usr/share/nginx/html/.vault` | Coffre-fort chiffré `.enc` |
+| `./.env` (ro) | `/usr/share/nginx/html/.env` | Clés API chiffrées (AES-256-GCM) |
+| `cetas-data` | `/usr/share/nginx/html/conversations` | Conversations JSON par utilisateur |
+| `cetas-data` | `/app/data` | `users.json` + `.jwt_secret` |
+
+### Caddy (reverse proxy HTTPS)
+
+```caddyfile
+cetas.mondomaine.com {
+    reverse_proxy localhost:8080 {
+        transport http {
+            read_timeout 300s
+            write_timeout 300s
+        }
+    }
+}
+```
 
 ### Rebuild après modification
+
 ```bash
-docker build --no-cache -t cetas:latest .
-docker rm -f cetas-webui
-docker run -d --name cetas-webui --restart unless-stopped \
-  -p 8080:80 \
-  -v /home/sam/kiro/.vault:/usr/share/nginx/html/.vault \
-  -v /home/sam/kiro/.env:/usr/share/nginx/html/.env \
-  -v cetas-data:/usr/share/nginx/html/conversations \
-  -v cetas-data:/app/data \
-  -e CETAS_VAULT_PASSWORD='Yoroboul2026!+' \
-  cetas:latest
+docker compose build --no-cache
+docker compose down && docker compose up -d
 ```
 
 ### Proxy seul (sans Docker)
+
 ```bash
-# Démarrer
 CETAS_VAULT_PASSWORD="motdepasse" PROXY_PORT=8081 python3 proxy/server.py
-
-# Le proxy stocke les conversations dans conversations/{user}/*.json
-# pour la synchronisation multi-appareils. Users dans /app/data/users.json.
-
-# Service permanent
-systemctl --user enable cetas-proxy
-systemctl --user start cetas-proxy
+# Conversations : conversations/{user}/*.json
+# Users : /app/data/users.json
 ```
 
-### Variables d'environnement (v3.3)
+### Guide complet
+
+Voir **[DEPLOY.md](./DEPLOY.md)** — guide pas-à-pas complet pour installer sur un VPS vierge (Debian 13 + Docker + Caddy + SearXNG).
+
+### Variables d'environnement
 
 | Variable | Défaut | Description |
 |----------|--------|-------------|
-| `CETAS_VAULT_PASSWORD` | — | Mot de passe du coffre-fort (obligatoire) |
-| `CETAS_PEPPER` | — | Secret supplémentaire anti-bruteforce offline (optionnel) |
-| `PROXY_PORT` | 8080 | Port d'écoute du proxy |
+| `CETAS_VAULT_PASSWORD` | — | Mot de passe du coffre-fort **(obligatoire)** |
+| `CETAS_WORKER_TOKEN` | — | Token partagé Cloudflare Worker (optionnel) |
+| `CETAS_CORS_ORIGINS` | `https://samui.neva-ci.pro` | Origines CORS autorisées |
+| `CETAS_PEPPER` | — | Secret anti-bruteforce offline (optionnel) |
+| `PROXY_PORT` | 8080 | Port d'écoute du proxy Python |
 | `CETAS_BASE_DIR` | auto-détecté | Racine de l'application |
 | `CETAS_DATA_DIR` | `/app/data` | Répertoire données (users.json, JWT secret) |
 | `CETAS_VAULT_PATH` | `{BASE_DIR}/.vault/.enc` | Chemin du vault chiffré |
 | `CETAS_ENV_PATH` | `{BASE_DIR}/.env` | Chemin du .env |
 | `CETAS_CRYPTO_PATH` | `{BASE_DIR}/core/linux/crypto_linux.py` | Module crypto |
+| `SEARXNG_SECRET_KEY` | — | Clé secrète SearXNG **(obligatoire)** |
 
 ## Fichiers divers
 
