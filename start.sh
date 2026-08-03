@@ -14,9 +14,14 @@ chmod 644 /usr/share/nginx/html/js/config.js
 # S'assurer que les répertoires de données sont accessibles
 mkdir -p /usr/share/nginx/html/conversations /app/data
 chown -R cetas:cetas /usr/share/nginx/html/conversations /app/data 2>/dev/null || true
-# Rendre le vault lisible uniquement par cetas (monté depuis l'hôte)
+# Rendre le vault lisible par cetas (uid 1001) — monté depuis l'hôte
 if [ -d /usr/share/nginx/html/.vault ]; then
-    chmod -R 700 /usr/share/nginx/html/.vault 2>/dev/null || true
+    chmod 755 /usr/share/nginx/html/.vault 2>/dev/null || true
+    chmod 644 /usr/share/nginx/html/.vault/.enc /usr/share/nginx/html/.vault/.guard_config /usr/share/nginx/html/.vault/.system 2>/dev/null || true
+fi
+# Rendre .env lisible par cetas
+if [ -f /usr/share/nginx/html/.env ]; then
+    chmod 644 /usr/share/nginx/html/.env 2>/dev/null || true
 fi
 
 echo "[start] Démarrage proxy Python..."
