@@ -6,22 +6,22 @@ services:
   cetas:
     build: .
     ports:
-      - "8080:80"
+      - "8901:80"
     restart: unless-stopped
     env_file:
       - .env.docker
     volumes:
-      - /home/sam/kiro/.vault:/usr/share/nginx/html/.vault
-      - /home/sam/kiro/.env:/usr/share/nginx/html/.env
+      - ./.vault:/usr/share/nginx/html/.vault:ro
+      - ./.env:/usr/share/nginx/html/.env:ro
       - cetas-data:/usr/share/nginx/html/conversations
       - cetas-data:/app/data
 
   searxng:
     image: searxng/searxng:latest
     ports:
-      - "127.0.0.1:8084:8080"
+      - "127.0.0.1:8904:8080"
     environment:
-      - SEARXNG_BASE_URL=http://localhost:8084/
+      - SEARXNG_BASE_URL=http://localhost:8904/
       - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:?SEARXNG_SECRET_KEY requis}
     volumes:
       - ./searxng-data:/etc/searxng
