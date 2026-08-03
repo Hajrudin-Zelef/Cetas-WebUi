@@ -10,3 +10,12 @@ memory_session.md
 .docker-env
 proxy/server.py.back
 .env.docker
+
+# Secrets & fichiers sensibles
+*.pem
+*.key
+*.crt
+secrets.txt
+skills-lock.json
+searxng-data/
+tools/__pycache__/
