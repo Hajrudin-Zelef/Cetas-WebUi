@@ -220,7 +220,7 @@ python3 setup.py
 ### Déroulement interactif
 
 1. **Dépendances** — vérification/installation automatique
-2. **Mot de passe setup** — le mot de passe par défaut est `yoroboul88`
+2. **Mot de passe setup** — entrez le mot de passe configuré dans `setup.py`
 3. **Création du coffre** — entrez un mot de passe fort pour le vault (générez avec `python3 -c "import secrets; print(secrets.token_urlsafe(24))"`)
 4. **Configuration des providers** — entrez vos clés API :
    - Chaque clé est **testée automatiquement** avant enregistrement
