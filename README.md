@@ -74,15 +74,15 @@ python3 setup.py
 # Chiffrer les clés pour le proxy
 CETAS_VAULT_PASSWORD="votre_mdp" python3 proxy/encrypt_keys.py
 
-# Configurer les variables d'environnement
+# Configurer les variables d'environnement (inclut SEARXNG_SECRET_KEY)
 cat > .env.docker << EOF
 CETAS_VAULT_PASSWORD=votre_mdp
 CETAS_WORKER_TOKEN=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
 CETAS_CORS_ORIGINS=https://votre-domaine.com,http://localhost:8080
+SEARXNG_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
 EOF
 
-# Démarrer
-export SEARXNG_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+# Démarrer (plus besoin d'export SEARXNG_SECRET_KEY)
 docker compose build --no-cache
 docker compose up -d
 
@@ -112,6 +112,7 @@ Voir **[DEPLOY.md](./DEPLOY.md)** — guide pas-à-pas complet pour installer su
 - ✅ SearXNG (recherche web auto-hébergée)
 - ✅ Cloudflare Worker (backup anti-SPOF)
 - ✅ Vault Guard (immutabilité noyau)
+- ✅ Migration vers un autre serveur
 - ✅ Maintenance, backups, troubleshooting
 
 ## Stack technique

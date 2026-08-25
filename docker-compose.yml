@@ -11,8 +11,8 @@ services:
     env_file:
       - .env.docker
     volumes:
-      - ./.vault:/usr/share/nginx/html/.vault:ro
-      - ./.env:/usr/share/nginx/html/.env:ro
+      - ./.vault:/usr/share/nginx/html/.vault
+      - ./.env:/usr/share/nginx/html/.env
       - cetas-data:/usr/share/nginx/html/conversations
       - cetas-data:/app/data
 
@@ -20,9 +20,10 @@ services:
     image: searxng/searxng:latest
     ports:
       - "127.0.0.1:8904:8080"
+    env_file:
+      - .env.docker
     environment:
       - SEARXNG_BASE_URL=http://localhost:8904/
-      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:?SEARXNG_SECRET_KEY requis}
     volumes:
       - ./searxng-data:/etc/searxng
     cap_drop:

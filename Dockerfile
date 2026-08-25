@@ -13,6 +13,7 @@ RUN npm install -g terser clean-css-cli
 # Proxy Python
 COPY proxy/server.py /app/server.py
 COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
+COPY core/users-seed.json /usr/share/nginx/html/core/users-seed.json
 
 # Fichiers de l'application (copiés avant minification)
 COPY . /usr/share/nginx/html

@@ -302,8 +302,8 @@ services:
     env_file:
       - .env.docker
     volumes:
-      - ./.vault:/usr/share/nginx/html/.vault:ro
-      - ./.env:/usr/share/nginx/html/.env:ro
+      - ./.vault:/usr/share/nginx/html/.vault
+      - ./.env:/usr/share/nginx/html/.env
       - cetas-data:/usr/share/nginx/html/conversations
       - cetas-data:/app/data
 
@@ -311,9 +311,10 @@ services:
     image: searxng/searxng:latest
     ports:
       - "127.0.0.1:8084:8080"
+    env_file:
+      - .env.docker
     environment:
       - SEARXNG_BASE_URL=http://localhost:8084/
-      - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:?SEARXNG_SECRET_KEY requis}
     volumes:
       - ./searxng-data:/etc/searxng
     cap_drop:
@@ -328,8 +329,8 @@ volumes:
 ```
 
 **Modifications par rapport à l'original :**
-- `./.vault` et `./.env` en chemins relatifs (au lieu de `/home/sam/kiro/...`)
-- Volumes montés en `:ro` (read-only) pour `.vault` et `.env` — sécurité renforcée
+- `./.vault` et `./.env` en chemins relatifs (pas de `:ro` — `start.sh` gère les permissions au démarrage)
+- `SEARXNG_SECRET_KEY` est dans `.env.docker` via `env_file` (plus besoin d'export manuel)
 
 ---
 
@@ -354,6 +355,9 @@ CETAS_WORKER_TOKEN=token_hex_32_caracteres
 
 # Origines CORS autorisées — remplacez par votre domaine
 CETAS_CORS_ORIGINS=https://cetas.mondomaine.com,http://localhost:8080
+
+# Clé secrète SearXNG (générée à l'étape 2)
+SEARXNG_SECRET_KEY=searxng_secret_key_hex
 ```
 
 ```bash
@@ -387,7 +391,7 @@ docker images | grep cetas
 4. Minifie tous les JS (terser), concatène + minifie le CSS (cleancss)
 5. Crée l'utilisateur non-root `cetas` (uid 1001)
 6. Configure Nginx (rate limiting, headers sécurité)
-7. Supprime les fichiers sensibles du build (seed API keys)
+7. Supprime les clés API en clair (api-keys-seed.json) mais garde users-seed.json
 
 ---
 
@@ -492,10 +496,7 @@ botdetection:
 ```bash
 cd /opt/cetas
 
-# Exporter la clé SearXNG (obligatoire)
-export SEARXNG_SECRET_KEY="votre_searxng_secret_key"
-
-# Démarrer
+# Démarrer (SEARXNG_SECRET_KEY est dans .env.docker, pas besoin d'export)
 docker compose up -d
 ```
 
@@ -680,6 +681,72 @@ cp /root/backups/cetas-20260101/.env /opt/cetas/.env
 
 ---
 
+## 16b. Migration vers un autre serveur
+
+### Depuis un serveur existant
+
+```bash
+# 1. Sauvegarder sur l'ancien serveur
+cd /opt/cetas
+tar czf /tmp/cetas-migration.tar.gz \
+  .vault/ .env .env.docker core/users-seed.json \
+  docker-compose.yml Dockerfile start.sh nginx.conf \
+  proxy/ css/ js/ images/ index.html models.js manifest.json sw.js
+
+# OU copie directe via rsync (recommandé)
+rsync -avz --exclude='node_modules' --exclude='.git' --exclude='searxng-data' \
+  /opt/cetas/ user@NOUVEAU_VPS:/opt/cetas/
+
+# 2. Backup du volume Docker (conversations + users.json)
+docker run --rm -v cetas-data:/data -v /tmp:/backup alpine \
+  tar czf /backup/cetas-data-$(date +%Y%m%d).tar.gz -C /data .
+# Copier cetas-data-*.tar.gz vers le nouveau serveur
+```
+
+### Sur le nouveau serveur
+
+```bash
+# 1. Prérequis
+sudo apt update && sudo apt install -y docker.io docker-compose-v2
+sudo usermod -aG docker $USER
+newgrp docker
+
+# 2. Restaurer les fichiers
+# (copier le tar.gz ou utiliser rsync depuis l'ancien serveur)
+cd /opt/cetas
+tar xzf /tmp/cetas-migration.tar.gz
+
+# 3. Restaurer le volume Docker
+docker run --rm -v cetas-data:/data -v /tmp:/backup alpine \
+  tar xzf /backup/cetas-data-YYYYMMDD.tar.gz -C /data
+
+# 4. Corriger les permissions
+chmod 755 .vault
+chmod 644 .vault/.enc .vault/.guard_config .vault/.system
+chmod 644 .env
+
+# 5. Build + démarrer
+docker compose build --no-cache
+docker compose up -d
+
+# 6. Vérifier
+docker compose ps          # cetas Up, searxng Up
+curl http://localhost:8080/api/health  # {"status":"ok","keys_loaded":N}
+```
+
+### Fichiers critiques (NE PAS OUBLIER)
+
+| Fichier | Contenu | Conséquence si manquant |
+|---------|---------|------------------------|
+| `.vault/.enc` | Clés API chiffrées (AES-256-GCM) | Aucune clé API chargée |
+| `.env` | Clés chiffrées pour le proxy | Proxy ne démarre pas |
+| `.env.docker` | Mots de passe vault + SearXNG | Container ne démarre pas |
+| `core/users-seed.json` | Users seed (importés au 1er lancement) | Pas de compte admin |
+| `docker-compose.yml` | Config Docker | Docker ne fonctionne pas |
+| Volume `cetas-data` | conversations + users.json + JWT secret | Données perdues |
+
+---
+
 ## 16. Troubleshooting
 
 ### Le container ne démarre pas
@@ -731,21 +798,21 @@ ls -la /opt/cetas/core/linux/crypto_linux.py
 ### "Permission denied" sur .vault/.enc
 
 ```bash
-# Le vault doit appartenir à l'uid 1001 (user cetas dans le container)
-sudo chown -R 1001:1001 /opt/cetas/.vault
-sudo chmod 700 /opt/cetas/.vault
-sudo chmod 600 /opt/cetas/.vault/.enc
+# Les permissions sont gérées par start.sh au démarrage du container
+# Si le problème persiste, vérifiez les permissions sur l'hôte
+sudo chmod 755 /opt/cetas/.vault
+sudo chmod 644 /opt/cetas/.vault/.enc
+sudo chmod 644 /opt/cetas/.env
 ```
 
 ### SearXNG ne démarre pas
 
 ```bash
-# Vérifier que SEARXNG_SECRET_KEY est exporté
-echo $SEARXNG_SECRET_KEY
+# Vérifier les logs SearXNG
+docker compose logs searxng
 
-# Relancer en exportant la variable
-export SEARXNG_SECRET_KEY="votre_cle"
-docker compose up -d
+# Vérifier que SEARXNG_SECRET_KEY est dans .env.docker
+grep SEARXNG_SECRET_KEY .env.docker
 ```
 
 ---
