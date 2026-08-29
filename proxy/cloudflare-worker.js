@@ -15,6 +15,19 @@
 
 export default {
   async fetch(request, env) {
+    // CORS preflight EN PREMIER — avant le token check
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, HEAD, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-cetas-token',
+          'Access-Control-Max-Age': '86400',
+        }
+      });
+    }
+
     // ── Auth token partagé ──────────────────────────────────────
     const SHARED_TOKEN = env.CETAS_TOKEN || '';
     if (SHARED_TOKEN) {
@@ -22,19 +35,6 @@ export default {
       if (sent !== SHARED_TOKEN) {
         return new Response('Unauthorized', { status: 401, headers: { 'Access-Control-Allow-Origin': '*' } });
       }
-    }
-
-    // CORS preflight
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, HEAD, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Max-Age': '86400',
-        }
-      });
     }
 
     const url = new URL(request.url);

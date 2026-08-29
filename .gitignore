@@ -19,3 +19,4 @@ secrets.txt
 skills-lock.json
 searxng-data/
 tools/__pycache__/
+node_modules/
