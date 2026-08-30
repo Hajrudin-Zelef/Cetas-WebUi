@@ -966,6 +966,12 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self._error(400, f"Pas de clé pour: {provider}")
             return
 
+        # Normaliser le path : strip prefix provider dupliqué ou "api/"
+        if upstream_path.startswith(provider + "/"):
+            upstream_path = upstream_path[len(provider) + 1:]
+        elif upstream_path.startswith("api/"):
+            upstream_path = upstream_path[4:]
+        
         upstream_path = "/" + upstream_path
         if not _is_path_allowed(provider, upstream_path):
             self._error(403, f"Path non autorisé pour {provider}: {upstream_path}")
