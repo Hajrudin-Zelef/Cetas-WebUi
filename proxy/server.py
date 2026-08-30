@@ -17,6 +17,10 @@ import importlib.util
 import datetime
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
+
+class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    daemon_threads = True
 from urllib.parse import urlparse, unquote
 
 import jwt
@@ -83,6 +87,11 @@ PROVIDER_CONFIG = {
         "base_url": "https://api.cabreras.ai",
         "auth": {"type": "header", "header": "Authorization", "prefix": "Bearer "},
     },
+    "llamacpp": {
+        "base_url": os.environ.get("CETAS_LLAMACPP_URL"),  # ex: https://nsweb.neva-ci.pro
+        "auth": {"type": "header", "header": "Authorization", "prefix": "Bearer "},
+        "env_key": "CETAS_LLAMACPP_KEY",  # clé API depuis variable d'env
+    },
 }
 
 # ── Paths autorisés par provider (évite l'abus du proxy) ─────────────
@@ -99,6 +108,7 @@ PROXY_ALLOWED_PATHS: dict[str, list[str]] = {
     "grok":       ["/v1/chat/completions"],
     "zai":        ["/api/paas/v4/chat/completions"],
     "cabreras":   ["/v1/chat/completions"],
+    "llamacpp":   ["/v1/chat/completions", "/v1/models"],
 }
 
 def _is_path_allowed(provider: str, path: str) -> bool:
@@ -366,7 +376,8 @@ def load_api_keys():
             try:
                 aesgcm = AESGCM(proxy_key)
                 plaintext = aesgcm.decrypt(iv, ct, provider.encode("utf-8"))
-                api_keys[provider] = plaintext.decode("utf-8")
+                normalized = provider.replace(".", "")  # llama.cpp → llamacpp
+                api_keys[normalized] = plaintext.decode("utf-8")
                 loaded += 1
             except Exception as e:
                 log.error("Échec déchiffrement %s: %s", provider, e)
@@ -462,16 +473,29 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
     """Construit et envoie la requête upstream.
     Retourne (status, resp_headers, response, conn)."""
     config = PROVIDER_CONFIG[provider]
-    api_key = api_keys[provider]
-    base_url = config["base_url"]
     auth = config["auth"]
 
-    # URL complète
-    if auth["type"] == "query":
-        sep = "&" if "?" in path else "?"
-        url_path = f"{path}{sep}{auth['param']}={api_key}"
+    # llamacpp: clé API depuis env var, URL depuis vault (api_keys)
+    env_key_name = config.get("env_key")
+    if env_key_name:
+        api_key = os.environ.get(env_key_name, "")
     else:
-        url_path = path
+        api_key = api_keys.get(provider, "")
+
+    # Résoudre host/port depuis base_url (config) ou vault (api_keys)
+    base_url = config.get("base_url") or api_key.rstrip("/")
+    parsed = urlparse(base_url)
+    host = parsed.hostname
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+
+    # Construire le path upstream
+    base_path = parsed.path.rstrip("/")
+    url_path = base_path + path if base_path else path
+
+    # Auth query (google)
+    if auth["type"] == "query":
+        sep = "&" if "?" in url_path else "?"
+        url_path = f"{url_path}{sep}{auth['param']}={api_key}"
 
     # Headers upstream
     headers = {}
@@ -482,15 +506,6 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
         headers[auth["header"]] = f"{prefix}{api_key}"
     for h, v in config.get("extra_headers", {}).items():
         headers[h] = v
-
-    parsed = urlparse(base_url)
-    host = parsed.hostname
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-
-    # Préfixer avec le chemin du base_url (ex: /openai pour Groq)
-    base_path = parsed.path.rstrip("/")
-    if base_path:
-        url_path = base_path + url_path
 
     conn = http.client.HTTPSConnection(host, port, timeout=300)
     try:
@@ -937,7 +952,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             return
 
         provider, upstream_path = path_parts.split("/", 1)
-        provider = provider.lower()
+        provider = provider.lower().replace(".", "")  # llamacpp = llama.cpp
 
         if provider not in PROVIDER_CONFIG:
             self._error(400, f"Provider inconnu: {provider}")
@@ -976,9 +991,19 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
             # Streamer la réponse (chunked → SSE ou JSON)
+            is_sse = "text/event-stream" in resp_headers.get("Content-Type", "")
+            # Timeout court sur socket upstream pour SSE (évite blocage keep-alive)
+            if is_sse and hasattr(response, "fp") and response.fp and hasattr(response.fp, "raw"):
+                try:
+                    response.fp.raw._sock.settimeout(30)
+                except Exception:
+                    pass
             while True:
                 try:
-                    chunk = response.read(4096)
+                    if is_sse:
+                        chunk = response.readline()
+                    else:
+                        chunk = response.read(4096)
                 except Exception:
                     break
                 if not chunk:
@@ -1023,7 +1048,7 @@ def main():
     _load_users()
     _get_jwt_secret()
     log.info("%d utilisateur(s) chargés, JWT prêt.", len(_users))
-    server = HTTPServer(("127.0.0.1", port), ProxyHandler)
+    server = ThreadingHTTPServer(("127.0.0.1", port), ProxyHandler)
     log.info("Proxy prêt sur 127.0.0.1:%d", port)
     try:
         server.serve_forever()

@@ -2960,7 +2960,7 @@ body.dark .quota-toast {
     cursor: pointer;
     font-weight: 600;
     font-size: 0.78rem;
-    color: var(--text-secondary);
+    color: var(--accent);
     text-transform: uppercase;
     letter-spacing: 0.03em;
     background: transparent;
@@ -2996,6 +2996,8 @@ body.dark .quota-toast {
     border-top: 1px solid var(--border);
     word-wrap: break-word;
     overflow-wrap: anywhere;
+    opacity: 0.65;
+    font-style: italic;
 }
 
 .thinking-content pre,
