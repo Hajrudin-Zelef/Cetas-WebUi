@@ -507,7 +507,10 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
     for h, v in config.get("extra_headers", {}).items():
         headers[h] = v
 
-    conn = http.client.HTTPSConnection(host, port, timeout=300)
+    if parsed.scheme == "https":
+        conn = http.client.HTTPSConnection(host, port, timeout=300)
+    else:
+        conn = http.client.HTTPConnection(host, port, timeout=300)
     try:
         conn.request(method, url_path, body=body, headers=headers)
         response = conn.getresponse()
@@ -957,7 +960,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if provider not in PROVIDER_CONFIG:
             self._error(400, f"Provider inconnu: {provider}")
             return
-        if provider not in api_keys:
+        config = PROVIDER_CONFIG[provider]
+        env_key_name = config.get("env_key")
+        if not env_key_name and provider not in api_keys:
             self._error(400, f"Pas de clé pour: {provider}")
             return
 
@@ -988,14 +993,19 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.send_response(status)
             for h, v in resp_headers.items():
                 self.send_header(h, v)
+            # Headers streaming SSE
+            if "text/event-stream" in resp_headers.get("Content-Type", ""):
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("X-Accel-Buffering", "no")
+                self.send_header("Connection", "keep-alive")
             self.end_headers()
 
             # Streamer la réponse (chunked → SSE ou JSON)
             is_sse = "text/event-stream" in resp_headers.get("Content-Type", "")
-            # Timeout court sur socket upstream pour SSE (évite blocage keep-alive)
+            # Timeout sur socket upstream pour SSE (assez long pour llama.cpp)
             if is_sse and hasattr(response, "fp") and response.fp and hasattr(response.fp, "raw"):
                 try:
-                    response.fp.raw._sock.settimeout(30)
+                    response.fp.raw._sock.settimeout(300)
                 except Exception:
                     pass
             while True:
