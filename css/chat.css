@@ -1828,20 +1828,36 @@ body.dark .input-action-btn.active .input-action-arrow {
     will-change: opacity, transform;
 }
 
+/* Le 3ème mot s'efface doucement avant d'être remplacé */
+.message-text .char-fade-out {
+    display: inline-block;
+    animation: charFadeOut 280ms cubic-bezier(0.4, 0, 1, 1) both;
+    will-change: opacity, transform;
+}
+
 @keyframes charFadeIn {
     0% {
         opacity: 0;
-        transform: translateY(3px);
-        filter: blur(2px);
-    }
-    50% {
-        opacity: 0.6;
-        filter: blur(1px);
+        transform: translateY(2px) scale(0.98);
+        filter: blur(1.5px);
     }
     100% {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
         filter: blur(0);
+    }
+}
+
+@keyframes charFadeOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-2px) scale(0.98);
+        filter: blur(1.5px);
     }
 }
 
