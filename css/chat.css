@@ -1913,6 +1913,136 @@ body.dark .input-action-btn.active .input-action-arrow {
     }
 }
 
+/* --- Typing indicator style TAF --- */
+.typing-indicator {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    animation: typingFadeIn 0.4s ease-out;
+}
+
+.typing-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent, #6c63ff), var(--accent-hover, #5a52e0));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(108, 99, 255, 0.2);
+}
+
+.typing-avatar i,
+.typing-avatar svg {
+    width: 18px;
+    height: 18px;
+    color: white;
+}
+
+.typing-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.typing-content {
+    background: var(--bg-msg-assistant, #f8f9fa);
+    border-radius: 12px;
+    padding: 14px 18px;
+    border: 1px solid var(--border, #e5e7eb);
+}
+
+.typing-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.typing-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #6b7280);
+    opacity: 0.4;
+    transition: all 0.4s ease;
+}
+
+.typing-step.active {
+    opacity: 1;
+    color: var(--text, #1f2937);
+}
+
+.typing-step.done {
+    opacity: 0.6;
+    color: var(--accent, #6c63ff);
+}
+
+.typing-step-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.typing-step.active .typing-step-icon {
+    border-color: var(--accent, #6c63ff);
+    animation: typingPulse 1.2s ease-in-out infinite;
+}
+
+.typing-step.done .typing-step-icon {
+    border-color: var(--accent, #6c63ff);
+    background: var(--accent, #6c63ff);
+}
+
+.typing-step.done .typing-step-icon::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+}
+
+@keyframes typingPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+.typing-progress {
+    margin-top: 12px;
+    height: 3px;
+    background: var(--border, #e5e7eb);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.typing-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent, #6c63ff), var(--accent-hover, #5a52e0));
+    border-radius: 2px;
+    animation: typingProgress 4.5s ease-in-out;
+    width: 0%;
+}
+
+@keyframes typingProgress {
+    0% { width: 0%; }
+    33% { width: 33%; }
+    66% { width: 66%; }
+    100% { width: 100%; }
+}
+
+@keyframes typingFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes wordReveal {
     0% {
         opacity: 0;
