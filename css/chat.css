@@ -1780,7 +1780,7 @@ body.dark .input-action-btn.active .input-action-arrow {
 /* --- Apparition douce des mots pendant le streaming --- */
 .message-text .char-flash {
     display: inline-block;
-    animation: wordReveal 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: wordReveal 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
     will-change: opacity, transform, filter;
 }
 
