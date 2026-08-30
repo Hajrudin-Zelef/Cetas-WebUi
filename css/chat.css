@@ -1821,6 +1821,30 @@ body.dark .input-action-btn.active .input-action-arrow {
     will-change: opacity, transform, filter;
 }
 
+/* Fondu doux sur le dernier mot du batch - effet 60fps */
+.message-text .char-fade {
+    display: inline-block;
+    animation: charFadeIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: opacity, transform;
+}
+
+@keyframes charFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(3px);
+        filter: blur(2px);
+    }
+    50% {
+        opacity: 0.6;
+        filter: blur(1px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
 /* Curseur de typing animé */
 .message-assistant.streaming .message-text::after {
     content: '';
