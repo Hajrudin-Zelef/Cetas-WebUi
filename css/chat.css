@@ -1879,6 +1879,17 @@ body.dark .input-action-btn.active .input-action-arrow {
     51%, 100% { opacity: 0; }
 }
 
+/* Spinner style Ink - Braille dots */
+.stream-spinner {
+    display: inline-block;
+    margin-left: 8px;
+    vertical-align: middle;
+    font-size: 1.1em;
+    line-height: 1;
+    color: var(--accent, #6c63ff);
+    font-family: monospace;
+}
+
 /* --- Indicateur d'attente entre tokens --- */
 .stream-waiting {
     display: inline-flex;
