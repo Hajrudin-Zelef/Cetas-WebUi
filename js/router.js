@@ -393,6 +393,20 @@ async function routeModel(prompt, samAgentModel) {
     }
 
     var pool = ROUTER_CONFIG[tier];
+
+    // Mode Réflexion (bouton +) : quand actif, ne retenir que les modèles
+    // "thinking" (réflexion garantie) ; quand inactif, exclure tout modèle
+    // à réflexion forcée (certains modèles pensent toujours, quel que soit
+    // le paramètre reasoning_effort — seul le choix du modèle contrôle ça).
+    var _reflectionOn = typeof document !== 'undefined'
+        && !!document.getElementById('plus-reflection-toggle')?.checked;
+    var _filteredPool = {};
+    Object.keys(pool).forEach(function(k) {
+        var matching = pool[k].filter(function(m) { return !!m.thinking === _reflectionOn; });
+        _filteredPool[k] = matching.length ? matching : pool[k];
+    });
+    pool = _filteredPool;
+
     if (!pool[intent]) intent = 'chat';
 
     var route;

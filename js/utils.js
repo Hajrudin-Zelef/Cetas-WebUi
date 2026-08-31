@@ -44,6 +44,23 @@ export function arrayBufferToBase64(buffer) {
 export function isPdf(file) {
     return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 }
+/** Vérifie si un fichier est un document Word (.docx) */
+export function isDocx(file) {
+    return file.name.toLowerCase().endsWith('.docx') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+}
+/** Vérifie si un fichier est un classeur Excel (.xlsx / .xls) */
+export function isXlsx(file) {
+    const name = file.name.toLowerCase();
+    return name.endsWith('.xlsx') || name.endsWith('.xls') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        file.type === 'application/vnd.ms-excel';
+}
+/** Vérifie si un fichier est une présentation PowerPoint (.pptx) */
+export function isPptx(file) {
+    return file.name.toLowerCase().endsWith('.pptx') ||
+        file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+}
 
 /** Calcule une couleur de texte (noir ou blanc) pour un fond donné */
 export function textColorForBg(hex) {

@@ -2561,6 +2561,90 @@ body.dark .quota-toast {
     color: var(--text);
     max-width: 200px;
 }
+.attach-file-card {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    width: 96px;
+    height: 118px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-input);
+    background: #fff;
+    cursor: zoom-in;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.attach-file-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.attach-file-card-preview {
+    flex: 1;
+    padding: 8px 8px 4px 8px;
+    overflow: hidden;
+    color: #333;
+    font-size: 5.5px;
+    line-height: 1.35;
+    white-space: pre-wrap;
+    word-break: break-word;
+    -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+}
+.attach-file-card-footer {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 8px;
+    background: var(--bg-hover);
+    border-top: 1px solid var(--border-input);
+}
+.attach-file-card-badge {
+    flex-shrink: 0;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: #fff;
+    text-transform: uppercase;
+}
+.attach-file-card-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.62rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.attach-file-card-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    z-index: 2;
+}
+.attach-file-card-remove:hover {
+    background: rgba(0,0,0,0.8);
+}
+body.dark .attach-file-card {
+    background: #2a2a2a;
+}
+body.dark .attach-file-card-preview {
+    color: #ccc;
+}
 
 .attach-file-chip-icon {
     flex-shrink: 0;
@@ -2969,12 +3053,16 @@ body.dark .quota-toast {
     display: flex;
     align-items: center;
     gap: 6px;
+    position: relative;
+    min-height: 18px;
+    overflow: hidden;
 }
 
 .thinking-block summary::before {
     content: '\25B6';
     font-size: 0.6rem;
     transition: transform 0.2s;
+    flex-shrink: 0;
 }
 
 .thinking-block[open] summary::before {
@@ -2985,19 +3073,79 @@ body.dark .quota-toast {
     display: none;
 }
 
+.thinking-block[open] summary > span {
+    opacity: 0;
+}
+
+.thinking-block[open] summary::after {
+    content: '\1F9DC\200D\2640\FE0F';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 50%;
+    font-size: 0.95rem;
+    animation: thinkingMermaidSwim 8s ease-in-out infinite;
+    filter: drop-shadow(0 0 4px var(--ocean-accent-glow, rgba(33,150,243,0.35)));
+}
+
+@keyframes thinkingMermaidSwim {
+    0% { transform: translate(0, -50%) scaleX(1); left: 16px; opacity: 0; }
+    5% { opacity: 1; }
+    45% { left: calc(100% - 30px); transform: translate(0, -50%) scaleX(1); opacity: 1; }
+    50% { transform: translate(0, -50%) scaleX(-1); }
+    95% { left: 16px; transform: translate(0, -50%) scaleX(-1); opacity: 1; }
+    100% { left: 16px; transform: translate(0, -50%) scaleX(-1); opacity: 0; }
+}
+
+.thinking-block[open] summary {
+    background:
+        linear-gradient(180deg, transparent 0%, rgba(33,150,243,0.14) 55%, rgba(33,150,243,0.22) 100%),
+        linear-gradient(90deg, transparent, var(--ocean-accent-glow, rgba(33,150,243,0.10)) 50%, transparent);
+    background-size: 100% 100%, 220% 100%;
+    animation: thinkingWaterFlow 8s ease-in-out infinite;
+}
+
+.thinking-block[open] summary .thinking-bubble {
+    position: absolute;
+    bottom: 2px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.55);
+    animation: thinkingBubbleRise 2.6s ease-in infinite;
+    pointer-events: none;
+}
+
+@keyframes thinkingBubbleRise {
+    0% { transform: translateY(0) scale(0.6); opacity: 0; }
+    15% { opacity: 0.9; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(-16px) scale(1); opacity: 0; }
+}
+
+@keyframes thinkingWaterFlow {
+    0% { background-position: 0 0, 120% 0; }
+    100% { background-position: 0 0, -20% 0; }
+}
+
 .thinking-content {
-    padding: 12px 14px 12px 20px;
-    color: var(--text-secondary);
-    font-size: 0.82rem;
-    line-height: 1.5;
+    padding: 10px 14px 10px 20px;
+    color: #9a9a9a;
+    font-size: 0.72rem;
+    font-weight: 400;
+    line-height: 1.45;
     max-height: 300px;
     overflow-y: auto;
     overflow-x: hidden;
     border-top: 1px solid var(--border);
     word-wrap: break-word;
     overflow-wrap: anywhere;
-    opacity: 0.65;
+    opacity: 1;
     font-style: italic;
+    letter-spacing: 0.01em;
+}
+body.dark .thinking-content {
+    color: #777777;
 }
 
 .thinking-content pre,

@@ -4,7 +4,7 @@
 // ============================================================
 import { STATE } from './state.js';
 import { getAttachBtn, getFileInput, getAttachPreview, getPromptInput, getSendBtn } from './dom.js';
-import { isTextFile, arrayBufferToBase64, isPdf } from './utils.js';
+import { isTextFile, arrayBufferToBase64, isPdf, isDocx, isXlsx, isPptx } from './utils.js';
 import { openLightbox, openFileViewer } from './lightbox.js';
 
 // Callback pour updateSendButton (défini dans app.js)
@@ -123,6 +123,82 @@ export function processAttachedFile(file) {
             notifyChange();
         };
         reader.readAsText(file);
+    } else if (isDocx(file)) {
+        const reader = new FileReader();
+        const entry = _trackLoad(file.name, reader);
+        reader.onload = async (e) => {
+            if (_isLoadCancelled(entry)) return;
+            const arrayBuffer = e.target.result;
+            let textContent = '';
+            try {
+                if (typeof mammoth !== 'undefined') {
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    textContent = result.value || '';
+                }
+            } catch (err) {
+                console.error('Erreur extraction DOCX:', err);
+            }
+            if (_isLoadCancelled(entry)) return;
+            _untrackLoad(entry);
+            const base64 = arrayBufferToBase64(arrayBuffer);
+            if (!textContent) {
+                if (typeof showModelAlert === 'function') {
+                    showModelAlert(`Impossible d'extraire le texte de ${file.name}. Le fichier est joint mais son contenu ne sera pas lisible par l'IA.`);
+                }
+            }
+            STATE.pendingFiles.push({ name: file.name, mimeType: file.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: base64, textContent });
+            notifyChange();
+        };
+        reader.onerror = reader.onabort = () => {
+            _untrackLoad(entry);
+            notifyChange();
+        };
+        reader.readAsArrayBuffer(file);
+    } else if (isXlsx(file)) {
+        const reader = new FileReader();
+        const entry = _trackLoad(file.name, reader);
+        reader.onload = (e) => {
+            if (_isLoadCancelled(entry)) return;
+            const arrayBuffer = e.target.result;
+            let textContent = '';
+            try {
+                if (typeof XLSX !== 'undefined') {
+                    const wb = XLSX.read(arrayBuffer, { type: 'array' });
+                    const parts = [];
+                    for (const sheetName of wb.SheetNames) {
+                        const csv = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName]);
+                        parts.push(`--- Feuille : ${sheetName} ---\n${csv}`);
+                    }
+                    textContent = parts.join('\n\n');
+                }
+            } catch (err) {
+                console.error('Erreur extraction XLSX:', err);
+            }
+            _untrackLoad(entry);
+            const base64 = arrayBufferToBase64(arrayBuffer);
+            if (!textContent) {
+                if (typeof showModelAlert === 'function') {
+                    showModelAlert(`Impossible d'extraire les données de ${file.name}. Le fichier est joint mais son contenu ne sera pas lisible par l'IA.`);
+                }
+            }
+            STATE.pendingFiles.push({ name: file.name, mimeType: file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', data: base64, textContent });
+            notifyChange();
+        };
+        reader.onerror = reader.onabort = () => {
+            _untrackLoad(entry);
+            notifyChange();
+        };
+        reader.readAsArrayBuffer(file);
+    } else if (isPptx(file)) {
+        if (typeof showModelAlert === 'function') {
+            showModelAlert(`Les fichiers PowerPoint (.pptx) ne sont pas encore pris en charge pour l'extraction de texte : ${file.name}.`);
+        }
+    } else {
+        if (typeof showModelAlert === 'function') {
+            showModelAlert(`Format de fichier non pris en charge : ${file.name}. Formats acceptés : images, PDF, DOCX, XLSX, TXT, MD, CSV, JSON.`);
+        } else {
+            console.warn('Format de fichier non pris en charge :', file.name);
+        }
     }
 }
 
@@ -154,38 +230,46 @@ export function renderAttachPreview() {
         attachPreview.appendChild(thumb);
     });
     STATE.pendingFiles.forEach((file, idx) => {
-        const chip = document.createElement('div');
-        chip.className = 'attach-file-chip';
-
-        const icon = document.createElement('span');
-        icon.className = 'attach-file-chip-icon';
-        icon.textContent = '📄';
-
-        const name = document.createElement('span');
-        name.className = 'attach-file-chip-name';
-        name.textContent = file.name;
-        name.title = file.name;
-        name.style.cursor = 'pointer';
-        name.addEventListener('click', () => {
+        const card = document.createElement('div');
+        card.className = 'attach-file-card';
+        card.title = file.name;
+        card.addEventListener('click', () => {
             if (file.data) {
                 const blob = new Blob([Uint8Array.from(atob(file.data), c => c.charCodeAt(0))], { type: file.mimeType || 'application/octet-stream' });
                 openFileViewer(URL.createObjectURL(blob), file.name);
             }
         });
 
+        const preview = document.createElement('div');
+        preview.className = 'attach-file-card-preview';
+        preview.textContent = (file.textContent || '').slice(0, 400);
+
+        const footer = document.createElement('div');
+        footer.className = 'attach-file-card-footer';
+        const ext = (file.name.split('.').pop() || 'file').toUpperCase().slice(0, 4);
+        const badge = document.createElement('span');
+        badge.className = 'attach-file-card-badge';
+        badge.textContent = ext;
+        const name = document.createElement('span');
+        name.className = 'attach-file-card-name';
+        name.textContent = file.name;
+        footer.appendChild(badge);
+        footer.appendChild(name);
+
         const removeBtn = document.createElement('button');
-        removeBtn.className = 'attach-file-chip-remove';
+        removeBtn.className = 'attach-file-card-remove';
         removeBtn.textContent = '×';
-        removeBtn.addEventListener('click', () => {
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             STATE.pendingFiles.splice(idx, 1);
             renderAttachPreview();
             if (_onStateChange) _onStateChange();
         });
 
-        chip.appendChild(icon);
-        chip.appendChild(name);
-        chip.appendChild(removeBtn);
-        attachPreview.appendChild(chip);
+        card.appendChild(preview);
+        card.appendChild(footer);
+        card.appendChild(removeBtn);
+        attachPreview.appendChild(card);
     });
     STATE.pendingLoadingFiles.forEach((entry) => {
         const chip = document.createElement('div');

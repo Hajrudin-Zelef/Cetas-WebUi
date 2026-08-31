@@ -1934,22 +1934,49 @@ body.dark .input-action-btn.active .input-action-arrow {
 }
 
 .typing-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent, #6c63ff), var(--accent-hover, #5a52e0));
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(160deg, var(--accent-dark, #2a6da3) 0%, var(--accent, #3B87CE) 55%, #7fc4f0 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(108, 99, 255, 0.2);
+    box-shadow: 0 4px 14px rgba(59, 135, 206, 0.35), 0 0 0 4px rgba(59, 135, 206, 0.08), inset 0 -4px 8px rgba(0, 40, 80, 0.25), inset 0 2px 3px rgba(255, 255, 255, 0.3);
+    animation: typingAvatarBob 2.4s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+.typing-avatar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.25) 45%, transparent 60%);
+    background-size: 220% 220%;
+    animation: typingAvatarShine 3.2s ease-in-out infinite;
+}
+@keyframes typingAvatarShine {
+    0% { background-position: 200% 200%; }
+    100% { background-position: -20% -20%; }
+}
+body.ocean-theme .typing-avatar {
+    background: linear-gradient(160deg, var(--ocean-accent-deep, #1976D2) 0%, var(--ocean-accent, #2196F3) 55%, #8fd3ff 100%);
+    box-shadow: var(--ocean-glow, 0 0 14px rgba(33, 150, 243, 0.25)), 0 4px 14px rgba(25, 118, 210, 0.35), inset 0 -4px 8px rgba(0, 40, 80, 0.3), inset 0 2px 3px rgba(255, 255, 255, 0.35);
+}
+@keyframes typingAvatarBob {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-2px) scale(1.04); }
 }
 
 .typing-avatar i,
 .typing-avatar svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     color: white;
+}
+.typing-avatar .typing-whale {
+    font-size: 20px;
+    line-height: 1;
 }
 
 .typing-body {
@@ -2037,9 +2064,14 @@ body.dark .input-action-btn.active .input-action-arrow {
 .typing-progress-bar {
     height: 100%;
     background: linear-gradient(90deg, var(--accent, #6c63ff), var(--accent-hover, #5a52e0));
+    background-size: 200% 100%;
     border-radius: 2px;
-    animation: typingProgress 4.5s ease-in-out;
+    animation: typingProgress 4.5s ease-in-out, typingShimmer 1.5s linear infinite;
     width: 0%;
+}
+@keyframes typingShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
 @keyframes typingProgress {
