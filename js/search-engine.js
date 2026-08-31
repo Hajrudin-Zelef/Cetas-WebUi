@@ -1,15 +1,24 @@
 var SEARXNG_URL="/search",SEARXNG_TIMEOUT=5e3;
-var WEBSEARCH_AGENT_URL="http://10.10.10.103:4500";
+var WEBSEARCH_AGENT_URL="/wsagent";
 var WEBSEARCH_AGENT_KEY="ws_cc99b62112400729d146799d3121a060";
-var WEBSEARCH_AGENT_TIMEOUT=12e3;
+var WEBSEARCH_AGENT_FALLBACK_URL="/nweb";
+var WEBSEARCH_AGENT_FALLBACK_KEY="ws_e0233bcf628f6fdba53390809335361f";
+var WEBSEARCH_AGENT_TIMEOUT=8e3;
 function _sanitize(e){return e?e.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,"").replace(/\\x[0-9a-fA-F]?/g,"").replace(/\\u[0-9a-fA-F]{0,3}$/g,"").trim():""}
 
 async function _searchWebSearchAgent(e){
-  var t=WEBSEARCH_AGENT_URL+"/search?q="+encodeURIComponent(e)+"&max_results=10";
-  var r=await fetch(t,{signal:AbortSignal.timeout(WEBSEARCH_AGENT_TIMEOUT),headers:{"X-API-Key":WEBSEARCH_AGENT_KEY}});
-  if(!r.ok)throw new Error("WebSearch Agent returned "+r.status);
-  var a=await r.json();
-  return a.sources&&Array.isArray(a.sources)?a.sources.slice(0,10).map((function(e){return{title:_sanitize(e.title),url:_sanitize(e.url),snippet:_sanitize(e.snippet)}})):[];
+  var _ep=[{u:WEBSEARCH_AGENT_URL,k:WEBSEARCH_AGENT_KEY},{u:WEBSEARCH_AGENT_FALLBACK_URL,k:WEBSEARCH_AGENT_FALLBACK_KEY}],_last=null;
+  for(var _e2=0;_e2<_ep.length;_e2++){
+    if(!_ep[_e2].u)continue;
+    var t=_ep[_e2].u+"/search?q="+encodeURIComponent(e)+"&max_results=10";
+    try{
+      var r=await fetch(t,{signal:AbortSignal.timeout(WEBSEARCH_AGENT_TIMEOUT),headers:{"X-API-Key":_ep[_e2].k}});
+      if(!r.ok)throw new Error("WebSearch Agent returned "+r.status);
+      var a=await r.json();
+      return a.sources&&Array.isArray(a.sources)?a.sources.slice(0,10).map((function(e){return{title:_sanitize(e.title),url:_sanitize(e.url),snippet:_sanitize(e.snippet)}})):[];
+    }catch(_er){_last=_er}
+  }
+  throw _last;
 }
 
 async function executeWebSearch(e){

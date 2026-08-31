@@ -519,7 +519,7 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
         resp_headers = {}
         for h, v in response.getheaders():
             hl = h.lower()
-            if hl not in ("transfer-encoding", "content-encoding", "content-length", "connection"):
+            if hl not in ("transfer-encoding", "content-encoding", "content-length", "connection", "date", "server"):
                 resp_headers[h] = v
 
         return response.status, resp_headers, response, conn
@@ -969,7 +969,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         # Normaliser le path : strip prefix provider dupliqué ou "api/"
         if upstream_path.startswith(provider + "/"):
             upstream_path = upstream_path[len(provider) + 1:]
-        elif upstream_path.startswith("api/"):
+        elif upstream_path.startswith("api/") and provider != "openrouter":
             upstream_path = upstream_path[4:]
         
         upstream_path = "/" + upstream_path
