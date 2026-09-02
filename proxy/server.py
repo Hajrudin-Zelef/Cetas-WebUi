@@ -92,6 +92,10 @@ PROVIDER_CONFIG = {
         "auth": {"type": "header", "header": "Authorization", "prefix": "Bearer "},
         "env_key": "CETAS_LLAMACPP_KEY",  # clé API depuis variable d'env
     },
+    "opencode": {
+        "base_url": "https://opencode.ai",
+        "auth": {"type": "header", "header": "Authorization", "prefix": "Bearer "},
+    },
 }
 
 # ── Paths autorisés par provider (évite l'abus du proxy) ─────────────
@@ -109,6 +113,8 @@ PROXY_ALLOWED_PATHS: dict[str, list[str]] = {
     "zai":        ["/api/paas/v4/chat/completions"],
     "cabreras":   ["/v1/chat/completions"],
     "llamacpp":   ["/v1/chat/completions", "/v1/models"],
+    "opencode":   ["/zen/go/v1/chat/completions", "/zen/go/v1/messages", "/zen/go/v1/responses",
+                   "/zen/v1/chat/completions", "/zen/v1/messages", "/zen/v1/responses"],
 }
 
 def _is_path_allowed(provider: str, path: str) -> bool:
