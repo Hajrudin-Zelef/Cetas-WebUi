@@ -20,7 +20,9 @@
 10. [Maintenance](#10-maintenance)
 11. [Backup & restauration](#11-backup--restauration)
 12. [Migration](#12-migration)
-13. [Troubleshooting](#13-troubleshooting)
+13. [Ajouter un provider](#13-ajouter-un-provider)
+14. [Variables d'environnement](#14-variables-denvironnement)
+15. [Troubleshooting](#15-troubleshooting)
 
 ---
 
@@ -82,29 +84,23 @@ git clone git@github.com:Hajrudin-Zelef/Cetas-WebUi.git .
 git checkout neva-pve
 ```
 
-### Fichiers confidentiels à transférer
+### Fichiers non inclus dans le dépôt
 
-Ces fichiers sont exclus du dépôt (gitignored) :
-
-```bash
-# Depuis l'installation existante
-scp /home/sam/kiro/setup.py                    root@VPS:/opt/cetas/
-scp /home/sam/kiro/core/linux/crypto_linux.py  root@VPS:/opt/cetas/core/linux/
-scp /home/sam/kiro/core/linux/vault_guard.py   root@VPS:/opt/cetas/core/linux/
-scp -r /home/sam/kiro/.vault                   root@VPS:/opt/cetas/
-scp /home/sam/kiro/.env                        root@VPS:/opt/cetas/
-```
-
-### Vérifier
+Ces fichiers sont exclus pour des raisons de sécurité. Transférez-les depuis votre installation existante :
 
 ```bash
-ls -la /opt/cetas/setup.py
-ls -la /opt/cetas/core/linux/crypto_linux.py
-ls -la /opt/cetas/core/linux/vault_guard.py
-chmod 755 /opt/cetas/setup.py
-chmod 755 /opt/cetas/core/linux/crypto_linux.py
-chmod 755 /opt/cetas/core/linux/vault_guard.py
+# Fichiers requis
+scp votre-chemin/setup.py                    root@VPS:/opt/cetas/
+scp votre-chemin/core/linux/crypto_linux.py  root@VPS:/opt/cetas/core/linux/
+scp votre-chemin/core/linux/vault_guard.py   root@VPS:/opt/cetas/core/linux/
+scp -r votre-chemin/.vault                   root@VPS:/opt/cetas/
+scp votre-chemin/.env                        root@VPS:/opt/cetas/
 ```
+
+**Fichiers requis pour le build :**
+- `setup.py` — configuration initiale vault
+- `core/linux/crypto_linux.py` — module chiffrement (AES-256-GCM + Scrypt)
+- `core/linux/vault_guard.py` — daemon immutabilité vault
 
 ---
 
@@ -128,7 +124,7 @@ Le setup :
 
 ```bash
 cd /opt/cetas
-export CETAS_VAULT_PASSWORD="votre_mot_de_passe"
+export CETAS_VAULT_PASSWORD="votre_mot_de_passe_fort"
 python3 proxy/encrypt_keys.py
 ```
 
@@ -179,10 +175,11 @@ volumes:
 ### .env.docker
 
 ```bash
-CETAS_VAULT_PASSWORD=votre_mot_de_passe
-CETAS_WORKER_TOKEN=token_hex_32
-CETAS_CORS_ORIGINS=https://votre-domaine.com
-SEARXNG_SECRET_KEY=secret_hex_32
+# Remplacez les valeurs par les vôtres
+CETAS_VAULT_PASSWORD=votre_mot_de_passe_vault
+CETAS_WORKER_TOKEN=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+CETAS_CORS_ORIGINS=https://votre-domaine.com,http://localhost:8080
+SEARXNG_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
 ```
 
 ```bash
@@ -193,6 +190,7 @@ chmod 600 /opt/cetas/.env.docker
 
 ```bash
 mkdir -p searxng-data
+
 cat > searxng-data/settings.yml << 'EOF'
 use_default_settings: true
 general:
@@ -202,7 +200,7 @@ search:
   safe_search: 0
   formats: [html, json]
 server:
-  secret_key: "cetas-searxng"
+  secret_key: "changez-ceci-par-une-valeur-aleatoire"
   bind_address: "0.0.0.0"
   port: 8080
 EOF
@@ -258,7 +256,8 @@ sudo nano /etc/caddy/Caddyfile
 ```
 
 ```caddyfile
-cetas.mondomaine.com {
+# Remplacez cetas.mondomaine.com par votre domaine
+votre-domaine.com {
     reverse_proxy localhost:8080 {
         transport http {
             read_timeout 300s
@@ -288,13 +287,10 @@ docker compose ps
 curl http://localhost:8080/api/health
 
 # 3. HTTPS
-curl -sI https://cetas.mondomaine.com | head -1
+curl -sI https://votre-domaine.com | head -1
 
-# 4. SearXNG
-curl -s http://localhost:8080/search | head -1
-
-# 5. Application
-# Ouvrir https://cetas.mondomaine.com → Login → Chat
+# 4. Application
+# Ouvrir https://votre-domaine.com → Login → Chat
 ```
 
 ---
@@ -350,27 +346,19 @@ cp /root/backups/cetas-YYYYMMDD/.env /opt/cetas/.env
 ### Depuis un serveur existant
 
 ```bash
-# Sauvegarder
 rsync -avz --exclude='node_modules' --exclude='.git' \
   /opt/cetas/ user@NOUVEAU_VPS:/opt/cetas/
-
-# Backup volume Docker
-docker run --rm -v cetas-data:/data -v /tmp:/backup alpine \
-  tar czf /backup/cetas-data-$(date +%Y%m%d).tar.gz -C /data .
 ```
 
 ### Sur le nouveau serveur
 
 ```bash
-# Restaurer volume
 docker run --rm -v cetas-data:/data -v /tmp:/backup alpine \
   tar xzf /backup/cetas-data-YYYYMMDD.tar.gz -C /data
 
-# Permissions
 chmod 755 .vault
 chmod 644 .vault/.enc .env
 
-# Build
 docker compose build --no-cache
 docker compose up -d
 ```
@@ -387,7 +375,55 @@ docker compose up -d
 
 ---
 
-## 13. Troubleshooting
+## 13. Ajouter un provider
+
+### Étapes
+
+1. **proxy/server.py** → Ajouter dans `PROVIDER_CONFIG` :
+```python
+"monprovider": {
+    "base_url": "https://api.monprovider.com",
+    "auth": {"type": "header", "header": "Authorization", "prefix": "Bearer "},
+},
+```
+
+2. **proxy/server.py** → Ajouter dans `PROXY_ALLOWED_PATHS` :
+```python
+"monprovider": ["/v1/chat/completions"],
+```
+
+3. **models.js** → Ajouter les modèles dans `MODELS_DATA` :
+```javascript
+{ id: "mon-modele", label: "Mon Modèle", editeur: "monprovider", inputPer1M: 1, outputPer1M: 5 }
+```
+
+4. **index.html** → Si domaine unique, ajouter au CSP `connect-src`
+
+5. **images/** → Ajouter l'icône SVG du provider
+
+6. **.env** → Chiffrer la clé API avec `add_api_key.py`
+
+---
+
+## 14. Variables d'environnement
+
+| Variable | Défaut | Description |
+|----------|--------|-------------|
+| `CETAS_VAULT_PASSWORD` | — | Mot de passe du coffre-fort **(obligatoire)** |
+| `CETAS_WORKER_TOKEN` | — | Token Cloudflare Worker (optionnel) |
+| `CETAS_CORS_ORIGINS` | `https://samui.neva-ci.pro` | Origines CORS autorisées |
+| `CETAS_PEPPER` | — | Secret anti-bruteforce offline (optionnel) |
+| `PROXY_PORT` | 8080 | Port d'écoute du proxy Python |
+| `CETAS_BASE_DIR` | auto-détecté | Racine de l'application |
+| `CETAS_DATA_DIR` | `/app/data` | Répertoire données users |
+| `CETAS_VAULT_PATH` | `{BASE_DIR}/.vault/.enc` | Chemin du vault |
+| `CETAS_ENV_PATH` | `{BASE_DIR}/.env` | Chemin du .env |
+| `CETAS_CRYPTO_PATH` | `{BASE_DIR}/core/linux/crypto_linux.py` | Module crypto |
+| `SEARXNG_SECRET_KEY` | — | Clé secrète SearXNG **(obligatoire)** |
+
+---
+
+## 15. Troubleshooting
 
 | Problème | Solution |
 |----------|----------|
@@ -401,6 +437,7 @@ docker compose up -d
 | Docker Hub timeout | `sudo ip link set dev eth0 mtu 1300` |
 | 401 sur toutes les routes | JWT expiré — se reconnecter ou reset .jwt_secret |
 | webSearchEnabled:false | Changer !1 en !0 dans js/state.js + rebuild |
+| Provider non reconnu | Ajouter dans PROVIDER_CONFIG + PROXY_ALLOWED_PATHS |
 
 ---
 
