@@ -23,7 +23,6 @@ core/
 setup.py
 setup.py.bak
 setup.py.or
-proxy/server.py
 proxy/server.py.back
 proxy/encrypt_keys.py
 proxy/cloudflare-worker.js

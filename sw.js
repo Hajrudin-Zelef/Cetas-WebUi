@@ -1,5 +1,5 @@
 // Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
-const CACHE_NAME = 'cetas-cache-v3';
+const CACHE_NAME = 'cetas-cache-v5';
 const OFFLINE_URLS = [
   './',
   './index.html',

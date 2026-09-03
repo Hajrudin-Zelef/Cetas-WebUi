@@ -1,39 +1,53 @@
 var SEARXNG_URL="/search",SEARXNG_TIMEOUT=5e3;
-var WEBSEARCH_AGENT_URL="/wsagent";
-var WEBSEARCH_AGENT_KEY="ws_cc99b62112400729d146799d3121a060";
-var WEBSEARCH_AGENT_FALLBACK_URL="/nweb";
-var WEBSEARCH_AGENT_FALLBACK_KEY="ws_e0233bcf628f6fdba53390809335361f";
-var WEBSEARCH_AGENT_TIMEOUT=8e3;
+var TAVILY_URL="/api/tavily/search",TAVILY_TIMEOUT=8e3;
 function _sanitize(e){return e?e.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,"").replace(/\\x[0-9a-fA-F]?/g,"").replace(/\\u[0-9a-fA-F]{0,3}$/g,"").trim():""}
 
-async function _searchWebSearchAgent(e){
-  var _ep=[{u:WEBSEARCH_AGENT_URL,k:WEBSEARCH_AGENT_KEY},{u:WEBSEARCH_AGENT_FALLBACK_URL,k:WEBSEARCH_AGENT_FALLBACK_KEY}],_last=null;
-  for(var _e2=0;_e2<_ep.length;_e2++){
-    if(!_ep[_e2].u)continue;
-    var t=_ep[_e2].u+"/search?q="+encodeURIComponent(e)+"&max_results=10";
-    try{
-      var r=await fetch(t,{signal:AbortSignal.timeout(WEBSEARCH_AGENT_TIMEOUT),headers:{"X-API-Key":_ep[_e2].k}});
-      if(!r.ok)throw new Error("WebSearch Agent returned "+r.status);
-      var a=await r.json();
-      return a.sources&&Array.isArray(a.sources)?a.sources.slice(0,10).map((function(e){return{title:_sanitize(e.title),url:_sanitize(e.url),snippet:_sanitize(e.snippet)}})):[];
-    }catch(_er){_last=_er}
-  }
-  throw _last;
+async function _searchTavily(e){
+  var t=TAVILY_URL+"?q="+encodeURIComponent(e)+"&max_results=10";
+  var h={};
+  if(typeof Auth!=="undefined"&&Auth.getToken){var token=Auth.getToken();if(token)h["Authorization"]="Bearer "+token}
+  var r=await fetch(t,{signal:AbortSignal.timeout(TAVILY_TIMEOUT),headers:h});
+  if(!r.ok)throw new Error("Tavily returned "+r.status);
+  var a=await r.json();
+  return a.results&&Array.isArray(a.results)?a.results.slice(0,10).map(function(e){return{title:_sanitize(e.title),url:_sanitize(e.url),snippet:_sanitize(e.snippet)}}):[];
+}
+
+async function _searchSearXNG(e){
+  var t=SEARXNG_URL+"?format=json&q="+encodeURIComponent(e);
+  var r=await fetch(t,{signal:AbortSignal.timeout(SEARXNG_TIMEOUT)});
+  if(!r.ok)throw new Error("SearXNG returned "+r.status);
+  var a=await r.json();
+  return a.results&&Array.isArray(a.results)?a.results.slice(0,10).map(function(e){return{title:_sanitize(e.title),url:_sanitize(e.url),snippet:_sanitize(e.content)}}):[];
 }
 
 async function executeWebSearch(e){
-  try{var t=await _searchWebSearchAgent(e);if(t&&t.length>0)return t}catch(e){console.warn("[search-engine] WebSearch Agent échoué:",e.message)}
+  try{var t=await _searchTavily(e);if(t&&t.length>0)return t}catch(e){console.warn("[search-engine] Tavily échoué:",e.message)}
   try{var t=await _searchSearXNG(e);if(t&&t.length>0)return t}catch(e){console.warn("[search-engine] SearXNG échoué:",e.message)}
-  try{var r=await _searchBrave(e);if(r&&r.length>0)return r}catch(e){console.warn("[search-engine] Brave échoué:",e.message)}
-  try{var a=await _searchDuckDuckGo(e);if(a&&a.length>0)return a}catch(e){console.warn("[search-engine] DuckDuckGo échoué:",e.message)}
-  return[]
+  return[];
 }
-async function executeWebFetch(e){try{var t=await fetch(e,{signal:AbortSignal.timeout(1e4)});if(t.ok)return{title:"",content:_extractText(await t.text())}}catch(e){console.warn("[search-engine] Fetch direct échoué:",e.message)}return null}
-async function _searchSearXNG(e){var t=SEARXNG_URL+"?format=json&q="+encodeURIComponent(e),r=await fetch(t,{signal:AbortSignal.timeout(SEARXNG_TIMEOUT)});if(!r.ok)throw new Error("SearXNG returned "+r.status);var a=await r.json();return a.results&&Array.isArray(a.results)?a.results.slice(0,10).map((function(e){return{title:_sanitize(e.title),url:_sanitize(e.url),snippet:_sanitize(e.content)}})):[]}
-var BRAVE_MONTHLY_QUOTA=1900;function _braveQuotaKey(){var e=new Date;return"cetas-brave-quota-"+e.getFullYear()+"-"+String(e.getMonth()+1).padStart(2,"0")}function _getBraveUsage(){try{var e=localStorage.getItem(_braveQuotaKey());return e&&parseInt(e,10)||0}catch(e){return 0}}function _incrementBraveUsage(){try{var e=_braveQuotaKey(),t=_getBraveUsage();localStorage.setItem(e,String(t+1))}catch(e){}}
-async function _searchBrave(e){var t=_getBraveKey();if(!t)throw new Error("Pas de clé Brave API");var r=_getBraveUsage();if(r>=BRAVE_MONTHLY_QUOTA)throw new Error("Quota Brave mensuel atteint ("+r+"/"+BRAVE_MONTHLY_QUOTA+") — bascule sur DuckDuckGo");var a="https://api.search.brave.com/res/v1/web/search?q="+encodeURIComponent(e)+"&count=10",n=await fetch(a,{signal:AbortSignal.timeout(8e3),headers:{Accept:"application/json","Accept-Encoding":"gzip","X-Subscription-Token":t}});if(!n.ok)throw new Error("Brave returned "+n.status);var c=await n.json();return _incrementBraveUsage(),c.web&&c.web.results?c.web.results.slice(0,10).map((function(e){return{title:_sanitize(e.title),url:_sanitize(e.url),snippet:_sanitize(e.description)}})):[]}
-async function _searchDuckDuckGo(e){var t="";try{t=localStorage.getItem("cetas-ddg-proxy")||""}catch(e){}var r=(t||"/ddg-proxy")+"/html/?q="+encodeURIComponent(e),a=await fetch(r,{signal:AbortSignal.timeout(8e3)});if(!a.ok)throw new Error("DuckDuckGo returned "+a.status);return _parseDdgHtml(await a.text())}
-function _parseDdgHtml(e){for(var t,r=[],a=/<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi,n=/<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi,c=[];null!==(t=a.exec(e));)c.push(t);for(var i=[];null!==(t=n.exec(e));)i.push(t);for(var s=0;s<Math.min(c.length,10);s++){var o=_cleanDdgUrl(c[s][1]),u=c[s][2].replace(/<[^>]*>/g,"").trim(),l=i[s]?i[s][1].replace(/<[^>]*>/g,"").trim():"";o&&u&&r.push({title:_sanitize(u),url:_sanitize(o),snippet:_sanitize(l)})}return r}
-function _cleanDdgUrl(e){var t=e.match(/uddg=([^&]+)/);if(t)try{return decodeURIComponent(t[1])}catch(e){}return 0===e.indexOf("//")?"https:"+e.split("?")[0]:e.split("?")[0]}
-function _extractText(e){try{for(var t=(new DOMParser).parseFromString(e,"text/html"),r=t.querySelectorAll('script, style, nav, footer, header, [role="navigation"], .sidebar, #sidebar'),a=0;a<r.length;a++)r[a].remove();var n=t.body;return n?(n.textContent||"").replace(/\n{3,}/g,"\n\n").trim().slice(0,8e3):""}catch(t){return e.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,8e3)}}
-function _getBraveKey(){try{if("undefined"!=typeof API_KEYS){if(API_KEYS.brave)return API_KEYS.brave;if(API_KEYS.brave_search)return API_KEYS.brave_search}var e=localStorage.getItem("cetas-brave-key");if(e)return e}catch(e){}return null}
+
+async function executeWebFetch(e){
+  try{var t=await fetch(e,{signal:AbortSignal.timeout(1e4)});if(t.ok)return{title:"",content:_extractText(await t.text())}}catch(e){console.warn("[search-engine] Fetch direct échoué:",e.message)}
+  return null;
+}
+
+function _extractText(e){
+  try{
+    var t=(new DOMParser).parseFromString(e,"text/html");
+    t.querySelectorAll('script, style, nav, footer, header, [role="navigation"], .sidebar, #sidebar').forEach(function(n){n.remove()});
+    var n=t.body;
+    return n?(n.textContent||"").replace(/\n{3,}/g,"\n\n").trim().slice(0,8e3):"";
+  }catch(t){return e.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,8e3)}
+}
+
+async function buildWebSearchContext(query){
+  var results = await executeWebSearch(query);
+  if(!results || results.length === 0) return null;
+  var lines = results.map(function(r, i){
+    return "["+(i+1)+"] "+r.title+"\n"+r.url+"\n"+(r.snippet||"")+"\n";
+  });
+  var contextText = "Résultats de recherche web pour la requête : \""+query+"\"\n\n"+lines.join("\n")+"\nUtilise ces informations pour répondre, et cite tes sources par leur numéro [1], [2], etc.";
+  var citations = results.map(function(r){ return { url: r.url, title: r.title }; });
+  return { contextText: contextText, citations: citations };
+}
+window.buildWebSearchContext = buildWebSearchContext;
