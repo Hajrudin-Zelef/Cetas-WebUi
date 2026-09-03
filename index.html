@@ -712,6 +712,7 @@
                 <button class="apikeys-tab" data-tab="conversation">Conversation</button>
                 <button class="apikeys-tab" data-tab="faq">FAQ</button>
                 <button class="apikeys-tab" data-tab="statistiques">Statistiques</button>
+                <button class="apikeys-tab" data-tab="logs">Logs et événements</button>
                 <button class="apikeys-tab" data-tab="share">Partager</button>
             </div>
             <div class="apikeys-tab-content">
@@ -871,6 +872,57 @@
                         <button class="dashboard-tab" data-tab="categories">Catégories</button>
                     </div>
                     <div id="dashboard-content" class="dashboard-content"></div>
+                    </div>
+                </div>
+                <!-- Panel Logs et événements -->
+                <div class="apikeys-panel" id="panel-logs">
+                    <h3>Logs et événements</h3>
+                    <p class="apikey-intro">Journalisation structurée des erreurs et incidents. Analyse IA via Mimo 2.5.</p>
+                    <div class="apikeys-panel-body">
+                        <div id="logs-status" class="logs-status">
+                            <span class="logs-status-dot"></span>
+                            <span id="logs-status-text">Collecte active</span>
+                        </div>
+                        <div class="logs-controls">
+                            <select id="logs-period" class="audio-setting-select">
+                                <option value="15m">15 minutes</option>
+                                <option value="1h" selected>1 heure</option>
+                                <option value="24h">24 heures</option>
+                                <option value="7d">7 jours</option>
+                            </select>
+                            <select id="logs-level" class="audio-setting-select">
+                                <option value="all">Tous les niveaux</option>
+                                <option value="error">Erreurs</option>
+                                <option value="warning">Warnings</option>
+                                <option value="info">Info</option>
+                            </select>
+                            <button type="button" id="logs-refresh-btn" class="models-save-btn">Actualiser</button>
+                        </div>
+                        <div class="logs-counters">
+                            <div class="logs-counter"><span class="logs-counter-value" id="logs-errors-count">0</span><span class="logs-counter-label">Erreurs</span></div>
+                            <div class="logs-counter"><span class="logs-counter-value" id="logs-warnings-count">0</span><span class="logs-counter-label">Warnings</span></div>
+                            <div class="logs-counter"><span class="logs-counter-value" id="logs-incidents-count">0</span><span class="logs-counter-label">Incidents</span></div>
+                            <div class="logs-counter"><span class="logs-counter-value" id="logs-p95-count">—</span><span class="logs-counter-label">Latence p95</span></div>
+                        </div>
+                        <div id="logs-timeline" class="logs-timeline">
+                            <div class="logs-empty">Aucun événement pour cette période.</div>
+                        </div>
+                        <div id="logs-detail" class="logs-detail" style="display:none">
+                            <h4>Détail de l'événement</h4>
+                            <pre id="logs-detail-content"></pre>
+                        </div>
+                        <div id="logs-incidents" class="logs-incidents" style="display:none">
+                            <h4>Incidents corrélés</h4>
+                            <div id="logs-incidents-list"></div>
+                        </div>
+                        <div class="logs-actions">
+                            <button type="button" id="logs-analyze-btn" class="models-save-btn">🤖 Analyser avec Mimo 2.5</button>
+                            <button type="button" id="logs-export-btn" class="models-cancel-btn">Exporter JSON</button>
+                        </div>
+                        <div id="logs-report" class="logs-report" style="display:none">
+                            <h4>Rapport IA</h4>
+                            <div id="logs-report-content"></div>
+                        </div>
                     </div>
                 </div>
                 <!-- Panel Stockage -->
@@ -1254,27 +1306,27 @@
     </aside>
 
     <script src="js/config.js?v=3.9"></script>
-    <script src="js/pdf.min.js" defer></script>
-    <script src="js/marked.umd.min.js"></script>
-    <script src="js/purify.min.js"></script>
-    <script src="js/jszip.min.js" defer></script>
-    <script src="js/mammoth.browser.min.js" defer></script>
-    <script src="js/xlsx.full.min.js" defer></script>
+    <script src="js/vendor/pdf.min.js" defer></script>
+    <script src="js/vendor/marked.umd.min.js"></script>
+    <script src="js/vendor/purify.min.js"></script>
+    <script src="js/vendor/jszip.min.js" defer></script>
+    <script src="js/vendor/mammoth.browser.min.js" defer></script>
+    <script src="js/vendor/xlsx.full.min.js" defer></script>
     <script src="models.js?v=4.0"></script>
-    <script src="js/api.js?v=4.0"></script>
-    <script src="js/search-engine.js?v=3.16"></script>
-    <script src="js/tool-search.js?v=3.9"></script>
-    <script src="js/filemanager.js?v=3.9"></script>
-    <script src="js/faq.js?v=3.9"></script>
-    <script src="js/auth.js?v=3.9"></script>
-    <script src="js/router.js?v=4.0"></script>
-    <script src="js/right-panel.js?v=3.9" defer></script>
-    <script src="js/model-catalog.js?v=3.9" defer></script>
-    <script type="module" src="js/ocean.js?v=3.9"></script>
-    <script type="module" src="js/app.js?v=4.0"></script>
-    <script src="js/config-providers.js?v=4.0"></script>
-    <script src="js/conversations.js?v=3.9"></script>
-    <script src="js/plus-menu.js?v=3.9"></script>
+    <script src="js/core/api.js?v=4.0"></script>
+    <script src="js/integrations/search-engine.js?v=3.16"></script>
+    <script src="js/integrations/tool-search.js?v=3.9"></script>
+    <script src="js/services/filemanager.js?v=3.9"></script>
+    <script src="js/features/faq.js?v=3.9"></script>
+    <script src="js/services/auth.js?v=3.9"></script>
+    <script src="js/core/router.js?v=4.0"></script>
+    <script src="js/ui/right-panel.js?v=3.9" defer></script>
+    <script src="js/features/model-catalog.js?v=3.9" defer></script>
+    <script type="module" src="js/ui/ocean.js?v=3.9"></script>
+    <script type="module" src="js/core/app.js?v=4.0"></script>
+    <script src="js/services/config-providers.js?v=4.0"></script>
+    <script src="js/features/conversations.js?v=3.9"></script>
+    <script src="js/ui/plus-menu.js?v=3.9"></script>
     <!-- Notification mise à jour -->
     <div id="update-toast" class="update-toast" style="display:none" role="status" aria-live="polite">
         <span class="update-toast-link">

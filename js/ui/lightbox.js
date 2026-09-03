@@ -4,7 +4,7 @@
 // ============================================================
 import { getLightboxOverlay, getLightboxImg, getLightboxClose,
          getFileViewerOverlay, getFileViewerIframe, getFileViewerTitle, getFileViewerClose,
-         getChatContainer } from './dom.js';
+         getChatContainer } from '../core/dom.js';
 
 // --- Lightbox images ---
 export function openLightbox(src) {

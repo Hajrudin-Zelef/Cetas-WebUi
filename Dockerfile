@@ -28,45 +28,45 @@ RUN chmod 600 /usr/share/nginx/html/.env 2>/dev/null || true
 RUN mkdir -p /app/data && chown -R cetas:cetas /app/data
 
 # Minifier les JS (sauf libs CDN déjà minifiées)
-RUN terser /usr/share/nginx/html/js/app.js -o /usr/share/nginx/html/js/app.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/ocean.js -o /usr/share/nginx/html/js/ocean.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/api.js -o /usr/share/nginx/html/js/api.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/auth.js -o /usr/share/nginx/html/js/auth.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/state.js -o /usr/share/nginx/html/js/state.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/emoji-picker.js -o /usr/share/nginx/html/js/emoji-picker.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/favorites.js -o /usr/share/nginx/html/js/favorites.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/whisper.js -o /usr/share/nginx/html/js/whisper.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/user-management.js -o /usr/share/nginx/html/js/user-management.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/web-search.js -o /usr/share/nginx/html/js/web-search.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/search-engine.js -o /usr/share/nginx/html/js/search-engine.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/tool-search.js -o /usr/share/nginx/html/js/tool-search.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/export-md.js -o /usr/share/nginx/html/js/export-md.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/budget.js -o /usr/share/nginx/html/js/budget.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/quotas.js -o /usr/share/nginx/html/js/quotas.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/settings-sync.js -o /usr/share/nginx/html/js/settings-sync.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/categories.js -o /usr/share/nginx/html/js/categories.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/roles.js -o /usr/share/nginx/html/js/roles.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/prompts.js -o /usr/share/nginx/html/js/prompts.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/export-import.js -o /usr/share/nginx/html/js/export-import.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/js/model-catalog.js -o /usr/share/nginx/html/js/model-catalog.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/plus-menu.js -o /usr/share/nginx/html/js/plus-menu.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/right-panel.js -o /usr/share/nginx/html/js/right-panel.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/config-providers.js -o /usr/share/nginx/html/js/config-providers.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/conversations.js -o /usr/share/nginx/html/js/conversations.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/filemanager.js -o /usr/share/nginx/html/js/filemanager.js -c -m --comments false
-RUN terser /usr/share/nginx/html/js/faq.js -o /usr/share/nginx/html/js/faq.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/core/app.js -o /usr/share/nginx/html/js/core/app.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/ui/ocean.js -o /usr/share/nginx/html/js/ui/ocean.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/core/api.js -o /usr/share/nginx/html/js/core/api.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/services/auth.js -o /usr/share/nginx/html/js/services/auth.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/core/state.js -o /usr/share/nginx/html/js/core/state.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/ui/emoji-picker.js -o /usr/share/nginx/html/js/ui/emoji-picker.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/features/favorites.js -o /usr/share/nginx/html/js/features/favorites.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/integrations/whisper.js -o /usr/share/nginx/html/js/integrations/whisper.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/services/user-management.js -o /usr/share/nginx/html/js/services/user-management.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/integrations/web-search.js -o /usr/share/nginx/html/js/integrations/web-search.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/integrations/search-engine.js -o /usr/share/nginx/html/js/integrations/search-engine.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/integrations/tool-search.js -o /usr/share/nginx/html/js/integrations/tool-search.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/services/export-md.js -o /usr/share/nginx/html/js/services/export-md.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/services/budget.js -o /usr/share/nginx/html/js/services/budget.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/services/quotas.js -o /usr/share/nginx/html/js/services/quotas.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/services/settings-sync.js -o /usr/share/nginx/html/js/services/settings-sync.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/features/categories.js -o /usr/share/nginx/html/js/features/categories.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/features/roles.js -o /usr/share/nginx/html/js/features/roles.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/features/prompts.js -o /usr/share/nginx/html/js/features/prompts.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/services/export-import.js -o /usr/share/nginx/html/js/services/export-import.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/js/features/model-catalog.js -o /usr/share/nginx/html/js/features/model-catalog.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/ui/plus-menu.js -o /usr/share/nginx/html/js/ui/plus-menu.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/ui/right-panel.js -o /usr/share/nginx/html/js/ui/right-panel.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/services/config-providers.js -o /usr/share/nginx/html/js/services/config-providers.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/features/conversations.js -o /usr/share/nginx/html/js/features/conversations.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/services/filemanager.js -o /usr/share/nginx/html/js/services/filemanager.js -c -m --comments false
+RUN terser /usr/share/nginx/html/js/features/faq.js -o /usr/share/nginx/html/js/features/faq.js -c -m --comments false
 RUN terser /usr/share/nginx/html/models.js -o /usr/share/nginx/html/models.js -c -m --comments false
 
 # Minifier le CSS — style.css est un point d'entrée @import, on concatène
 # dans l'ordre de cascade avant minification
-RUN cat /usr/share/nginx/html/css/variables.css \
-        /usr/share/nginx/html/css/layout.css \
-        /usr/share/nginx/html/css/chat.css \
-        /usr/share/nginx/html/css/components.css \
-        /usr/share/nginx/html/css/canvas.css \
-        /usr/share/nginx/html/css/catalog.css \
-        /usr/share/nginx/html/css/storage.css \
-        /usr/share/nginx/html/css/menu.css \
+RUN cat /usr/share/nginx/html/css/base/variables.css \
+        /usr/share/nginx/html/css/base/layout.css \
+        /usr/share/nginx/html/css/features/chat.css \
+        /usr/share/nginx/html/css/components/components.css \
+        /usr/share/nginx/html/css/components/canvas.css \
+        /usr/share/nginx/html/css/components/catalog.css \
+        /usr/share/nginx/html/css/components/storage.css \
+        /usr/share/nginx/html/css/components/menu.css \
     | cleancss -o /usr/share/nginx/html/css/style.css
 RUN cleancss /usr/share/nginx/html/css/ocean.css -o /usr/share/nginx/html/css/ocean.css
 

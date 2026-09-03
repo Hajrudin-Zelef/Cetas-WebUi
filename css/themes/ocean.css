@@ -1,0 +1,402 @@
+/* Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius. */
+/* ============================================================
+   ocean.css — Thème aquatique premium Cachalot pour Cetas
+   Toutes les règles sont gardées par body.ocean-theme.
+   Aucun sélecteur existant n'est modifié — surcharge additive pure.
+   ============================================================ */
+
+/* --- 1. FONDATION — Variables océaniques --- */
+
+body.ocean-theme {
+    --ocean-accent: #2196F3;
+    --ocean-accent-deep: #1976D2;
+    --ocean-accent-glow: rgba(33, 150, 243, 0.12);
+    --ocean-glow: 0 0 14px rgba(33, 150, 243, 0.25);
+    --ocean-glow-strong: 0 0 24px rgba(33, 150, 243, 0.35);
+    --ocean-transition: cubic-bezier(0.23, 1, 0.32, 1);
+    --ocean-border-glow: rgba(33, 150, 243, 0.08);
+    /* Override de l'accent existant */
+    --accent: #2196F3;
+    --accent-dark: #1976D2;
+    --accent-light: rgba(33, 150, 243, 0.12);
+}
+
+/* --- 2. CANVAS — Fond de particules --- */
+
+#ocean-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    display: block;
+}
+
+/* --- 3. GLASSMORPHISM — Panneaux en verre dépoli --- */
+
+/* Sidebar et panneau droit */
+body.ocean-theme .sidebar,
+body.ocean-theme .right-panel {
+    background: color-mix(in srgb, var(--bg-sidebar) 82%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    isolation: isolate;
+}
+body.ocean-theme .sidebar {
+    border-right-color: var(--ocean-border-glow);
+}
+body.ocean-theme .right-panel {
+    border-left-color: var(--ocean-border-glow);
+}
+
+/* Zone de saisie */
+body.ocean-theme .input-area {
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    isolation: isolate;
+    border-top: 1px solid var(--ocean-border-glow);
+}
+
+/* Modales */
+body.ocean-theme .sp-modal,
+body.ocean-theme .budget-alert-popup,
+body.ocean-theme .custom-dialog {
+    background: color-mix(in srgb, var(--bg-input) 90%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    will-change: backdrop-filter;
+    isolation: isolate;
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.06),
+        0 16px 48px rgba(0, 0, 0, 0.10),
+        0 0 0 1px rgba(33, 150, 243, 0.05);
+}
+
+body.ocean-theme .sp-modal-overlay,
+body.ocean-theme .budget-alert-overlay,
+body.ocean-theme .custom-dialog-overlay {
+    background: rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    isolation: isolate;
+    will-change: backdrop-filter;
+}
+
+/* Dropdowns */
+body.ocean-theme .user-menu-dropdown,
+body.ocean-theme .plus-menu-dropdown,
+body.ocean-theme .share-menu,
+body.ocean-theme .cat-select-dropdown {
+    background: color-mix(in srgb, var(--bg-input) 92%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-color: var(--ocean-border-glow);
+    isolation: isolate;
+}
+
+/* Token bar */
+body.ocean-theme #token-info,
+body.ocean-theme #cost-info {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* --- 3bis. THINKING BLOCK — Harmonisation glassmorphism --- */
+
+body.ocean-theme .thinking-block {
+    background: color-mix(in srgb, var(--bg-input) 55%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: var(--ocean-border-glow);
+    isolation: isolate;
+}
+
+body.ocean-theme .thinking-block summary {
+    background: transparent;
+}
+
+/* --- 4. GLOW BIOLUMINESCENT — Interactions lumineuses --- */
+
+/* Input focus */
+body.ocean-theme .input-wrapper:focus-within {
+    border-color: var(--ocean-accent);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.10), var(--ocean-glow);
+}
+
+body.ocean-theme .prompt-input:focus {
+    outline: none;
+}
+
+/* Boutons principaux */
+body.ocean-theme #send-btn:hover,
+body.ocean-theme #send-btn:focus-visible {
+    background: var(--ocean-accent);
+    box-shadow: var(--ocean-glow);
+    transform: scale(1.04);
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s var(--ocean-transition);
+}
+
+body.ocean-theme .new-chat-btn:hover {
+    background: var(--ocean-accent);
+    color: #0a1628;
+    box-shadow: var(--ocean-glow);
+}
+
+/* Liens */
+body.ocean-theme a,
+body.ocean-theme .link {
+    color: var(--ocean-accent-deep);
+    transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+body.ocean-theme a:hover {
+    color: var(--ocean-accent);
+    text-shadow: 0 0 10px rgba(33, 150, 243, 0.35);
+}
+
+/* Conversation active */
+body.ocean-theme .conv-item.active {
+    box-shadow: inset 0 0 0 1px rgba(33, 150, 243, 0.10);
+}
+
+/* Boutons d'icône actifs dans l'input */
+body.ocean-theme .input-icon-btn.active {
+    color: var(--ocean-accent);
+    border-color: rgba(33, 150, 243, 0.25);
+    background: rgba(33, 150, 243, 0.06);
+    box-shadow: 0 0 0 1px rgba(33, 150, 243, 0.06);
+}
+
+body.ocean-theme .input-icon-btn:hover {
+    color: var(--ocean-accent);
+}
+
+/* Le bouton + doit rester opaque pour être lisible */
+body.ocean-theme #plus-menu-btn {
+    background: var(--bg-input);
+}
+body.ocean-theme #plus-menu-btn:hover {
+    background: var(--bg-hover);
+}
+body.ocean-theme #plus-menu-btn.open {
+    background: var(--active-cat-color, var(--ocean-accent));
+}
+
+/* Boutons des panels latéraux */
+body.ocean-theme .side-panel-btn:hover,
+body.ocean-theme .sidebar-toggle:hover {
+    color: var(--ocean-accent);
+    background: rgba(33, 150, 243, 0.06);
+}
+
+/* Boutons du menu plus */
+body.ocean-theme .plus-menu-item:hover {
+    background: rgba(33, 150, 243, 0.06);
+}
+
+/* Toggle switches */
+body.ocean-theme .plus-menu-toggle input:checked + .plus-menu-toggle-slider {
+    background: var(--ocean-accent-deep);
+}
+
+/* Pastilles d'effort actives */
+body.ocean-theme .plus-menu-pill.active {
+    background: rgba(33, 150, 243, 0.12);
+    color: var(--ocean-accent);
+    border-color: rgba(33, 150, 243, 0.25);
+}
+
+/* Onglets actifs */
+body.ocean-theme .rp-tab.active {
+    color: var(--ocean-accent);
+}
+body.ocean-theme .rp-tabs::after {
+    background: var(--ocean-accent);
+}
+
+/* Mode réflexion toggle */
+body.ocean-theme .plus-menu-toggle input:checked + .plus-menu-toggle-slider {
+    background: var(--ocean-accent-deep);
+}
+
+/* --- 5. RESPIRATION DU CACHALOT — Animation des logos --- */
+
+@keyframes ocean-whale-breathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-3px) scale(1.03); }
+}
+
+body.ocean-theme .sidebar-logo {
+    animation: ocean-whale-breathe 4s ease-in-out infinite;
+    filter: drop-shadow(0 2px 6px rgba(33, 150, 243, 0.15));
+}
+
+body.ocean-theme .empty-chat-logo {
+    animation: ocean-whale-breathe 4s ease-in-out infinite;
+    filter: drop-shadow(0 4px 12px rgba(33, 150, 243, 0.12));
+}
+
+body.ocean-theme .login-logo {
+    animation: ocean-whale-breathe 4s ease-in-out infinite;
+    filter: drop-shadow(0 2px 8px rgba(33, 150, 243, 0.18));
+}
+
+/* Logo du splash : animation breathing ajoutée après l'anim d'entrée */
+body.ocean-theme .kiro-splash-logo {
+    animation:
+        kiro-splash-logo-in 0.7s cubic-bezier(0.2, 0.8, 0.3, 1.1) both,
+        ocean-whale-breathe 4s ease-in-out 0.7s infinite;
+}
+
+/* --- 6. RIPPLE AQUATIQUE — Onde au clic --- */
+
+@keyframes ocean-ripple-out {
+    0%   { opacity: 0.5; transform: scale(0); }
+    60%  { opacity: 0.20; }
+    100% { opacity: 0; transform: scale(4); }
+}
+
+body.ocean-theme .input-wrapper {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+body.ocean-theme .input-wrapper::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--ripple-x, 50) * 1%);
+    top: calc(var(--ripple-y, 50) * 1%);
+    width: 60px;
+    height: 60px;
+    margin-left: -30px;
+    margin-top: -30px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(33, 150, 243, 0.12) 0%, transparent 70%);
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0);
+    z-index: 1;
+}
+
+body.ocean-theme .input-wrapper.ocean-ripple-active::after {
+    animation: ocean-ripple-out 0.7s ease-out forwards;
+}
+
+/* Ripple sur boutons */
+body.ocean-theme .new-chat-btn,
+body.ocean-theme .sidebar-config-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+body.ocean-theme .new-chat-btn::after,
+body.ocean-theme .sidebar-config-btn::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--ripple-x, 50) * 1%);
+    top: calc(var(--ripple-y, 50) * 1%);
+    width: 50px;
+    height: 50px;
+    margin-left: -25px;
+    margin-top: -25px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0);
+    z-index: 1;
+}
+
+body.ocean-theme .new-chat-btn.ocean-ripple-active::after,
+body.ocean-theme .sidebar-config-btn.ocean-ripple-active::after {
+    animation: ocean-ripple-out 0.6s ease-out forwards;
+}
+
+/* --- 7. TRANSITIONS « VAGUE » — Courbes fluides --- */
+
+body.ocean-theme .sidebar,
+body.ocean-theme .sidebar-toggle,
+body.ocean-theme .right-panel {
+    transition-timing-function: var(--ocean-transition);
+}
+
+body.ocean-theme .conv-item {
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.25s var(--ocean-transition);
+}
+
+body.ocean-theme .conv-item:hover {
+    transform: translateX(2px);
+}
+
+body.ocean-theme .message-wrapper.animate-in {
+    animation: message-appear 0.45s var(--ocean-transition) both;
+}
+
+body.ocean-theme .sidebar-toggle {
+    transition: left 0.3s var(--ocean-transition), color 0.15s, background 0.15s;
+}
+
+/* --- 8. SPLASH SCREEN — Upgrade océanique --- */
+
+body.ocean-theme .kiro-splash {
+    background: linear-gradient(175deg, #0a1628 0%, #0d2137 40%, #0f2840 100%);
+    overflow: hidden;
+}
+
+/* Halos bioluminescents */
+body.ocean-theme .kiro-splash::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 300px 200px at 20% 30%, rgba(33, 150, 243, 0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 250px 180px at 75% 65%, rgba(25, 118, 210, 0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 150px 250px at 50% 50%, rgba(33, 150, 243, 0.025) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Gouttes d'eau animées */
+@keyframes ocean-droplet-fall {
+    0%   { transform: translateY(-30px) scale(1); opacity: 0; }
+    15%  { opacity: 0.5; }
+    70%  { opacity: 0.4; }
+    100% { transform: translateY(80px) scale(0.25); opacity: 0; }
+}
+
+body.ocean-theme .kiro-splash::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 9px;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: rgba(33, 150, 243, 0.18);
+    left: 18%;
+    top: 25%;
+    box-shadow:
+        28vw 15px 0 rgba(33, 150, 243, 0.12),
+        55vw 8px 0 rgba(25, 118, 210, 0.10),
+        72vw 22px 0 rgba(33, 150, 243, 0.08);
+    animation: ocean-droplet-fall 2.8s ease-in infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Placer le texte et logo au-dessus des pseudo-elements */
+body.ocean-theme .kiro-splash-logo,
+body.ocean-theme .kiro-splash-text,
+body.ocean-theme .kiro-splash-spinner {
+    position: relative;
+    z-index: 1;
+}
+
+/* Texte du splash en cyan */
+body.ocean-theme .kiro-splash-text {
+    color: rgba(33, 150, 243, 0.85);
+}
+
+/* Spinner du splash en cyan */
+body.ocean-theme .kiro-splash-spinner {
+    border-top-color: var(--ocean-accent);
+}

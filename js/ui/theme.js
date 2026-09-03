@@ -1,5 +1,5 @@
 // © Marexsoft Corporation. Fondateur Kouassi Marius.
-import { getThemeToggle } from './dom.js';
+import { getThemeToggle } from '../core/dom.js';
 
 let _onThemeChange = null;
 

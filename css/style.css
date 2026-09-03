@@ -3,14 +3,15 @@
    Fichier d'entrée qui importe les modules CSS dans l'ordre de cascade.
    Pour bundler en prod : concaténer tous les fichiers importés dans cet ordre. */
 
-@import 'variables.css';
-@import 'layout.css';
-@import 'chat.css';
-@import 'components.css';
-@import 'canvas.css';
-@import 'catalog.css';
-@import 'storage.css';
-@import 'menu.css';
+@import 'base/variables.css';
+@import 'base/layout.css';
+@import 'features/chat.css';
+@import 'features/logs-events.css';
+@import 'components/components.css';
+@import 'components/canvas.css';
+@import 'components/catalog.css';
+@import 'components/storage.css';
+@import 'components/menu.css';
 
 
 /* Web search indicator */

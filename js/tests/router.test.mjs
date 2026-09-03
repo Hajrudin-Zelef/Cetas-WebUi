@@ -15,7 +15,7 @@ globalThis.localStorage = {
 };
 globalThis.window = globalThis;
 
-const R = require(new URL('./router.js', import.meta.url).pathname);
+const R = require(new URL('../core/router.js', import.meta.url).pathname);
 const C = R.ROUTER_CONFIG;
 const KNOWN_PROVIDERS = new Set(['groq', 'google', 'openrouter', 'deepseek', 'mistral', 'opencode', 'llamacpp', 'ollama', 'lmstudio']);
 
