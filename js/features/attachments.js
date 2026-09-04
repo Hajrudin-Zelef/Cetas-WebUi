@@ -2,10 +2,10 @@
 // ============================================================
 // attachments.js — Pièces jointes : fichiers, drag-drop, presse-papiers
 // ============================================================
-import { STATE } from './state.js';
-import { getAttachBtn, getFileInput, getAttachPreview, getPromptInput, getSendBtn } from './dom.js';
-import { isTextFile, arrayBufferToBase64, isPdf, isDocx, isXlsx, isPptx } from './utils.js';
-import { openLightbox, openFileViewer } from './lightbox.js';
+import { STATE } from '../core/state.js';
+import { getAttachBtn, getFileInput, getAttachPreview, getPromptInput, getSendBtn } from '../core/dom.js';
+import { isTextFile, arrayBufferToBase64, isPdf, isDocx, isXlsx, isPptx } from '../core/utils.js';
+import { openLightbox, openFileViewer } from '../ui/lightbox.js';
 
 // Callback pour updateSendButton (défini dans app.js)
 let _onStateChange = null;
