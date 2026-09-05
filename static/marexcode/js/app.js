@@ -1,4 +1,4 @@
-import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder } from './api.js';
+import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject } from './api.js';
 import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
@@ -53,6 +53,7 @@ const refs = {
     itemUploadedProject: $('item-uploaded-project'),
     uploadedProjectDesc: $('uploaded-project-desc'),
     btnUploadFolder: $('btn-upload-folder'),
+    btnDeleteProject: $('btn-delete-project'),
     btnModel: $('btn-model'),
     menuModel: $('menu-model'),
     labelModel: $('label-model'),
@@ -143,6 +144,10 @@ async function refreshProjectState() {
         refs.uploadedProjectDesc.textContent = available
             ? 'Dossier importé disponible'
             : "Aucun dossier importé pour l'instant";
+        // Show/hide delete button based on availability
+        if (refs.btnDeleteProject) {
+            refs.btnDeleteProject.style.display = available ? 'flex' : 'none';
+        }
     } catch (e) {
         // silencieux : reste sur l'état par défaut affiché dans le HTML
     }
@@ -196,6 +201,30 @@ function setupWorkspaceSelector() {
             refs.btnUploadFolder.disabled = false;
         }
     });
+
+    // Delete button handler
+    if (refs.btnDeleteProject) {
+        refs.btnDeleteProject.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!confirm('Êtes-vous sûr de vouloir supprimer le projet importé ? Cette action est irréversible.')) {
+                return;
+            }
+            const originalLabel = refs.btnDeleteProject.textContent;
+            refs.btnDeleteProject.textContent = 'Suppression…';
+            refs.btnDeleteProject.disabled = true;
+            try {
+                await deleteProject();
+                await refreshProjectState();
+                refs.menuWorkspace.classList.remove('open');
+                await refreshTree();
+            } catch (e) {
+                alert("Erreur lors de la suppression : " + (e.message || e));
+            } finally {
+                refs.btnDeleteProject.textContent = originalLabel;
+                refs.btnDeleteProject.disabled = false;
+            }
+        });
+    }
 }
 
 // ── Menu "+" (modèles + compétences) ──

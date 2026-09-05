@@ -9,8 +9,10 @@ export function createChat(deps) {
     let rawAcc = '';
     let controller = null;
     let userClosedPanel = false;
+    let fileContents = {};
+    let todoBlockEl = null;
+    let statusEl = null;
 
-    // ── Panneau latéral droit : raisonnement + fichiers modifiés ──
     function openSidePanel() {
         if (!sidePanel || userClosedPanel) return;
         sidePanel.classList.add('open');
@@ -23,7 +25,7 @@ export function createChat(deps) {
     function resetSidePanel() {
         userClosedPanel = false;
         if (sidePanelBody) {
-            sidePanelBody.querySelectorAll('.sp-think-block, .sp-file-block').forEach(el => el.remove());
+            sidePanelBody.querySelectorAll('.sp-think-block').forEach(el => el.remove());
         }
         if (sidePanelEmpty) sidePanelEmpty.style.display = 'block';
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
@@ -67,29 +69,152 @@ export function createChat(deps) {
         return m;
     }
 
-    // Bloc fichier/outil : écrit dans le panneau droit, pas dans le fil de chat
-    function addToolBlock(name, args, result) {
-        openSidePanel();
-        const t = document.createElement('div');
-        t.className = 'sp-file-block';
-        const path = args && (args.path || args.file_path || args.filePath);
-        t.innerHTML =
-            '<div class="sp-file-block-header">' +
-                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>' +
-                '<span>' + esc(name) + '</span>' +
-                (path ? '<span class="sp-file-block-path">' + esc(path) + '</span>' : '') +
-                '<span class="sp-file-block-status">' + (result && result.pending ? 'en cours…' : 'terminé') + '</span>' +
-            '</div>' +
-            '<pre>' + esc(JSON.stringify(args, null, 2)) + '</pre>' +
-            (result && !result.pending ? '<pre>' + esc(JSON.stringify(result, null, 2)) + '</pre>' : '');
-        if (sidePanelBody) {
-            sidePanelBody.appendChild(t);
-            sidePanelBody.scrollTop = sidePanelBody.scrollHeight;
+    function computeDiff(oldContent, newContent) {
+        const oldLines = (oldContent || '').split('\n');
+        const newLines = (newContent || '').split('\n');
+        const result = [];
+        const maxLen = Math.max(oldLines.length, newLines.length);
+        for (let i = 0; i < maxLen; i++) {
+            const oldLine = oldLines[i];
+            const newLine = newLines[i];
+            if (oldLine === undefined) {
+                result.push({ type: 'add', content: newLine });
+            } else if (newLine === undefined) {
+                result.push({ type: 'del', content: oldLine });
+            } else if (oldLine !== newLine) {
+                result.push({ type: 'del', content: oldLine });
+                result.push({ type: 'add', content: newLine });
+            } else {
+                result.push({ type: 'same', content: newLine });
+            }
         }
-        return t;
+        return result;
     }
 
-    // Badge compact "Réflexion" dans le fil de chat — le détail va dans le panneau droit
+    function renderDiffContent(oldContent, newContent) {
+        const diff = computeDiff(oldContent, newContent);
+        let html = '';
+        for (const line of diff) {
+            if (line.type === 'add') {
+                html += '<div class="diff-add">+ ' + esc(line.content) + '</div>';
+            } else if (line.type === 'del') {
+                html += '<div class="diff-del">- ' + esc(line.content) + '</div>';
+            } else {
+                html += '<div class="diff-same">  ' + esc(line.content) + '</div>';
+            }
+        }
+        return html;
+    }
+
+    function addChatToolBlock(name, args, result) {
+        const block = document.createElement('div');
+        block.className = 'chat-tool-block';
+        const path = args && (args.path || args.file_path || args.filePath);
+        const isBash = name.toLowerCase() === 'bash';
+        const isWrite = name.toLowerCase() === 'write';
+        const isEdit = name.toLowerCase() === 'edit';
+        const isRead = name.toLowerCase() === 'read';
+        const isGrep = name.toLowerCase() === 'grep';
+
+        let badgeClass = 'tool-badge-neutral';
+        if (isBash) badgeClass = 'tool-badge-bash';
+
+        let contentHtml = '';
+        let previewHtml = '';
+
+        if (isWrite || isEdit) {
+            const newContent = args && args.content || '';
+            const oldContent = isEdit ? (args && args.old || '') : (fileContents[path] || '');
+            contentHtml = renderDiffContent(oldContent, newContent);
+            previewHtml = contentHtml.split('\n').slice(0, 4).join('\n');
+            if (path) fileContents[path] = newContent;
+        } else if (isRead) {
+            const content = result && result.content || '';
+            contentHtml = esc(content);
+            previewHtml = content.split('\n').slice(0, 4).join('\n');
+        } else if (isGrep) {
+            const content = result && result.matches || JSON.stringify(result, null, 2);
+            contentHtml = esc(content);
+            previewHtml = content.split('\n').slice(0, 4).join('\n');
+        } else if (isBash) {
+            const content = result && result.output || JSON.stringify(result, null, 2);
+            contentHtml = esc(content);
+            previewHtml = content.split('\n').slice(0, 4).join('\n');
+        } else {
+            contentHtml = esc(JSON.stringify(args, null, 2));
+            previewHtml = contentHtml.split('\n').slice(0, 4).join('\n');
+        }
+
+        const previewLines = previewHtml.split('\n').slice(0, 4).join('\n');
+
+        block.innerHTML =
+            '<div class="chat-tool-block-header">' +
+                '<span class="tool-badge ' + badgeClass + '">' + esc(name) + '</span>' +
+                (path ? '<span class="chat-tool-block-path">' + esc(path) + '</span>' : '') +
+                '<button class="chat-tool-toggle" type="button">Développer</button>' +
+            '</div>' +
+            '<div class="chat-tool-block-preview"><pre>' + esc(previewLines) + '</pre></div>' +
+            '<div class="chat-tool-block-full" style="display:none"><pre>' + (isWrite || isEdit ? contentHtml : esc(contentHtml)) + '</pre></div>';
+
+        const toggleBtn = block.querySelector('.chat-tool-toggle');
+        const previewEl = block.querySelector('.chat-tool-block-preview');
+        const fullEl = block.querySelector('.chat-tool-block-full');
+
+        toggleBtn.addEventListener('click', () => {
+            const isExpanded = fullEl.style.display !== 'none';
+            if (isExpanded) {
+                fullEl.style.display = 'none';
+                previewEl.style.display = 'block';
+                toggleBtn.textContent = 'Développer';
+            } else {
+                fullEl.style.display = 'block';
+                previewEl.style.display = 'none';
+                toggleBtn.textContent = 'Réduire';
+            }
+        });
+
+        chatLog.appendChild(block);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        return block;
+    }
+
+    function ensureStatusLine() {
+        if (statusEl) return statusEl;
+        statusEl = document.createElement('div');
+        statusEl.className = 'chat-status-line';
+        statusEl.innerHTML = '<span class="status-dot"></span><span class="status-action">Prêt</span><span class="status-model">' + esc(session?.model || '') + '</span>';
+        chatLog.appendChild(statusEl);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        return statusEl;
+    }
+
+    function updateStatus(action) {
+        ensureStatusLine();
+        const actionEl = statusEl.querySelector('.status-action');
+        if (actionEl && action) actionEl.textContent = action;
+    }
+
+    function renderTodoBlock(todos) {
+        if (!Array.isArray(todos) || todos.length === 0) return;
+        if (!todoBlockEl) {
+            todoBlockEl = document.createElement('div');
+            todoBlockEl.className = 'chat-todo-block';
+            chatLog.insertBefore(todoBlockEl, statusEl || null);
+        }
+        let html = '<div class="chat-todo-header"># Todos</div><ul class="chat-todo-list">';
+        for (const todo of todos) {
+            const status = todo.status || 'pending';
+            let icon = '[ ]';
+            let cls = 'todo-pending';
+            if (status === 'in_progress') { icon = '[•]'; cls = 'todo-in-progress'; }
+            else if (status === 'completed') { icon = '[x]'; cls = 'todo-completed'; }
+            html += '<li class="chat-todo-item ' + cls + '"><span class="todo-icon">' + icon + '</span><span class="todo-content">' + esc(todo.content || '') + '</span></li>';
+        }
+        html += '</ul>';
+        todoBlockEl.innerHTML = html;
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
     function ensureThinkBadge() {
         if (thinkBadgeEl) return thinkBadgeEl;
         const b = document.createElement('button');
@@ -135,6 +260,7 @@ export function createChat(deps) {
 
     function renderHistory() {
         chatLog.innerHTML = '';
+        fileContents = {};
         for (const m of (session.messages || [])) {
             if (m.role === 'user') addMsg('user', m.content || '');
             else if (m.role === 'assistant') addMsg('assistant', m.content || '', true);
@@ -155,6 +281,7 @@ export function createChat(deps) {
             setRunning(false);
             finishThinking();
             if (pendingEl) {
+                pendingEl.innerHTML = '<div class="md">' + renderMarkdown(rawAcc) + '</div>';
                 session.messages.push({ role: 'assistant', content: rawAcc });
                 pendingEl = null;
             }
@@ -177,8 +304,10 @@ export function createChat(deps) {
     function newSession() {
         session = { id: null, title: 'Nouvelle conversation', model: session && session.model ? session.model : null, messages: [] };
         chatLog.innerHTML = '';
+        fileContents = {};
         setChatVisible(false);
         pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkText = '';
+        todoBlockEl = null; statusEl = null;
         resetSidePanel();
         return session;
     }
@@ -201,12 +330,15 @@ export function createChat(deps) {
         session.messages.push({ role: 'user', content: text });
         addMsg('user', text);
 
-        const baseSys = 'Tu es Marexcode, un assistant de codage IA professionnel intégré à Cetas. Tu aides l utilisateur à lire, écrire, éditer et analyser du code dans son workspace. RÈGLES : 1) Utilise les outils (Read, Write, Edit, Grep, Bash) pour accomplir la tâche concrètement, PAS juste expliquer. 2) Lis d abord les fichiers concernés avant de proposer des modifications. 3) Après chaque modification, indique le fichier et la ligne. 4) Si une commande échoue, lis l erreur et corrige. 5) Sois concis et cite les chemins exacts. 6) Ne modifie jamais hors sandbox, ne demande jamais sudo. 7) Pour une tâche complexe : analyse → plan → exécution → vérification.';
+        const baseSys = 'Tu es Marexcode, un assistant de codage IA professionnel intégré à Cetas. Tu aides l utilisateur à lire, écrire, éditer et analyser du code dans son workspace. RÈGLES : 1) Utilise les outils (Ls, Read, Write, Edit, Grep, Bash, TodoWrite) pour accomplir la tâche concrètement, PAS juste expliquer. 2) Utilise Ls pour découvrir la structure du workspace avant de lire des fichiers. 3) Lis ensuite les fichiers concernés avant de proposer des modifications. 4) Après chaque modification, indique le fichier et la ligne. 5) Si une commande échoue, lis l erreur et corrige. 6) Sois concis et cite les chemins exacts. 7) Ne modifie jamais hors sandbox, ne demande jamais sudo. 8) Pour toute tâche à plusieurs étapes : utilise TodoWrite AU DÉBUT pour lister le plan, puis rappelle-le après chaque étape complétée pour mettre à jour les statuts (pending → in_progress → completed). 9) Pour une tâche complexe : analyse → plan (TodoWrite) → exécution → vérification.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
         const sys = (skill ? skill + '\n\n' : '') + baseSys;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
         pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkText = ''; rawAcc = '';
+        todoBlockEl = null; statusEl = null;
         pendingEl = addMsg('assistant', '', false);
+        ensureStatusLine();
+        updateStatus('Génération…');
 
         const onChunk = (chunk) => {
             rawAcc += chunk;
@@ -216,8 +348,10 @@ export function createChat(deps) {
         const onDone = () => {
             setRunning(false);
             finishThinking();
+            updateStatus('Terminé');
             if (pendingEl) {
-                pendingEl.innerHTML = '<div class="md">' + renderMarkdown(rawAcc) + '</div>';
+                const rendered = renderMarkdown(rawAcc);
+                pendingEl.innerHTML = '<div class="md">' + rendered + '</div>';
                 session.messages.push({ role: 'assistant', content: rawAcc });
                 pendingEl = null;
             }
@@ -226,7 +360,11 @@ export function createChat(deps) {
         const onError = (err) => {
             setRunning(false);
             finishThinking();
-            pendingEl = null;
+            if (pendingEl) {
+                pendingEl.innerHTML = '<div class="md">' + renderMarkdown(rawAcc) + '</div>';
+                if (rawAcc) session.messages.push({ role: 'assistant', content: rawAcc });
+                pendingEl = null;
+            }
             if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
             addMsg('error', 'Erreur: ' + (err && err.message ? err.message : err));
         };
@@ -250,34 +388,84 @@ export function createChat(deps) {
         } catch (err) {
             setRunning(false);
             finishThinking();
-            pendingEl = null;
+            if (pendingEl) {
+                pendingEl.innerHTML = '<div class="md">' + renderMarkdown(rawAcc) + '</div>';
+                if (rawAcc) session.messages.push({ role: 'assistant', content: rawAcc });
+                pendingEl = null;
+            }
             if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
             addMsg('error', 'Erreur: ' + (err && err.message ? err.message : err));
         }
     }
 
+    window.addEventListener('marexcode-todo', (e) => {
+        const d = e.detail;
+        if (d && Array.isArray(d.todos)) {
+            renderTodoBlock(d.todos);
+        }
+    });
+
     window.addEventListener('marexcode-tool', (e) => {
         const d = e.detail;
         if (!d || !d.phase) return;
         if (d.phase === 'start') {
-            addToolBlock(d.name, d.args, { pending: true });
+            addChatToolBlock(d.name, d.args, { pending: true });
+            const actionMap = { Bash: 'Exécution commande…', Read: 'Lecture fichier…', Write: 'Écriture fichier…', Edit: 'Modification fichier…', Grep: 'Recherche…', TodoWrite: 'Mise à jour todos…' };
+            updateStatus(actionMap[d.name] || 'Traitement…');
         } else if (d.phase === 'end') {
-            if (!sidePanelBody) return;
-            const blocks = sidePanelBody.querySelectorAll('.sp-file-block');
+            const blocks = chatLog.querySelectorAll('.chat-tool-block');
             const last = blocks[blocks.length - 1];
             if (last) {
-                const path = d.args && (d.args.path || d.args.file_path || d.args.filePath);
-                last.innerHTML =
-                    '<div class="sp-file-block-header">' +
-                        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>' +
-                        '<span>' + esc(d.name) + '</span>' +
-                        (path ? '<span class="sp-file-block-path">' + esc(path) + '</span>' : '') +
-                        '<span class="sp-file-block-status">terminé</span>' +
-                    '</div>' +
-                    '<pre>' + esc(JSON.stringify(d.args, null, 2)) + '</pre>' +
-                    '<pre>' + esc(JSON.stringify(d.result, null, 2)) + '</pre>';
+                const name = d.name;
+                const args = d.args;
+                const result = d.result;
+                const path = args && (args.path || args.file_path || args.filePath);
+                const isBash = name.toLowerCase() === 'bash';
+                const isWrite = name.toLowerCase() === 'write';
+                const isEdit = name.toLowerCase() === 'edit';
+                const isRead = name.toLowerCase() === 'read';
+                const isGrep = name.toLowerCase() === 'grep';
+
+                let badgeClass = 'tool-badge-neutral';
+                if (isBash) badgeClass = 'tool-badge-bash';
+
+                let contentHtml = '';
+                if (isWrite || isEdit) {
+                    const newContent = args && args.content || '';
+                    const oldContent = isEdit ? (args && args.old || '') : (fileContents[path] || '');
+                    contentHtml = renderDiffContent(oldContent, newContent);
+                    if (path) fileContents[path] = newContent;
+                } else if (isRead) {
+                    contentHtml = esc(result && result.content || '');
+                } else if (isGrep) {
+                    contentHtml = esc(result && result.matches || JSON.stringify(result, null, 2));
+                } else if (isBash) {
+                    contentHtml = esc(result && result.output || JSON.stringify(result, null, 2));
+                } else {
+                    contentHtml = esc(JSON.stringify(result, null, 2));
+                }
+
+                const previewLines = contentHtml.split('\n').slice(0, 4).join('\n');
+
+                last.querySelector('.chat-tool-block-header .chat-tool-block-path')?.remove();
+                if (path) {
+                    const pathSpan = document.createElement('span');
+                    pathSpan.className = 'chat-tool-block-path';
+                    pathSpan.textContent = path;
+                    last.querySelector('.chat-tool-block-header').insertBefore(pathSpan, last.querySelector('.chat-tool-toggle'));
+                }
+
+                const previewEl = last.querySelector('.chat-tool-block-preview pre');
+                const fullEl = last.querySelector('.chat-tool-block-full pre');
+                if (previewEl) previewEl.textContent = previewLines;
+                if (fullEl) {
+                    if (isWrite || isEdit) {
+                        fullEl.innerHTML = contentHtml;
+                    } else {
+                        fullEl.textContent = contentHtml;
+                    }
+                }
             }
-            sidePanelBody.scrollTop = sidePanelBody.scrollHeight;
         }
     });
 
@@ -292,3 +480,5 @@ export function createChat(deps) {
         isRunning: () => running
     };
 }
+
+/* Marexcode — © Marexsoft Corporation. Fondateur Kouassi Marius. */

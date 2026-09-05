@@ -84,6 +84,12 @@ export async function setProject(name) {
     });
 }
 
+export async function deleteProject() {
+    return apiFetch('/api/marexcode/project', {
+        method: 'DELETE'
+    });
+}
+
 /**
  * Upload réel d'un dossier choisi via <input webkitdirectory>.
  * `fileList` est la FileList native (chaque File porte déjà webkitRelativePath).

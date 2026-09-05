@@ -7,7 +7,7 @@ const DEFAULT_PERMISSION = 'Espace Write';
 const VALID = ['Read only', 'Espace Write', 'Ask permission'];
 
 // Outils considérés comme "lecture seule" (jamais bloqués, jamais confirmés)
-const READ_ONLY_TOOLS = new Set(['read', 'grep']);
+const READ_ONLY_TOOLS = new Set(['read', 'grep', 'ls']);
 // Outils qui modifient l'état du sandbox (fichiers ou commandes shell)
 const MUTATING_TOOLS = new Set(['write', 'edit', 'bash']);
 

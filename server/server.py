@@ -1206,6 +1206,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             sid = self.path[len("/api/marexcode/sessions/"):]
             self._marex_sessions_item_delete(sid)
             return
+        if self.path == "/api/marexcode/project":
+            self._marex_project_delete()
+            return
         self.send_response(404)
         self.end_headers()
 

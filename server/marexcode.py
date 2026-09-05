@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
 
 # ── Sandbox d'exécution (outils Bash + fichiers) ───────────────────────
-EXEC_SANDBOX = os.environ.get("CETAS_PROJECT_DIR", os.environ.get("CETAS_BASE_DIR", DATA_DIR))
+EXEC_SANDBOX = os.environ.get("CETAS_PROJECT_DIR", DATA_DIR)
 EXEC_ALLOWLIST = {
     "ls", "cat", "grep", "git", "node", "python3", "python", "npm", "npx",
     "head", "tail", "wc", "find", "sed", "awk", "echo", "printf", "mkdir",
@@ -143,23 +143,33 @@ def marex_project_root(username: str, project_name: str | None = None) -> str:
 class MarexcodeMixin:
     # ── Résolution de chemins sandbox ──────────────────────────────────
 
-    def _exec_root(self) -> str:
-        return getattr(self, "_marex_root", None) or EXEC_SANDBOX
+    def _exec_root(self) -> str | None:
+        """Retourne la racine sandbox définie par l'appelant. Ne JAMAIS fallback
+        silencieusement vers EXEC_SANDBOX — si _marex_root n'est pas défini,
+        c'est un bug d'appel et il faut échouer explicitement."""
+        root = getattr(self, "_marex_root", None)
+        if not root:
+            log.error("_exec_root() appelé sans _marex_root défini — refus d'exécution")
+            return None
+        return root
 
     def _resolve_safe_path(self, rel_path: str) -> str | None:
         """Résout un chemin dans le sandbox, bloque l'échappement (../, symlinks)."""
         if not rel_path:
             return None
-        candidate = os.path.realpath(os.path.join(self._exec_root(), rel_path))
-        root = os.path.realpath(self._exec_root())
-        if candidate == root or candidate.startswith(root + os.sep):
+        root = self._exec_root()
+        if not root:
+            return None
+        candidate = os.path.realpath(os.path.join(root, rel_path))
+        real_root = os.path.realpath(root)
+        if candidate == real_root or candidate.startswith(real_root + os.sep):
             return candidate
         return None
 
     # ── Outils Bash ────────────────────────────────────────────────────
 
-    def _exec_bash(self, command: str) -> dict:
-        """Exécute une commande bash whitelistée avec timeout."""
+    def _exec_bash(self, command: str, timeout: int = None) -> dict:
+        """Exécute une commande bash whitelistée avec timeout configurable."""
         import shlex
         try:
             tokens = shlex.split(command)
@@ -176,27 +186,34 @@ class MarexcodeMixin:
         for tok in tokens[1:]:
             if tok in EXEC_BANNED_FLAGS:
                 return {"error": f"Flag interdit: {tok}", "code": 403}
+        root = self._exec_root()
+        if not root:
+            return {"error": "Sandbox non initialisée", "code": 500}
+        
+        # Timeout configurable (défaut EXEC_TIMEOUT, max 60s)
+        exec_timeout = min(timeout if timeout else EXEC_TIMEOUT, 60)
+        
         try:
             proc = subprocess.run(
                 tokens,
-                cwd=self._exec_root(),
+                cwd=root,
                 capture_output=True,
                 text=True,
-                timeout=EXEC_TIMEOUT,
+                timeout=exec_timeout,
             )
         except subprocess.TimeoutExpired:
-            return {"error": f"Timeout dépassé ({EXEC_TIMEOUT}s)", "code": 124, "timed_out": True}
+            return {"error": f"Timeout dépassé ({exec_timeout}s)", "code": 124, "timed_out": True}
         except FileNotFoundError:
             return {"error": f"Binaire introuvable: {binary}", "code": -1}
         except Exception as e:
             return {"error": f"Erreur exécution: {e}", "code": -1}
         out = proc.stdout[:EXEC_MAX_OUTPUT]
         err = proc.stderr[:EXEC_MAX_OUTPUT]
-        return {"stdout": out, "stderr": err, "code": proc.returncode}
+        return {"stdout": out, "stderr": err, "code": proc.returncode, "timeout_used": exec_timeout}
 
     # ── Outils fichiers ────────────────────────────────────────────────
 
-    def _exec_read(self, rel_path: str) -> dict:
+    def _exec_read(self, rel_path: str, offset: int = None, limit: int = None) -> dict:
         path = self._resolve_safe_path(rel_path)
         if not path:
             return {"error": "Chemin hors sandbox", "code": 403}
@@ -209,13 +226,32 @@ class MarexcodeMixin:
             return {"error": f"Est un dossier: {rel_path}", "code": 400}
         except Exception as e:
             return {"error": f"Erreur lecture: {e}", "code": -1}
-        return {"content": content[:EXEC_MAX_OUTPUT]}
+        
+        # Pagination
+        lines = content.split('\n')
+        total_lines = len(lines)
+        
+        if offset is not None or limit is not None:
+            start = (offset - 1) if offset and offset > 0 else 0
+            end = (start + limit) if limit else total_lines
+            lines_read = lines[start:end]
+            content = '\n'.join(lines_read)
+            return {
+                "content": content[:EXEC_MAX_OUTPUT],
+                "lines_read": len(lines_read),
+                "total_lines": total_lines,
+                "offset": start + 1,
+                "limit": limit
+            }
+        
+        return {"content": content[:EXEC_MAX_OUTPUT], "lines_read": total_lines, "total_lines": total_lines}
 
     def _exec_write(self, rel_path: str, content: str) -> dict:
         path = self._resolve_safe_path(rel_path)
         if not path:
             return {"error": "Chemin hors sandbox", "code": 403}
         try:
+            existed = os.path.exists(path)
             parent = os.path.dirname(path)
             if parent and not os.path.exists(parent):
                 os.makedirs(parent, exist_ok=True)
@@ -223,9 +259,10 @@ class MarexcodeMixin:
                 f.write(content[:EXEC_MAX_OUTPUT])
         except Exception as e:
             return {"error": f"Erreur écriture: {e}", "code": -1}
-        return {"ok": True, "path": rel_path}
+        return {"ok": True, "path": rel_path, "existed": existed}
 
     def _exec_edit(self, rel_path: str, old: str, new: str) -> dict:
+        import difflib
         path = self._resolve_safe_path(rel_path)
         if not path:
             return {"error": "Chemin hors sandbox", "code": 403}
@@ -234,22 +271,42 @@ class MarexcodeMixin:
                 content = f.read()
             if old not in content:
                 return {"error": "Texte à remplacer introuvable", "code": 400}
+            
+            # Compter les remplacements
+            replacements = content.count(old)
             updated = content.replace(old, new, 1)
+            
+            # Calculer diff
+            old_lines = content.splitlines(keepends=True)
+            new_lines = updated.splitlines(keepends=True)
+            diff = list(difflib.unified_diff(old_lines, new_lines, fromfile=rel_path, tofile=rel_path, lineterm=''))
+            patch = ''.join(diff)
+            
+            # Compter additions/deletions
+            additions = sum(1 for line in diff if line.startswith('+') and not line.startswith('+++'))
+            deletions = sum(1 for line in diff if line.startswith('-') and not line.startswith('---'))
+            
             with open(path, "w", encoding="utf-8") as f:
                 f.write(updated)
         except FileNotFoundError:
             return {"error": f"Fichier introuvable: {rel_path}", "code": 404}
         except Exception as e:
             return {"error": f"Erreur édition: {e}", "code": -1}
-        return {"ok": True, "path": rel_path}
+        return {"ok": True, "path": rel_path, "replacements": replacements, "additions": additions, "deletions": deletions, "patch": patch}
 
-    def _exec_grep(self, pattern: str, rel_path: str) -> dict:
+    def _exec_grep(self, pattern: str, rel_path: str, limit: int = None) -> dict:
         path = self._resolve_safe_path(rel_path or ".")
         if not path:
             return {"error": "Chemin hors sandbox", "code": 403}
+        root = self._exec_root()
+        if not root:
+            return {"error": "Sandbox non initialisée", "code": 500}
         try:
+            cmd = ["grep", "-rn", "--color=never", "--binary-files=without-match", "--exclude-dir=__pycache__", "--exclude-dir=.git", pattern, path]
+            if limit:
+                cmd = ["grep", "-rn", "-m", str(limit), "--color=never", "--binary-files=without-match", "--exclude-dir=__pycache__", "--exclude-dir=.git", pattern, path]
             proc = subprocess.run(
-                ["grep", "-rn", "--color=never", pattern, path],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=EXEC_TIMEOUT,
@@ -258,7 +315,12 @@ class MarexcodeMixin:
             return {"error": f"Timeout dépassé ({EXEC_TIMEOUT}s)", "code": 124, "timed_out": True}
         except Exception as e:
             return {"error": f"Erreur grep: {e}", "code": -1}
-        return {"stdout": proc.stdout[:EXEC_MAX_OUTPUT], "code": proc.returncode}
+        
+        stdout = proc.stdout[:EXEC_MAX_OUTPUT]
+        # Compter les matches
+        matches = len([line for line in stdout.split('\n') if line.strip()])
+        
+        return {"stdout": stdout, "code": proc.returncode, "matches": matches, "limit_applied": limit}
 
     # ── Endpoint POST /api/exec ────────────────────────────────────────
 
@@ -286,15 +348,17 @@ class MarexcodeMixin:
         log.info("exec tool=%s user=%s", tool, username)
         try:
             if tool == "bash":
-                result = self._exec_bash(str(args.get("command", "")))
+                result = self._exec_bash(str(args.get("command", "")), args.get("timeout"))
             elif tool == "read":
-                result = self._exec_read(str(args.get("file_path", "")))
+                result = self._exec_read(str(args.get("file_path", "")), args.get("offset"), args.get("limit"))
             elif tool == "write":
                 result = self._exec_write(str(args.get("file_path", "")), str(args.get("content", "")))
             elif tool == "edit":
                 result = self._exec_edit(str(args.get("file_path", "")), str(args.get("old", "")), str(args.get("new", "")))
             elif tool == "grep":
-                result = self._exec_grep(str(args.get("pattern", "")), str(args.get("path", "")))
+                result = self._exec_grep(str(args.get("pattern", "")), str(args.get("path", "")), args.get("limit"))
+            elif tool == "ls":
+                result = {"files": self._marex_tree()}
             else:
                 self._respond_json({"error": f"Outil inconnu: {tool}"}, 400)
                 return
@@ -313,6 +377,8 @@ class MarexcodeMixin:
     def _marex_tree(self) -> list:
         """Listing récursif du workspace, exclut .git/node_modules/fichiers cachés."""
         root = self._exec_root()
+        if not root:
+            return []
         out = []
         for dirpath, dirnames, filenames in os.walk(root):
             dirnames[:] = [d for d in dirnames if not d.startswith(".")
@@ -482,6 +548,36 @@ class MarexcodeMixin:
             self._respond_json({"error": "Nom de projet invalide"}, 400)
             return
         self._respond_json({"ok": True, "active": name})
+
+    # ── Suppression du projet importé ───────────────────────────────────
+
+    def _marex_project_delete(self):
+        """DELETE /api/marexcode/project — supprime le workspace 'Projet importé'.
+        Vide entièrement uploaded_project/ et bascule sur PROJECT_SERVER si c'était le projet actif.
+        """
+        from server import _rate_check
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if not _rate_check("delete_project:" + username, 5, 300):
+            self._respond_json({"error": "Trop de suppressions. Réessayez dans quelques minutes."}, 429)
+            return
+        base = marex_workspace(username)
+        target_root = os.path.join(base, UPLOADED_PROJECT_DIRNAME)
+        try:
+            import shutil
+            if os.path.isdir(target_root):
+                shutil.rmtree(target_root)
+            os.makedirs(target_root, exist_ok=True)
+        except Exception as e:
+            self._respond_json({"error": f"Erreur suppression: {e}"}, 500)
+            return
+        # Si le projet actif était "Projet importé", basculer sur "Marexcode (serveur)"
+        active = marex_get_active_project(username)
+        if active == PROJECT_UPLOADED:
+            marex_set_active_project(username, PROJECT_SERVER)
+        log.info("delete project user=%s", username)
+        self._respond_json({"ok": True, "active": PROJECT_SERVER})
 
     # ── Upload d'un dossier de projet ───────────────────────────────────
 

@@ -686,12 +686,14 @@ html,body{
 }
 
 .composer{
-  width:620px;
+  width:100%;
+  max-width:620px;
   background:var(--bg-elevated);
   border:1px solid var(--border);
   border-radius:14px;
   padding:0 0 12px 0;
   overflow:hidden;
+  box-sizing:border-box;
 }
 
 /* Bandeau projet : pleine largeur, fondu avec le composer, séparé par une ligne fine (façon Codex) */
@@ -1414,7 +1416,8 @@ html,body{
 
 /* Mobile : composer fluide, dropdowns adaptés */
 @media (max-width: 600px){
-  .hero{ gap:14px; padding:6px 10px; }
+  .hero{ gap:14px; padding:60px 10px 60px 10px; }
+  .hero.has-chat{ padding:60px 10px 60px 10px; }
   .hero-title{ flex-wrap:wrap; gap:8px; }
   .hero-title h1{ font-size:19px; }
   .badge-pill{ font-size:10px; }

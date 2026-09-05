@@ -251,7 +251,7 @@ export function createMarexcode(deps) {
         initPlusMenu(); refreshModelLabel(); loadTree(); loadSessions();
         document.body.classList.add("marexcode-mode");
         window._activeToolset = MAREXCODE_TOOLS;
-        window._toolMaxIterations = 10;
+        window._toolMaxIterations = 5;
         window.dispatchEvent(new CustomEvent("cetas:toolset-change"));
     }
 
