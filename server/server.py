@@ -54,7 +54,14 @@ log = logging.getLogger(__name__)
 BASE_DIR = os.environ.get("CETAS_BASE_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 VAULT_PATH = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault", ".enc"))
 ENV_PATH = os.environ.get("CETAS_ENV_PATH", os.path.join(BASE_DIR, ".env"))
-CRYPTO_PATH = os.environ.get("CETAS_CRYPTO_PATH", os.path.join(BASE_DIR, "core", "linux", "crypto_linux.py"))
+
+
+def _crypto_path() -> str:
+    override = os.environ.get("CETAS_CRYPTO_PATH")
+    if override:
+        return override
+    sub = "win" if os.name == "nt" else "linux"
+    return os.path.join(BASE_DIR, "core", sub, "crypto_%s.py" % sub)
 
 # ── Static serving local (M0) : mode autonome sans nginx ───────────
 _SSI_RE = re.compile(r'<!--#include\s+file="([^"]+)"\s*-->')
@@ -425,14 +432,15 @@ def _validate_jwt(token: str) -> dict | None:
 
 
 def _load_vault():
-    """Charge le module crypto_linux.py dynamiquement et retourne SecureVault."""
+    """Charge le module crypto (win/linux) dynamiquement et retourne SecureVault."""
+    crypto_path = _crypto_path()
     try:
-        if not os.path.exists(CRYPTO_PATH):
-            log.error("Module crypto introuvable: %s", CRYPTO_PATH)
+        if not os.path.exists(crypto_path):
+            log.error("Module crypto introuvable: %s", crypto_path)
             sys.exit(1)
-        spec = importlib.util.spec_from_file_location("crypto_linux", CRYPTO_PATH)
+        spec = importlib.util.spec_from_file_location("crypto_linux", crypto_path)
         if spec is None or spec.loader is None:
-            log.error("Impossible de charger le module crypto: %s", CRYPTO_PATH)
+            log.error("Impossible de charger le module crypto: %s", crypto_path)
             sys.exit(1)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)

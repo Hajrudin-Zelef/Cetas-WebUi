@@ -49,6 +49,47 @@ EXEC_BANNED_FLAGS = {"-c", "--eval", "-e"}
 EXEC_TIMEOUT = int(os.environ.get("CETAS_EXEC_TIMEOUT", "10"))
 EXEC_MAX_OUTPUT = int(os.environ.get("CETAS_EXEC_MAX_OUTPUT", "200000"))
 
+
+def _exec_sandbox() -> str:
+    return os.environ.get("CETAS_PROJECT_DIR", DATA_DIR)
+
+
+def _local_bash() -> bool:
+    return os.environ.get("CETAS_LOCAL_MODE", "") == "1"
+
+
+def format_tool_output(tool: str, args: dict, result: dict) -> str:
+    if tool == "read":
+        out = "Read %s lines from %s" % (result.get("lines_read", 0), args.get("file_path", "?"))
+        if result.get("offset") is not None:
+            out += " (offset %s, limit %s)" % (result["offset"], result.get("limit", "all"))
+        return out
+    if tool == "edit":
+        parts = ["Edited file successfully: %s" % result.get("path", args.get("file_path", "?")),
+                 "Replacements: %s" % result.get("replacements", 0),
+                 "Additions: %s" % result.get("additions", 0),
+                 "Deletions: %s" % result.get("deletions", 0)]
+        if result.get("patch"):
+            parts.append("```diff\n%s\n```" % result["patch"])
+        return "\n".join(parts)
+    if tool == "write":
+        verb = "Wrote" if result.get("existed") else "Created"
+        return "%s file: %s" % (verb, result.get("path", args.get("file_path", "?")))
+    if tool == "bash":
+        out = "Command exited with code %s" % result.get("code", 0)
+        if result.get("stdout"):
+            out += "\n" + result["stdout"]
+        if result.get("stderr"):
+            out += "\nstderr:\n" + result["stderr"]
+        return out
+    if tool == "grep":
+        return "Found %s matches\n%s" % (result.get("matches", 0), result.get("stdout", ""))
+    if tool == "ls":
+        files = result.get("files", [])
+        lines = ["Found %s files" % len(files)] + [e.get("path", "") for e in files]
+        return "\n".join(lines)
+    return ""
+
 # ── Upload de projet (dossier importé depuis le navigateur) ────────────
 UPLOAD_MAX_FILES = int(os.environ.get("CETAS_UPLOAD_MAX_FILES", "200"))
 UPLOAD_MAX_TOTAL_BYTES = int(os.environ.get("CETAS_UPLOAD_MAX_BYTES", str(20 * 1024 * 1024)))  # 20 Mo
@@ -111,6 +152,10 @@ def marex_server_project_root(username: str) -> str:
     """Racine isolée du projet 'Marexcode (serveur)', distincte de sessions/
     et des métadonnées internes. Migre automatiquement une seule fois les
     fichiers qui traînaient historiquement à la racine du workspace."""
+    sandbox = _exec_sandbox()
+    if sandbox != DATA_DIR:
+        os.makedirs(sandbox, exist_ok=True)
+        return sandbox
     base = marex_workspace(username)
     target = os.path.join(base, SERVER_PROJECT_DIRNAME)
     if not os.path.isdir(target):
@@ -155,12 +200,13 @@ class MarexcodeMixin:
 
     def _resolve_safe_path(self, rel_path: str) -> str | None:
         """Résout un chemin dans le sandbox, bloque l'échappement (../, symlinks)."""
-        if not rel_path:
+        rel = str(rel_path or "").replace("\\", "/")
+        if not rel:
             return None
         root = self._exec_root()
         if not root:
             return None
-        candidate = os.path.realpath(os.path.join(root, rel_path))
+        candidate = os.path.realpath(os.path.join(root, rel))
         real_root = os.path.realpath(root)
         if candidate == real_root or candidate.startswith(real_root + os.sep):
             return candidate
@@ -170,6 +216,22 @@ class MarexcodeMixin:
 
     def _exec_bash(self, command: str, timeout: int = None) -> dict:
         """Exécute une commande bash whitelistée avec timeout configurable."""
+        root = self._exec_root() or "."
+        if _local_bash():
+            t = min(timeout or EXEC_TIMEOUT, 60)
+            bash_path = os.environ.get("CETAS_BASH_PATH")
+            try:
+                if bash_path:
+                    proc = subprocess.run([bash_path, "-c", command], cwd=root,
+                                          capture_output=True, text=True, timeout=t)
+                else:
+                    proc = subprocess.run(command, shell=True, cwd=root,
+                                          capture_output=True, text=True, timeout=t)
+            except subprocess.TimeoutExpired:
+                return {"error": "Commande expirée après %ss" % t, "code": 124, "timed_out": True}
+            return {"stdout": (proc.stdout or "")[:EXEC_MAX_OUTPUT],
+                    "stderr": (proc.stderr or "")[:EXEC_MAX_OUTPUT],
+                    "code": proc.returncode, "timeout_used": False}
         import shlex
         try:
             tokens = shlex.split(command)
@@ -366,6 +428,7 @@ class MarexcodeMixin:
             self._respond_json({"error": f"Erreur interne: {e}"}, 500)
             return
         result["tool"] = tool
+        result["text"] = format_tool_output(tool, args, result)
         if "error" in result:
             status = result.get("code", 500) if result.get("code", 500) >= 400 else 500
             self._respond_json({"error": result["error"], "tool": tool}, status)
