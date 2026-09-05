@@ -8,6 +8,7 @@ Utilise uniquement stdlib + cryptography (déjà installé).
 """
 
 import os
+import re
 import sys
 import json
 import hashlib
@@ -54,6 +55,48 @@ BASE_DIR = os.environ.get("CETAS_BASE_DIR", os.path.dirname(os.path.dirname(os.p
 VAULT_PATH = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault", ".enc"))
 ENV_PATH = os.environ.get("CETAS_ENV_PATH", os.path.join(BASE_DIR, ".env"))
 CRYPTO_PATH = os.environ.get("CETAS_CRYPTO_PATH", os.path.join(BASE_DIR, "core", "linux", "crypto_linux.py"))
+
+# ── Static serving local (M0) : mode autonome sans nginx ───────────
+_SSI_RE = re.compile(r'<!--#include\s+file="([^"]+)"\s*-->')
+STATIC_MIME = {
+    ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
+    ".js": "application/javascript; charset=utf-8", ".mjs": "application/javascript; charset=utf-8",
+    ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png",
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".ico": "image/x-icon",
+    ".webp": "image/webp", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8",
+}
+
+
+def _static_dir() -> str:
+    return os.environ.get("CETAS_STATIC_DIR", os.path.join(BASE_DIR, "static"))
+
+
+def _static_content_type(path: str) -> str:
+    return STATIC_MIME.get(os.path.splitext(path)[1].lower(), "application/octet-stream")
+
+
+def _ssi_render(rel_path: str, _depth: int = 0) -> str:
+    """Assemble les directives <!--#include file="...">, relatives au fichier courant."""
+    if _depth > 10:
+        return ""
+    root = os.path.realpath(_static_dir())
+    full = os.path.realpath(os.path.join(root, rel_path))
+    if not (full == root or full.startswith(root + os.sep)):
+        return ""
+    try:
+        with open(full, "r", encoding="utf-8") as f:
+            content = f.read()
+    except OSError:
+        return ""
+
+    def _sub(m):
+        inc = m.group(1)
+        inc_rel = os.path.normpath(os.path.join(os.path.dirname(rel_path), inc))
+        if inc_rel.startswith(".."):
+            return ""
+        return _ssi_render(inc_rel, _depth + 1)
+
+    return _SSI_RE.sub(_sub, content)
 
 # ── Configuration providers ──────────────────────────────────────────
 PROVIDER_CONFIG = {
@@ -1061,6 +1104,41 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             _save_users_locked()
         self._respond_json({"ok": True})
 
+    def _serve_static(self) -> bool:
+        """Sert le frontend static/ en local (mode autonome, sans nginx)."""
+        path = urlparse(self.path).path
+        if path.startswith("/api/"):
+            return False
+        rel = path.lstrip("/")
+        if path == "/marexcode/" or rel == "" or path.endswith("/"):
+            rel = (rel or "") + "index.html"
+        norm = os.path.normpath(rel)
+        if norm.startswith(".."):
+            return False
+        root = os.path.realpath(_static_dir())
+        full = os.path.realpath(os.path.join(root, norm))
+        if not (full == root or full.startswith(root + os.sep)):
+            return False
+        if not os.path.isfile(full):
+            norm = "index.html"
+            full = os.path.join(root, norm)
+        try:
+            if norm.endswith(".html"):
+                data = _ssi_render(norm).encode("utf-8")
+            else:
+                with open(full, "rb") as f:
+                    data = f.read()
+        except OSError:
+            return False
+        self.send_response(200)
+        self.send_header("Content-Type", _static_content_type(norm))
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        if self._write_body:
+            self.wfile.write(data)
+        return True
+
     def do_GET(self):
         self._handle_get(write_body=True)
 
@@ -1134,6 +1212,8 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if path.startswith("/api/marexcode/sessions/"):
             sid = path[len("/api/marexcode/sessions/"):]
             self._marex_sessions_item_get(sid)
+            return
+        if self._serve_static():
             return
         self.send_response(404)
         self.end_headers()
