@@ -70,7 +70,7 @@ git checkout neva-pve
 python3 setup.py
 
 # Chiffrer les clés pour le proxy
-CETAS_VAULT_PASSWORD="votre_mdp" python3 proxy/encrypt_keys.py
+CETAS_VAULT_PASSWORD="votre_mdp" python3 server/encrypt_keys.py
 
 # Configurer les variables d'environnement
 cat > .env.docker << EOF

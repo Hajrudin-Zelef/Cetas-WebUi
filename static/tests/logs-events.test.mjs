@@ -9,7 +9,7 @@ import {
     levelBadge,
     renderCounters,
     renderIncidents
-} from "../features/logs-events.js";
+} from "../js/features/logs-events.js";
 
 // --- parsePeriod ---
 describe("parsePeriod", () => {

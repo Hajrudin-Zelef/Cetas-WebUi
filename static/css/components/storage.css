@@ -1413,6 +1413,11 @@ body.auth-locked .kiro-splash {
     opacity: 0.7;
     border-color: var(--text-secondary);
 }
+.dev-module-btn[data-module="marexcode"] {
+    opacity: 1;
+    border-style: solid;
+    color: var(--text);
+}
 .dev-toast {
     position: fixed;
     bottom: 24px;

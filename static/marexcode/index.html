@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Marexcode</title>
+<link rel="icon" href="/images/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/marexcode/css/marexcode.css?v=1.6">
+</head>
+<body>
+
+<div class="frame" id="main-frame">
+  <div class="app">
+    <!--#include file="components/sidebar.html" -->
+    <!--#include file="components/composer.html" -->
+
+    <!-- PANNEAU LATÉRAL DROIT : raisonnement + fichiers modifiés -->
+    <div class="side-panel" id="side-panel">
+      <div class="side-panel-header">
+        <span class="side-panel-header-title">
+          <span class="think-spinner-sm" id="side-panel-spinner" style="display:none"></span>
+          <span>Raisonnement</span>
+        </span>
+        <button class="side-panel-close" id="side-panel-close" aria-label="Fermer">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="side-panel-body" id="side-panel-body">
+        <div class="side-panel-empty" id="side-panel-empty">Le raisonnement et les fichiers modifiés par l'agent s'afficheront ici.</div>
+      </div>
+    </div>
+
+    <!-- VISIONNEUSE FICHIER -->
+    <div class="file-viewer-overlay" id="file-viewer">
+      <div class="file-viewer">
+        <div class="file-viewer-header">
+          <span class="fv-path" id="fv-path"></span>
+          <button class="fv-close" id="fv-close" aria-label="Fermer">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="file-viewer-body" id="fv-body"></div>
+      </div>
+    </div>
+
+    <!-- AUTH GATE -->
+    <div class="auth-gate" id="auth-gate">
+      <div class="auth-gate-card">
+        <h2>Connectez-vous</h2>
+        <p>Vous devez être connecté à Cetas pour utiliser Marexcode.</p>
+        <button class="auth-gate-btn" id="auth-login-btn">Se connecter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--#include file="components/settings.html" -->
+
+<script src="/js/config.js?v=3.9"></script>
+<script src="/js/data/models.js?v=4.0"></script>
+<script src="/js/services/auth.js?v=3.9"></script>
+<script src="/js/core/api.js?v=4.0"></script>
+<script src="/js/integrations/tool-search.js?v=4.0"></script>
+<script src="/js/vendor/marked.umd.min.js"></script>
+<script src="/js/vendor/purify.min.js"></script>
+<script type="module" src="/marexcode/js/app.js?v=1.7"></script>
+</body>
+</html>

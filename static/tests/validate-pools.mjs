@@ -7,12 +7,12 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const require = createRequire(import.meta.url);
-const R = require(new URL('../core/router.js', import.meta.url).pathname);
+const R = require(new URL('../js/core/router.js', import.meta.url).pathname);
 
 const sandbox = {};
 vm.createContext(sandbox);
 const MODELS_DATA = vm.runInContext(
-    fs.readFileSync(new URL('../../models.js', import.meta.url), 'utf-8') + ';\nMODELS_DATA',
+    fs.readFileSync(new URL('../js/data/models.js', import.meta.url), 'utf-8') + ';\nMODELS_DATA',
     sandbox
 );
 if (!MODELS_DATA) { console.error('models.js: MODELS_DATA introuvable'); process.exit(1); }

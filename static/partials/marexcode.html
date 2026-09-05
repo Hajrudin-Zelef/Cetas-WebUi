@@ -1,0 +1,44 @@
+<section id="marexcode-view" class="marex-view" style="display:none" hidden>
+  <div class="marex-topbar">
+    <button id="marex-back-btn" class="marex-btn" title="Retour">←</button>
+    <span class="marex-title">Marexcode</span>
+    <div class="marex-plus-wrap">
+      <button id="marex-plus-btn" class="marex-plus-btn" title="Choisir un modèle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <span id="marex-model-label" class="marex-model-label">Modèle</span>
+      <div id="marex-plus-dropdown" class="marex-plus-dropdown" style="display:none">
+        <div id="marex-model-tabs" class="plus-model-tabs">
+          <button type="button" class="plus-model-tab active" data-tab="text">Texte</button>
+          <button type="button" class="plus-model-tab" data-tab="image">Image</button>
+          <button type="button" class="plus-model-tab" data-tab="search">Recherche</button>
+        </div>
+        <div id="marex-model-list" class="plus-model-list"></div>
+      </div>
+    </div>
+    <select id="marex-session-select" class="marex-select"></select>
+    <button id="marex-new-session" class="marex-btn">Nouveau</button>
+  </div>
+  <div class="marex-body">
+    <aside class="marex-side">
+      <div class="marex-pane-title">Fichiers</div>
+      <div id="marex-tree" class="marex-tree"></div>
+      <div class="marex-pane-title">Sessions</div>
+      <div id="marex-sessions" class="marex-sessions"></div>
+    </aside>
+    <main class="marex-main">
+      <div id="marex-chat-log" class="marex-chat-log"></div>
+      <div class="marex-input-row">
+        <textarea id="marex-input" class="marex-input" rows="1"
+                  placeholder="Décrivez la tâche de code..."></textarea>
+        <button id="marex-send-btn" class="marex-send-btn">Envoyer</button>
+      </div>
+    </main>
+    <aside class="marex-side">
+      <div class="marex-pane-title">Fichier</div>
+      <div id="marex-file-viewer" class="marex-file-viewer">
+        <pre id="marex-file-content" class="marex-file-content"></pre>
+      </div>
+    </aside>
+  </div>
+</section>

@@ -1,0 +1,611 @@
+#!/usr/bin/env python3
+"""
+Marexcode Backend — © Marexsoft Corporation. Fondateur Kouassi Marius.
+
+Backend complet du module Marexcode (assistant de codage intégré à Cetas) :
+sandbox d'exécution d'outils (Bash/Read/Write/Edit/Grep), arborescence du
+workspace et sessions persistantes par utilisateur.
+
+Ce module expose un mixin (`MarexcodeMixin`) hérité par `ProxyHandler`
+(server.py). Toutes les méthodes portent sur `self` (le handler HTTP), ce qui
+donne accès à l'auth JWT, à `_respond_json`, aux headers/body de la requête.
+
+Routes couvertes :
+  - POST   /api/exec                         → outils sandbox
+  - GET    /api/marexcode/tree               → arborescence workspace
+  - GET    /api/marexcode/sessions           → liste des sessions
+  - GET    /api/marexcode/sessions/{id}      → session complète
+  - PUT    /api/marexcode/sessions/{id}      → sauvegarder une session
+  - DELETE /api/marexcode/sessions/{id}      → supprimer une session
+  - GET    /api/marexcode/project            → projet actif + liste
+  - PUT    /api/marexcode/project            → change le projet actif
+  - POST   /api/marexcode/upload             → importe un dossier (multipart)
+
+Sécurité : auth JWT obligatoire, sandbox par utilisateur (blocage `../` +
+symlinks), whitelist de commandes, interdits anti-bypass, timeout, output
+plafonné, rate-limit par utilisateur.
+"""
+
+import os
+import json
+import logging
+import subprocess
+
+log = logging.getLogger(__name__)
+
+DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
+
+# ── Sandbox d'exécution (outils Bash + fichiers) ───────────────────────
+EXEC_SANDBOX = os.environ.get("CETAS_PROJECT_DIR", os.environ.get("CETAS_BASE_DIR", DATA_DIR))
+EXEC_ALLOWLIST = {
+    "ls", "cat", "grep", "git", "node", "python3", "python", "npm", "npx",
+    "head", "tail", "wc", "find", "sed", "awk", "echo", "printf", "mkdir",
+    "touch", "rm", "cp", "mv", "pwd", "date", "whoami", "basename", "dirname",
+}
+# Commandes interdites (contournement de whitelist / élévation de privilèges)
+EXEC_BANNED_TOKENS = {"sudo", "su", "bash", "sh", "zsh", "curl", "wget"}
+# Interdits car exécution de code arbitraire malgré la whitelist du binaire
+EXEC_BANNED_FLAGS = {"-c", "--eval", "-e"}
+EXEC_TIMEOUT = int(os.environ.get("CETAS_EXEC_TIMEOUT", "10"))
+EXEC_MAX_OUTPUT = int(os.environ.get("CETAS_EXEC_MAX_OUTPUT", "200000"))
+
+# ── Upload de projet (dossier importé depuis le navigateur) ────────────
+UPLOAD_MAX_FILES = int(os.environ.get("CETAS_UPLOAD_MAX_FILES", "200"))
+UPLOAD_MAX_TOTAL_BYTES = int(os.environ.get("CETAS_UPLOAD_MAX_BYTES", str(20 * 1024 * 1024)))  # 20 Mo
+UPLOADED_PROJECT_DIRNAME = "uploaded_project"
+SERVER_PROJECT_DIRNAME = "server_project"
+PROJECT_SERVER = "Marexcode (serveur)"
+PROJECT_UPLOADED = "Projet importé"
+
+# Entrées techniques à la racine du workspace utilisateur, jamais migrées
+# vers server_project/ (métadonnées internes, pas du code utilisateur).
+_WORKSPACE_RESERVED_ENTRIES = {"sessions", "active_project.json", UPLOADED_PROJECT_DIRNAME, SERVER_PROJECT_DIRNAME}
+
+
+def marex_workspace(username: str) -> str:
+    """Répertoire de travail Marexcode d'un utilisateur (sandbox dédiée)."""
+    safe = username.replace("/", "_").replace("\\", "_").strip() or "anon"
+    d = os.path.join(DATA_DIR, "marexcode", safe)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def marex_sessions_dir(username: str) -> str:
+    """Répertoire des sessions Marexcode d'un utilisateur."""
+    safe = username.replace("/", "_").replace("\\", "_").strip() or "anon"
+    return os.path.join(DATA_DIR, "marexcode", safe, "sessions")
+
+
+def marex_active_project_path(username: str) -> str:
+    """Fichier stockant le nom du projet actif (serveur / importé) d'un utilisateur."""
+    return os.path.join(marex_workspace(username), "active_project.json")
+
+
+def marex_get_active_project(username: str) -> str:
+    """Lit le projet actif ; par défaut le workspace serveur."""
+    path = marex_active_project_path(username)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        name = data.get("active")
+        if name in (PROJECT_SERVER, PROJECT_UPLOADED):
+            return name
+    except Exception:
+        pass
+    return PROJECT_SERVER
+
+
+def marex_set_active_project(username: str, name: str) -> bool:
+    if name not in (PROJECT_SERVER, PROJECT_UPLOADED):
+        return False
+    path = marex_active_project_path(username)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"active": name}, f)
+    except Exception:
+        return False
+    return True
+
+
+def marex_server_project_root(username: str) -> str:
+    """Racine isolée du projet 'Marexcode (serveur)', distincte de sessions/
+    et des métadonnées internes. Migre automatiquement une seule fois les
+    fichiers qui traînaient historiquement à la racine du workspace."""
+    base = marex_workspace(username)
+    target = os.path.join(base, SERVER_PROJECT_DIRNAME)
+    if not os.path.isdir(target):
+        os.makedirs(target, exist_ok=True)
+        try:
+            for entry in os.listdir(base):
+                if entry in _WORKSPACE_RESERVED_ENTRIES or entry.startswith("."):
+                    continue
+                src = os.path.join(base, entry)
+                dst = os.path.join(target, entry)
+                if not os.path.exists(dst):
+                    os.rename(src, dst)
+        except Exception:
+            log.exception("migration server_project échouée pour user=%s", username)
+    return target
+
+
+def marex_project_root(username: str, project_name: str | None = None) -> str:
+    """Racine sandbox effective selon le projet actif de l'utilisateur."""
+    if project_name is None:
+        project_name = marex_get_active_project(username)
+    if project_name == PROJECT_UPLOADED:
+        base = marex_workspace(username)
+        d = os.path.join(base, UPLOADED_PROJECT_DIRNAME)
+        os.makedirs(d, exist_ok=True)
+        return d
+    return marex_server_project_root(username)
+
+
+class MarexcodeMixin:
+    # ── Résolution de chemins sandbox ──────────────────────────────────
+
+    def _exec_root(self) -> str:
+        return getattr(self, "_marex_root", None) or EXEC_SANDBOX
+
+    def _resolve_safe_path(self, rel_path: str) -> str | None:
+        """Résout un chemin dans le sandbox, bloque l'échappement (../, symlinks)."""
+        if not rel_path:
+            return None
+        candidate = os.path.realpath(os.path.join(self._exec_root(), rel_path))
+        root = os.path.realpath(self._exec_root())
+        if candidate == root or candidate.startswith(root + os.sep):
+            return candidate
+        return None
+
+    # ── Outils Bash ────────────────────────────────────────────────────
+
+    def _exec_bash(self, command: str) -> dict:
+        """Exécute une commande bash whitelistée avec timeout."""
+        import shlex
+        try:
+            tokens = shlex.split(command)
+        except ValueError as e:
+            return {"error": f"Commande invalide: {e}", "code": -1}
+        if not tokens:
+            return {"error": "Commande vide", "code": -1}
+        binary = os.path.basename(tokens[0])
+        if binary not in EXEC_ALLOWLIST:
+            return {"error": f"Commande non autorisée: {tokens[0]}", "code": 403}
+        for tok in tokens:
+            if tok in EXEC_BANNED_TOKENS:
+                return {"error": f"Commande interdite: {tok}", "code": 403}
+        for tok in tokens[1:]:
+            if tok in EXEC_BANNED_FLAGS:
+                return {"error": f"Flag interdit: {tok}", "code": 403}
+        try:
+            proc = subprocess.run(
+                tokens,
+                cwd=self._exec_root(),
+                capture_output=True,
+                text=True,
+                timeout=EXEC_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired:
+            return {"error": f"Timeout dépassé ({EXEC_TIMEOUT}s)", "code": 124, "timed_out": True}
+        except FileNotFoundError:
+            return {"error": f"Binaire introuvable: {binary}", "code": -1}
+        except Exception as e:
+            return {"error": f"Erreur exécution: {e}", "code": -1}
+        out = proc.stdout[:EXEC_MAX_OUTPUT]
+        err = proc.stderr[:EXEC_MAX_OUTPUT]
+        return {"stdout": out, "stderr": err, "code": proc.returncode}
+
+    # ── Outils fichiers ────────────────────────────────────────────────
+
+    def _exec_read(self, rel_path: str) -> dict:
+        path = self._resolve_safe_path(rel_path)
+        if not path:
+            return {"error": "Chemin hors sandbox", "code": 403}
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+        except FileNotFoundError:
+            return {"error": f"Fichier introuvable: {rel_path}", "code": 404}
+        except IsADirectoryError:
+            return {"error": f"Est un dossier: {rel_path}", "code": 400}
+        except Exception as e:
+            return {"error": f"Erreur lecture: {e}", "code": -1}
+        return {"content": content[:EXEC_MAX_OUTPUT]}
+
+    def _exec_write(self, rel_path: str, content: str) -> dict:
+        path = self._resolve_safe_path(rel_path)
+        if not path:
+            return {"error": "Chemin hors sandbox", "code": 403}
+        try:
+            parent = os.path.dirname(path)
+            if parent and not os.path.exists(parent):
+                os.makedirs(parent, exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content[:EXEC_MAX_OUTPUT])
+        except Exception as e:
+            return {"error": f"Erreur écriture: {e}", "code": -1}
+        return {"ok": True, "path": rel_path}
+
+    def _exec_edit(self, rel_path: str, old: str, new: str) -> dict:
+        path = self._resolve_safe_path(rel_path)
+        if not path:
+            return {"error": "Chemin hors sandbox", "code": 403}
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+            if old not in content:
+                return {"error": "Texte à remplacer introuvable", "code": 400}
+            updated = content.replace(old, new, 1)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(updated)
+        except FileNotFoundError:
+            return {"error": f"Fichier introuvable: {rel_path}", "code": 404}
+        except Exception as e:
+            return {"error": f"Erreur édition: {e}", "code": -1}
+        return {"ok": True, "path": rel_path}
+
+    def _exec_grep(self, pattern: str, rel_path: str) -> dict:
+        path = self._resolve_safe_path(rel_path or ".")
+        if not path:
+            return {"error": "Chemin hors sandbox", "code": 403}
+        try:
+            proc = subprocess.run(
+                ["grep", "-rn", "--color=never", pattern, path],
+                capture_output=True,
+                text=True,
+                timeout=EXEC_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired:
+            return {"error": f"Timeout dépassé ({EXEC_TIMEOUT}s)", "code": 124, "timed_out": True}
+        except Exception as e:
+            return {"error": f"Erreur grep: {e}", "code": -1}
+        return {"stdout": proc.stdout[:EXEC_MAX_OUTPUT], "code": proc.returncode}
+
+    # ── Endpoint POST /api/exec ────────────────────────────────────────
+
+    def _exec_tool(self):
+        """POST /api/exec — dispatch outils Marexcode (Bash + fichiers).
+        Body: {"tool": "Bash|Read|Write|Edit|Grep", "args": {...}}
+        """
+        from server import _rate_check
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if not _rate_check("exec:" + username, 60, 60):
+            self._respond_json({"error": "Trop de requêtes. Réessayez dans une minute."}, 429)
+            return
+        self._marex_root = marex_project_root(username)
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        tool = (data.get("tool") or "").strip().lower()
+        args = data.get("args") or {}
+        log.info("exec tool=%s user=%s", tool, username)
+        try:
+            if tool == "bash":
+                result = self._exec_bash(str(args.get("command", "")))
+            elif tool == "read":
+                result = self._exec_read(str(args.get("file_path", "")))
+            elif tool == "write":
+                result = self._exec_write(str(args.get("file_path", "")), str(args.get("content", "")))
+            elif tool == "edit":
+                result = self._exec_edit(str(args.get("file_path", "")), str(args.get("old", "")), str(args.get("new", "")))
+            elif tool == "grep":
+                result = self._exec_grep(str(args.get("pattern", "")), str(args.get("path", "")))
+            else:
+                self._respond_json({"error": f"Outil inconnu: {tool}"}, 400)
+                return
+        except Exception as e:
+            self._respond_json({"error": f"Erreur interne: {e}"}, 500)
+            return
+        result["tool"] = tool
+        if "error" in result:
+            status = result.get("code", 500) if result.get("code", 500) >= 400 else 500
+            self._respond_json({"error": result["error"], "tool": tool}, status)
+            return
+        self._respond_json(result)
+
+    # ── Arborescence du workspace ──────────────────────────────────────
+
+    def _marex_tree(self) -> list:
+        """Listing récursif du workspace, exclut .git/node_modules/fichiers cachés."""
+        root = self._exec_root()
+        out = []
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")
+                           and d not in ("node_modules", ".git")]
+            rel = os.path.relpath(dirpath, root)
+            for fn in sorted(filenames):
+                if fn.startswith("."):
+                    continue
+                full = os.path.join(dirpath, fn)
+                out.append({"path": os.path.join(rel, fn) if rel != "." else fn,
+                            "type": "file", "size": os.path.getsize(full)})
+        return sorted(out, key=lambda e: e["path"])
+
+    def _marex_tree_get(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        self._respond_json(self._marex_tree())
+
+    # ── Sessions persistantes ──────────────────────────────────────────
+
+    def _marex_session_path(self, sid: str) -> str | None:
+        if not sid or os.path.basename(sid) != sid or sid.startswith("."):
+            return None
+        root = os.path.realpath(self._session_root)
+        full = os.path.realpath(os.path.join(root, sid + ".json"))
+        if full != root and not full.startswith(root + os.sep):
+            return None
+        return full
+
+    def _marex_sessions_list(self):
+        root = os.path.realpath(self._session_root)
+        os.makedirs(root, exist_ok=True)
+        out = []
+        for fn in sorted(os.listdir(root)):
+            if fn.endswith(".json"):
+                try:
+                    with open(os.path.join(root, fn), "r", encoding="utf-8") as f:
+                        d = json.load(f)
+                    out.append({"id": fn[:-5], "title": d.get("title", ""),
+                                "model": d.get("model", ""),
+                                "date": d.get("date", ""),
+                                "project": d.get("project", PROJECT_SERVER)})
+                except Exception:
+                    pass
+        return out
+
+    def _marex_session_load(self, sid: str):
+        path = self._marex_session_path(sid)
+        if not path or not os.path.exists(path):
+            return None
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
+
+    def _marex_session_save(self, sid: str, data: dict):
+        path = self._marex_session_path(sid)
+        if not path:
+            return None
+        try:
+            parent = os.path.dirname(path)
+            if parent and not os.path.exists(parent):
+                os.makedirs(parent, exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False)
+        except Exception:
+            return None
+        return {"ok": True}
+
+    def _marex_session_delete(self, sid: str):
+        path = self._marex_session_path(sid)
+        if not path or not os.path.exists(path):
+            return None
+        try:
+            os.remove(path)
+        except Exception:
+            return None
+        return {"ok": True}
+
+    def _marex_sessions_list_get(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._session_root = marex_sessions_dir(username)
+        self._respond_json(self._marex_sessions_list())
+
+    def _marex_sessions_item_get(self, sid: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._session_root = marex_sessions_dir(username)
+        data = self._marex_session_load(sid)
+        if data is None:
+            self._respond_json({"error": "Session introuvable"}, 404)
+            return
+        self._respond_json(data)
+
+    def _marex_sessions_item_put(self, sid: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        try:
+            content_len = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+            data = json.loads(body)
+        except Exception:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        self._session_root = marex_sessions_dir(username)
+        if self._marex_session_save(sid, data) is None:
+            self._respond_json({"error": "ID de session invalide"}, 400)
+            return
+        self._respond_json({"ok": True})
+
+    def _marex_sessions_item_delete(self, sid: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._session_root = marex_sessions_dir(username)
+        if self._marex_session_delete(sid) is None:
+            self._respond_json({"error": "Session introuvable"}, 404)
+            return
+        self._respond_json({"ok": True})
+
+    # ── Projet actif (serveur / importé) ───────────────────────────────
+
+    def _marex_project_get(self):
+        """GET /api/marexcode/project — projet actif de l'utilisateur."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        active = marex_get_active_project(username)
+        uploaded_dir = os.path.join(marex_workspace(username), UPLOADED_PROJECT_DIRNAME)
+        has_uploaded = os.path.isdir(uploaded_dir) and bool(os.listdir(uploaded_dir))
+        self._respond_json({
+            "active": active,
+            "projects": [
+                {"name": PROJECT_SERVER, "available": True},
+                {"name": PROJECT_UPLOADED, "available": has_uploaded},
+            ],
+        })
+
+    def _marex_project_put(self):
+        """PUT /api/marexcode/project — change le projet actif.
+        Body: {"active": "Marexcode (serveur)" | "Projet importé"}
+        """
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        try:
+            content_len = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+            data = json.loads(body)
+        except Exception:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        name = str(data.get("active", ""))
+        if name == PROJECT_UPLOADED:
+            uploaded_dir = os.path.join(marex_workspace(username), UPLOADED_PROJECT_DIRNAME)
+            if not os.path.isdir(uploaded_dir) or not os.listdir(uploaded_dir):
+                self._respond_json({"error": "Aucun projet importé pour l'instant. Importez un dossier d'abord."}, 400)
+                return
+        if not marex_set_active_project(username, name):
+            self._respond_json({"error": "Nom de projet invalide"}, 400)
+            return
+        self._respond_json({"ok": True, "active": name})
+
+    # ── Upload d'un dossier de projet ───────────────────────────────────
+
+    def _marex_upload_project(self):
+        """POST /api/marexcode/upload — importe un dossier (multipart/form-data).
+        Chaque fichier envoyé porte un header Content-Disposition avec un
+        `filename` contenant le chemin relatif (ex: "src/app.js"), tel que
+        produit par webkitdirectory côté navigateur.
+        Remplace entièrement le contenu de uploaded_project/ et active ce
+        projet automatiquement en cas de succès.
+        """
+        from server import _rate_check
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if not _rate_check("upload:" + username, 5, 300):
+            self._respond_json({"error": "Trop d'imports. Réessayez dans quelques minutes."}, 429)
+            return
+
+        content_type = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in content_type:
+            self._respond_json({"error": "Content-Type multipart/form-data attendu"}, 400)
+            return
+        boundary = None
+        for part in content_type.split(";"):
+            part = part.strip()
+            if part.startswith("boundary="):
+                boundary = part[len("boundary="):].strip('"')
+        if not boundary:
+            self._respond_json({"error": "Boundary multipart manquant"}, 400)
+            return
+
+        content_len = int(self.headers.get("Content-Length", 0))
+        if content_len <= 0 or content_len > UPLOAD_MAX_TOTAL_BYTES + (1024 * 1024):
+            self._respond_json({"error": f"Upload trop volumineux (max {UPLOAD_MAX_TOTAL_BYTES // (1024*1024)} Mo)"}, 413)
+            return
+        body = self.rfile.read(content_len)
+
+        try:
+            files = _parse_multipart_files(body, boundary.encode("utf-8"))
+        except Exception as e:
+            self._respond_json({"error": f"Corps multipart invalide: {e}"}, 400)
+            return
+
+        if not files:
+            self._respond_json({"error": "Aucun fichier reçu"}, 400)
+            return
+        if len(files) > UPLOAD_MAX_FILES:
+            self._respond_json({"error": f"Trop de fichiers (max {UPLOAD_MAX_FILES})"}, 400)
+            return
+        total_bytes = sum(len(f["content"]) for f in files)
+        if total_bytes > UPLOAD_MAX_TOTAL_BYTES:
+            self._respond_json({"error": f"Taille totale trop importante (max {UPLOAD_MAX_TOTAL_BYTES // (1024*1024)} Mo)"}, 400)
+            return
+
+        base = marex_workspace(username)
+        target_root = os.path.join(base, UPLOADED_PROJECT_DIRNAME)
+
+        # Valide tous les chemins AVANT d'écrire quoi que ce soit (atomique en intention).
+        resolved = []
+        for f in files:
+            rel = f["filename"].replace("\\", "/").lstrip("/")
+            # Retire un éventuel dossier racine unique ajouté par webkitdirectory
+            # (ex: "mon-projet/src/app.js" → on garde tel quel, c'est déjà relatif au dossier choisi)
+            candidate = os.path.realpath(os.path.join(target_root, rel))
+            real_root = os.path.realpath(target_root)
+            if candidate != real_root and not candidate.startswith(real_root + os.sep):
+                self._respond_json({"error": f"Chemin invalide dans l'upload: {rel}"}, 400)
+                return
+            if os.path.basename(rel).startswith("."):
+                continue  # ignore fichiers cachés
+            resolved.append((candidate, f["content"]))
+
+        try:
+            # Remplace entièrement le projet importé précédent.
+            import shutil
+            if os.path.isdir(target_root):
+                shutil.rmtree(target_root)
+            os.makedirs(target_root, exist_ok=True)
+            for path, content in resolved:
+                parent = os.path.dirname(path)
+                if parent and not os.path.exists(parent):
+                    os.makedirs(parent, exist_ok=True)
+                with open(path, "wb") as out:
+                    out.write(content)
+        except Exception as e:
+            self._respond_json({"error": f"Erreur écriture upload: {e}"}, 500)
+            return
+
+        marex_set_active_project(username, PROJECT_UPLOADED)
+        log.info("upload project user=%s files=%d bytes=%d", username, len(resolved), total_bytes)
+        self._respond_json({"ok": True, "files": len(resolved), "bytes": total_bytes, "active": PROJECT_UPLOADED})
+
+
+def _parse_multipart_files(body: bytes, boundary: bytes) -> list:
+    """Parse minimal d'un corps multipart/form-data : renvoie une liste de
+    {"filename": str, "content": bytes} pour chaque part porteuse d'un
+    `filename` (les champs simples sans filename sont ignorés).
+    """
+    delimiter = b"--" + boundary
+    parts = body.split(delimiter)
+    files = []
+    for part in parts:
+        part = part.strip(b"\r\n")
+        if not part or part == b"--":
+            continue
+        if b"\r\n\r\n" not in part:
+            continue
+        header_blob, content = part.split(b"\r\n\r\n", 1)
+        # Le dernier boundary se termine par "--" ; retire ce suffixe du contenu si présent.
+        if content.endswith(b"\r\n"):
+            content = content[:-2]
+        headers_text = header_blob.decode("utf-8", errors="replace")
+        filename = None
+        for line in headers_text.split("\r\n"):
+            if line.lower().startswith("content-disposition:") and "filename=" in line:
+                # Extrait filename="..."
+                marker = "filename=\""
+                idx = line.find(marker)
+                if idx != -1:
+                    rest = line[idx + len(marker):]
+                    end = rest.find("\"")
+                    if end != -1:
+                        filename = rest[:end]
+        if filename:
+            files.append({"filename": filename, "content": content})
+    return files

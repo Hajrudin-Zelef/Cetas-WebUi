@@ -1,4 +1,4 @@
-"""Tests for proxy routing logic in proxy/server.py.
+"""Tests for proxy routing logic in server/server.py.
 
 Covers: path allowlisting, provider config, CORS origin, rate limiting.
 Never starts a real HTTP server — all functions are called directly.
@@ -19,9 +19,9 @@ os.environ["CETAS_DATA_DIR"] = os.path.join(_test_tmpdir, "data")
 os.makedirs(os.environ["CETAS_DATA_DIR"], exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Import setup — point at proxy/ so `import server` resolves
+# Import setup — point at server/ so `import server` resolves
 # ---------------------------------------------------------------------------
-_PROXY_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "proxy")
+_PROXY_DIR = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, os.path.abspath(_PROXY_DIR))
 
 import server  # noqa: E402

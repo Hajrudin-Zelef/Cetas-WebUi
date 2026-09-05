@@ -1,4 +1,4 @@
-"""Tests for the authentication system in proxy/server.py.
+"""Tests for the authentication system in server/server.py.
 
 Covers: password hashing (scrypt), JWT create/validate, user management.
 All file I/O uses tmp_path — never touches real data files.
@@ -20,9 +20,9 @@ os.environ["CETAS_DATA_DIR"] = os.path.join(_test_tmpdir, "data")
 os.makedirs(os.environ["CETAS_DATA_DIR"], exist_ok=True)
 
 # ---------------------------------------------------------------------------
-# Import setup — point at proxy/ so `import server` resolves
+# Import setup — point at server/ so `import server` resolves
 # ---------------------------------------------------------------------------
-_PROXY_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "proxy")
+_PROXY_DIR = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, os.path.abspath(_PROXY_DIR))
 
 import server  # noqa: E402  (module-level, after path fix)

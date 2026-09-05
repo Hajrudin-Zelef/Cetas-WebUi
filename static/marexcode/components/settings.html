@@ -1,0 +1,119 @@
+<!-- ============ VUE SETTINGS ============ -->
+<div class="frame" id="settings-frame" style="display:none;">
+  <div class="app">
+    <div class="settings-view open">
+
+      <div class="settings-nav">
+        <button class="settings-back" id="settings-back-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          Retour
+        </button>
+
+        <div class="settings-cat-label">Personnel</div>
+        <button class="settings-nav-item active" data-panel="profil">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+          Profil
+        </button>
+        <button class="settings-nav-item" data-panel="raccourcis">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M8 13h8"/></svg>
+          Raccourcis clavier
+        </button>
+
+        <div class="settings-cat-label">Données</div>
+        <button class="settings-nav-item" data-panel="donnees">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+          Sessions
+        </button>
+      </div>
+
+      <div class="settings-content">
+
+        <!-- PROFIL -->
+        <div class="settings-panel active" data-content="profil">
+          <h1 class="settings-page-title">Profil</h1>
+
+          <div class="settings-group-label">Compte</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Nom d'utilisateur</h3>
+                <p>Votre identifiant de connexion Cetas.</p>
+              </div>
+              <span class="settings-row-value" id="set-username">—</span>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Rôle</h3>
+                <p>Niveau d'accès sur la plateforme.</p>
+              </div>
+              <span class="settings-row-value" id="set-role">—</span>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Application</h3>
+                <p>Marexcode — Assistant de codage intégré à Cetas.</p>
+              </div>
+              <span class="settings-row-status">v1.0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RACCOURCIS -->
+        <div class="settings-panel" data-content="raccourcis">
+          <h1 class="settings-page-title">Raccourcis clavier</h1>
+
+          <div class="settings-group-label">Composer</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text"><h3>Envoyer le message</h3></div>
+              <span class="settings-row-value">Entrée</span>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text"><h3>Saut de ligne</h3></div>
+              <span class="settings-row-value">Maj + Entrée</span>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text"><h3>Arrêter la génération</h3></div>
+              <span class="settings-row-value">Échap</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SESSIONS -->
+        <div class="settings-panel" data-content="donnees">
+          <h1 class="settings-page-title">Sessions</h1>
+
+          <div class="settings-group-label">Stockage</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Discussions enregistrées</h3>
+                <p>Vos sessions de codage sont stockées sur le serveur par utilisateur.</p>
+              </div>
+              <span class="settings-row-value" id="set-sessions-count">—</span>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Supprimer toutes les sessions</h3>
+                <p>Efface définitivement toutes vos discussions Marexcode.</p>
+              </div>
+              <button class="settings-btn danger" id="set-clear-all">Tout supprimer</button>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Compte</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Se déconnecter</h3>
+                <p>Vous reconnecter à Cetas sera nécessaire pour continuer.</p>
+              </div>
+              <button class="settings-btn danger" id="set-logout">Déconnexion</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

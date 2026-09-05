@@ -1,0 +1,71 @@
+/* ============ Module Marexcode (vue plein écran) ============ */
+body.marexcode-mode .sidebar,
+body.marexcode-mode .main,
+body.marexcode-mode .right-panel,
+body.marexcode-mode #side-panel-toolbar { display:none !important; }
+body.marexcode-mode #marexcode-view { display:flex !important; }
+
+.marex-view {
+  position: fixed; inset: 0; z-index: 5000;
+  flex-direction: column; background: var(--bg, #f7f9fc); color: var(--text);
+}
+.marex-topbar {
+  display:flex; align-items:center; gap:12px; padding:10px 16px;
+  border-bottom:1px solid var(--border); background: var(--panel-bg, #fff);
+}
+.marex-title { font-weight:700; font-size:1rem; margin-right:8px; }
+.marex-btn { padding:6px 12px; border:1px solid var(--border); border-radius:6px;
+  background:var(--btn-bg); color:var(--btn-text); cursor:pointer; }
+.marex-select { padding:5px 8px; border:1px solid var(--border); border-radius:6px;
+  background:var(--btn-bg); color:var(--text); max-width:200px; }
+.marex-plus-wrap { position:relative; display:flex; align-items:center; gap:8px; }
+.marex-plus-btn {
+  width:28px; height:28px; min-width:28px; padding:0; border-radius:50%;
+  border:1px solid var(--border-input, var(--border)); background:var(--bg-input, var(--btn-bg));
+  color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all 0.15s;
+}
+.marex-plus-btn:hover { color:var(--text); border-color:var(--text-secondary); }
+.marex-plus-btn.open { background:var(--accent, #2563eb); color:#fff; transform:rotate(45deg); }
+.marex-model-label { font-size:0.82rem; color:var(--text); max-width:180px; overflow:hidden;
+  text-overflow:ellipsis; white-space:nowrap; }
+.marex-plus-dropdown {
+  position:absolute; top:34px; left:0; z-index:6000; width:300px; max-height:420px;
+  background:var(--panel-bg, #fff); border:1px solid var(--border); border-radius:10px;
+  padding:10px; box-shadow:0 8px 30px rgba(0,0,0,0.18); overflow:visible;
+}
+body.dark .marex-plus-dropdown { box-shadow:0 8px 30px rgba(0,0,0,0.5); }
+.marex-body { flex:1; display:flex; min-height:0; }
+.marex-side { width:260px; min-width:200px; overflow:auto; padding:10px;
+  border-right:1px solid var(--border); }
+.marex-main { flex:1; display:flex; flex-direction:column; min-width:0; }
+.marex-pane-title { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;
+  color:var(--text-secondary); margin:10px 0 6px; }
+.marex-tree-item { padding:3px 6px; border-radius:4px; cursor:pointer; font-size:0.85rem;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.marex-tree-item:hover { background:var(--hover-bg, rgba(0,0,0,0.05)); }
+.marex-chat-log { flex:1; overflow:auto; padding:16px; }
+.marex-msg { margin-bottom:12px; max-width:78%; padding:10px 14px; border-radius:10px;
+  font-size:0.9rem; white-space:pre-wrap; }
+.marex-msg.user { margin-left:auto; background:var(--user-msg-bg, #dbeafe); }
+.marex-msg.assistant { background:var(--assistant-msg-bg, #fff); border:1px solid var(--border); }
+.marex-tool { margin-bottom:8px; border:1px solid var(--border); border-radius:6px;
+  padding:8px 10px; font-size:0.8rem; }
+.marex-tool-name { font-weight:600; }
+.marex-tool pre { margin:6px 0 0; max-height:160px; overflow:auto; font-size:0.75rem; }
+.marex-think { margin-bottom:12px; border:1px dashed var(--border); border-radius:8px;
+  padding:8px 12px; background:rgba(128,128,128,0.06); }
+.marex-think summary { cursor:pointer; font-size:0.78rem; font-weight:600;
+  color:var(--text-secondary); user-select:none; }
+.marex-think-content { margin-top:6px; font-size:0.8rem; line-height:1.5;
+  color:var(--text-secondary); white-space:pre-wrap; }
+.marex-input-row { display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
+.marex-input { flex:1; resize:none; border:1px solid var(--border); border-radius:8px;
+  padding:10px; font:inherit; }
+.marex-send-btn { padding:8px 16px; border:none; border-radius:8px; cursor:pointer;
+  background:var(--accent, #2563eb); color:#fff; }
+.marex-file-viewer { flex:1; overflow:auto; }
+.marex-file-content { padding:12px; font-size:0.8rem; line-height:1.5; white-space:pre; }
+
+/* Bouton sidebar Marexcode (module actif) */
+.dev-module-btn[data-module="marexcode"] { opacity: 1; border-style: solid; color: var(--text); }

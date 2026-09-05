@@ -1,0 +1,94 @@
+    <script src="js/config.js?v=3.9"></script>
+    <script src="js/vendor/pdf.min.js" defer></script>
+    <script src="js/vendor/marked.umd.min.js"></script>
+    <script src="js/vendor/purify.min.js"></script>
+    <script src="js/vendor/jszip.min.js" defer></script>
+    <script src="js/vendor/mammoth.browser.min.js" defer></script>
+    <script src="js/vendor/xlsx.full.min.js" defer></script>
+    <script src="js/data/models.js?v=4.0"></script>
+    <script src="js/core/api.js?v=4.0"></script>
+    <script src="js/integrations/search-engine.js?v=3.16"></script>
+    <script src="js/integrations/tool-search.js?v=3.9"></script>
+    <script src="js/services/filemanager.js?v=3.9"></script>
+    <script src="js/features/faq.js?v=3.9"></script>
+    <script src="js/services/auth.js?v=3.9"></script>
+    <script src="js/core/router.js?v=4.0"></script>
+    <script src="js/ui/right-panel.js?v=3.9" defer></script>
+    <script src="js/features/model-catalog.js?v=3.9" defer></script>
+    <script type="module" src="js/ui/ocean.js?v=3.9"></script>
+    <script type="module" src="js/core/app.js?v=4.0"></script>
+    <script type="module" src="js/features/marexcode.js?v=4.1"></script>
+    <script src="js/services/config-providers.js?v=4.0"></script>
+    <script src="js/features/conversations.js?v=3.9"></script>
+    <script src="js/ui/plus-menu.js?v=3.9"></script>
+    <!-- Notification mise à jour -->
+    <div id="update-toast" class="update-toast" style="display:none" role="status" aria-live="polite">
+        <span class="update-toast-link">
+            <svg class="update-toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+            <span class="update-toast-text">Mise à jour&nbsp;<strong id="update-toast-version"></strong>&nbsp;disponible. Cliquez pour en savoir plus</span>
+        </span>
+        <button type="button" class="update-toast-close" aria-label="Fermer">&times;</button>
+    </div>
+    <!-- Overlay de connexion -->
+    <div id="login-overlay" class="login-overlay" style="display:none">
+        <div class="login-card">
+            <img src="images/Cetas42.png" alt="Cetas" class="login-logo">
+            <h1 class="login-title">Cetas</h1>
+            <p class="login-subtitle">Assistant IA multi-modèles</p>
+            <form id="login-form" class="login-form">
+                <div class="login-field">
+                    <label for="login-username">Nom d'utilisateur</label>
+                    <input type="text" id="login-username" autocomplete="username" placeholder="admin" autofocus>
+                </div>
+                <div class="login-field">
+                    <label for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••">
+                </div>
+                <div id="login-error" class="login-error" style="display:none"></div>
+                <button type="submit" id="login-btn" class="login-btn">Se connecter</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale utilisateur (admin) -->
+    <div id="user-modal-overlay" class="sp-modal-overlay" style="display:none">
+        <div class="sp-modal user-modal">
+            <h3 id="user-modal-title">Ajouter un utilisateur</h3>
+            <div class="sp-modal-body">
+                <div class="user-field">
+                    <label for="user-modal-username">Nom d'utilisateur</label>
+                    <input type="text" id="user-modal-username" class="sp-modal-field" placeholder="utilisateur">
+                </div>
+                <div class="user-field">
+                    <label for="user-modal-email">Email</label>
+                    <input type="email" id="user-modal-email" class="sp-modal-field" placeholder="user@cetas.local">
+                </div>
+                <div class="user-field">
+                    <label for="user-modal-password">Mot de passe</label>
+                    <input type="password" id="user-modal-password" class="sp-modal-field" placeholder="Laisser vide pour ne pas changer">
+                </div>
+                <div class="user-field">
+                    <label for="user-modal-role">Rôle</label>
+                    <select id="user-modal-role" class="sp-modal-field">
+                        <option value="user">Utilisateur</option>
+                        <option value="admin">Administrateur</option>
+                    </select>
+                </div>
+            </div>
+            <div class="sp-modal-actions">
+                <button type="button" id="user-modal-delete" class="models-save-btn" style="display:none;background:var(--red)">Supprimer</button>
+                <button type="button" id="user-modal-cancel" class="models-cancel-btn">Annuler</button>
+                <button type="button" id="user-modal-save" class="models-save-btn">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js').catch(function(err) {
+                console.warn('SW registration failed:', err);
+            });
+        });
+    }
+    </script>

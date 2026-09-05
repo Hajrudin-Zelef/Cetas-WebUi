@@ -1,0 +1,586 @@
+    <!-- Modale Rôle -->
+    <div id="sp-modal-overlay" class="sp-modal-overlay" style="display:none">
+        <div class="sp-modal">
+            <h3 id="sp-modal-title">Nouveau rôle</h3>
+            <label class="sp-modal-label" for="sp-modal-nom">Nom</label>
+            <input type="text" id="sp-modal-nom" class="sp-modal-input" placeholder="Ex : Assistant technique" required>
+            <label class="sp-modal-label" for="sp-modal-contenu">Contenu</label>
+            <div class="sp-modal-textarea-wrap">
+                <textarea id="sp-modal-contenu" class="sp-modal-textarea" rows="8" placeholder="Tu es un assistant..." required></textarea>
+                <button id="sp-modal-optimize" class="sp-modal-enhance-inside"><svg width="12" height="12" viewBox="0 0 24 24"><use href="images/icons.svg#icon-sparkle"/></svg> Améliorer avec l'IA</button>
+            </div>
+            <div class="sp-modal-actions">
+                <button id="sp-modal-delete" class="cat-modal-delete-btn" style="display:none">Supprimer</button>
+                <span class="sp-modal-spacer"></span>
+                <button id="sp-modal-cancel" class="sp-modal-btn sp-modal-btn-cancel">&#8249; Retour</button>
+                <button id="sp-modal-save" class="sp-modal-btn sp-modal-btn-save">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Prompt enregistré -->
+    <div id="pr-modal-overlay" class="sp-modal-overlay" style="display:none">
+        <div class="sp-modal">
+            <h3 id="pr-modal-title">Nouveau Prompt</h3>
+            <label class="sp-modal-label" for="pr-modal-nom">Nom</label>
+            <input type="text" id="pr-modal-nom" class="sp-modal-input" placeholder="Ex : Résume ce texte" required>
+            <label class="sp-modal-label" for="pr-modal-contenu">Contenu</label>
+            <div class="sp-modal-textarea-wrap">
+                <textarea id="pr-modal-contenu" class="sp-modal-textarea" rows="8" placeholder="Résume le texte suivant en 3 points..." required></textarea>
+                <button id="pr-modal-enhance" class="sp-modal-enhance-inside"><svg width="12" height="12" viewBox="0 0 24 24"><use href="images/icons.svg#icon-sparkle"/></svg> Améliorer avec l'IA</button>
+            </div>
+            <div class="sp-modal-actions">
+                <button id="pr-modal-delete" class="cat-modal-delete-btn" style="display:none">Supprimer</button>
+                <span class="sp-modal-spacer"></span>
+                <button id="pr-modal-cancel" class="sp-modal-btn sp-modal-btn-cancel">&#8249; Retour</button>
+                <button id="pr-modal-save" class="sp-modal-btn sp-modal-btn-save">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modale Configuration -->
+    <div id="apikeys-modal-overlay" class="sp-modal-overlay" style="display:none">
+        <div class="sp-modal apikeys-modal">
+            <div class="apikeys-tabs">
+                <button class="apikeys-tab active" data-tab="apimodeles">API et Modèles</button>
+                <button class="apikeys-tab" data-tab="models">Fonctionnalités</button>
+                <button class="apikeys-tab" data-tab="budget">Budget</button>
+                <button class="apikeys-tab" data-tab="quotas">Quotas</button>
+                <button class="apikeys-tab" data-tab="appearance">Apparence</button>
+                <button class="apikeys-tab" data-tab="stockage">Stockage</button>
+                <button class="apikeys-tab" data-tab="users" id="tab-users" style="display:none">Utilisateurs</button>
+                <div class="apikeys-tabs-spacer"></div>
+                <button class="apikeys-tab" data-tab="conversation">Conversation</button>
+                <button class="apikeys-tab" data-tab="faq">FAQ</button>
+                <button class="apikeys-tab" data-tab="statistiques">Statistiques</button>
+                <button class="apikeys-tab" data-tab="logs">Logs et événements</button>
+                <button class="apikeys-tab" data-tab="share">Partager</button>
+            </div>
+            <div class="apikeys-tab-content">
+                <button type="button" id="apikeys-close-btn" class="apikeys-close-btn" title="Fermer">&times;</button>
+                <!-- Panel API et Modèles -->
+                <div class="apikeys-panel active" id="panel-apimodeles">
+                    <h3>API et Modèles</h3>
+                    <p class="apikey-intro">Sélectionnez un fournisseur pour configurer sa clé API et choisir les modèles à afficher dans le sélecteur principal.</p>
+                    <div class="apikeys-panel-body">
+                        <div id="providers-tabs" class="providers-tabs"></div>
+                        <div id="provider-content" class="provider-content">
+                            <!-- Sections par fournisseur, rendues par JS -->
+                        </div>
+                    </div>
+                    <div class="models-save-row">
+                        <button type="button" id="apimodeles-cancel-btn" class="models-cancel-btn">Annuler</button>
+                        <button type="button" id="apimodeles-save-btn" class="models-save-btn" disabled>Sauvegarder</button>
+                    </div>
+                </div>
+                <!-- Panel Fonctionnalités -->
+                <div class="apikeys-panel" id="panel-models">
+                    <h3>Fonctionnalités</h3>
+                    <p class="apikey-intro">Choisissez le fournisseur à utiliser pour chaque fonctionnalité.</p>
+                    <div class="apikeys-panel-body">
+                    <div class="audio-setting-row">
+                        <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></span>
+                        <label class="audio-setting-label" for="audio-tts-provider">Synthèse vocale <span class="rp-hint-btn custom-select-info" data-tooltip="Fournisseur utilisé pour lire les réponses à haute voix.&#10;&#10;Recommandé : Gemini 2.5 Flash TTS, voix très naturelle pour un coût réduit.">?</span></label>
+                        <select id="audio-tts-provider" class="audio-setting-select"></select>
+                    </div>
+                    <div class="audio-setting-row">
+                        <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span>
+                        <label class="audio-setting-label" for="audio-stt-provider">Transcription (micro) <span class="rp-hint-btn custom-select-info" data-tooltip="Fournisseur utilisé pour transcrire votre voix en texte.&#10;&#10;Recommandé : Voxtral (Mistral), précis, rapide et économique.">?</span></label>
+                        <select id="audio-stt-provider" class="audio-setting-select"></select>
+                    </div>
+                    <div class="audio-setting-row">
+                        <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8L19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2L19 5"/><path d="M11 6.2L9.7 5"/><path d="M11 11.8L9.7 13"/><path d="M2 21l9-9"/></svg></span>
+                        <label class="audio-setting-label" for="enhance-provider">Amélioration de prompts/rôles <span class="rp-hint-btn custom-select-info" data-tooltip="Modèle utilisé pour améliorer automatiquement vos prompts et rôles.&#10;&#10;Recommandé : un petit ou moyen modèle peut être suffisant. Un modèle plus performant avec raisonnement pourrait être nécessaire pour une meilleure compréhension en cas d'idées décousues.">?</span></label>
+                        <select id="enhance-provider" class="audio-setting-select"></select>
+                    </div>
+                    <div class="audio-setting-row">
+                        <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/><line x1="4" y1="18" x2="10" y2="18"/></svg></span>
+                        <label class="audio-setting-label" for="summary-model">Résumé IA <span class="rp-hint-btn custom-select-info" data-tooltip="Modèle utilisé pour générer des résumés de conversation.&#10;&#10;Recommandé : un modèle moyen avec raisonnement, pour des synthèses fidèles et bien structurées.">?</span></label>
+                        <select id="summary-model" class="audio-setting-select"></select>
+                    </div>
+                    <div class="audio-setting-row">
+                        <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></span>
+                        <label class="audio-setting-label" for="title-model">Génération du titre <span class="rp-hint-btn custom-select-info" data-tooltip="Modèle utilisé pour générer le titre de la conversation après le premier échange. « Aucun » utilise les premiers mots du message.&#10;&#10;Recommandé : un modèle très petit et très peu coûteux sans raisonnement suffit largement.">?</span></label>
+                        <select id="title-model" class="audio-setting-select"></select>
+                    </div>
+                    <div class="audio-setting-row">
+                        <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                        <label class="audio-setting-label" for="error-explainer-model">Analyse des erreurs <span class="rp-hint-btn custom-select-info" data-tooltip="Modèle utilisé pour expliquer les erreurs rencontrées lors des appels API.&#10;&#10;Recommandé : un petit ou moyen modèle rapide, sans raisonnement.">?</span></label>
+                        <select id="error-explainer-model" class="audio-setting-select"></select>
+                    </div>
+                    <div id="local-fallback-row" class="local-fallback-box" style="display:none">
+                        <div class="audio-setting-row">
+                            <label class="audio-setting-label" for="local-fallback-model">Si le modèle local n'est pas disponible <span class="rp-hint-btn custom-select-info" data-tooltip="Modèle utilisé automatiquement à la place de votre modèle local lorsque celui-ci est injoignable (serveur Ollama ou LM Studio arrêté, modèle non chargé, port fermé, etc.).&#10;&#10;Évite d'avoir à changer manuellement de modèle quand votre instance locale n'est pas en cours d'exécution. Choisir « Aucun » désactive le repli : un message d'erreur s'affichera à la place.">?</span></label>
+                            <select id="local-fallback-model" class="audio-setting-select">
+                                <option value="" disabled selected>Sélectionner le modèle de secours</option>
+                                <option value="none">Aucun</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="models-error" class="models-error" style="display:none"></div>
+                    </div>
+                    <div class="models-save-row">
+                        <button type="button" id="models-cancel-btn" class="models-cancel-btn">Annuler</button>
+                        <button type="button" id="models-save-btn" class="models-save-btn" disabled>Sauvegarder</button>
+                    </div>
+                </div>
+                <!-- Panel Catalogue (fusionné dans « API et Modèles ») -->
+                <input type="hidden" id="catalog-search" value="">
+                <div id="catalog-list" style="display:none"></div>
+                <!-- Panel Budget -->
+                <div class="apikeys-panel" id="panel-budget">
+                    <h3>Budget</h3>
+                    <p class="apikey-intro">Suivez vos dépenses cumulées sur la période choisie.</p>
+                    <div class="apikeys-panel-body">
+                    <div class="audio-setting-row">
+                        <label class="audio-setting-label" for="budget-enabled">Activer le suivi</label>
+                        <label class="budget-toggle">
+                            <input type="checkbox" id="budget-enabled">
+                            <span class="budget-toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div id="budget-settings" style="display:none">
+                        <div class="audio-setting-row">
+                            <label class="audio-setting-label" for="budget-period">Période <span class="rp-hint-btn custom-select-info" data-tooltip="Fenêtre de temps sur laquelle vos dépenses sont totalisées.&#10;&#10;Jour : aujourd'hui (00h00 à 23h59).&#10;Semaine : du lundi au dimanche en cours.&#10;Mois : du 1er au dernier jour du mois en cours.&#10;&#10;Le compteur repart automatiquement à zéro au début de chaque nouvelle période.">?</span></label>
+                            <select id="budget-period" class="audio-setting-select budget-field">
+                                <option value="day">Jour</option>
+                                <option value="week">Semaine</option>
+                                <option value="month" selected>Mois</option>
+                            </select>
+                        </div>
+                        <div class="audio-setting-row">
+                            <label class="audio-setting-label" for="budget-amount">Montant max <span class="budget-amount-suffix" id="budget-amount-suffix">/ mois</span></label>
+                            <div class="budget-amount-wrapper">
+                                <span class="budget-amount-prefix">$</span>
+                                <input type="number" id="budget-amount" class="sp-modal-input budget-field" min="0" step="0.5" placeholder="10.00">
+                            </div>
+                        </div>
+                        <div id="budget-preview" class="budget-preview" style="display:none">
+                            <p class="budget-preview-label">Consommation période actuelle (<span id="budget-period-label" style="font-weight:400"></span>)</p>
+                            <div class="budget-progress-bar">
+                                <div class="budget-progress-fill" id="budget-fill"></div>
+                            </div>
+                            <p class="budget-progress-text" id="budget-text"></p>
+                        </div>
+                        <p class="budget-help-note">Lorsque le montant maximum est atteint, une alerte s'affiche pour vous avertir. Vous pouvez la fermer, elle ne reviendra qu'à la période suivante. Aucun blocage n'est appliqué, vous pouvez continuer à utiliser l'application.</p>
+                    </div>
+                    </div>
+                    <div class="models-save-row">
+                        <button type="button" id="budget-cancel-btn" class="models-cancel-btn">Annuler</button>
+                        <button type="button" id="budget-save-btn" class="models-save-btn" disabled>Sauvegarder</button>
+                    </div>
+                </div>
+                <!-- Panel Quotas -->
+                <div class="apikeys-panel" id="panel-quotas">
+                    <h3>Quotas d'utilisation</h3>
+                    <p class="apikey-intro">Crédits restants chez vos fournisseurs API. Données mises en cache 5 minutes.</p>
+                    <div class="apikeys-panel-body">
+                        <div id="quotas-list">
+                            <!-- Rempli dynamiquement par js/quotas.js -->
+                        </div>
+                        <div id="quotas-global-alert" class="quotas-global-alert" style="display:none"></div>
+                    </div>
+                    <div class="models-save-row">
+                        <button type="button" id="quotas-save-btn" class="models-save-btn" style="margin-right:8px">Sauvegarder</button>
+                        <button type="button" id="quotas-refresh-btn" class="models-save-btn">Actualiser</button>
+                    </div>
+                </div>
+                <!-- Panel Apparence -->
+                <div class="apikeys-panel" id="panel-appearance">
+                    <h3>Apparence</h3>
+                    <p class="apikey-intro">Personnalisez l'apparence de l'application.</p>
+                    <div class="apikeys-panel-body">
+                    <div class="audio-setting-row">
+                        <label class="audio-setting-label">Thème</label>
+                        <div class="theme-toggle" id="theme-toggle-panel">
+                            <button class="theme-toggle-btn" data-theme="light">☀ Clair</button>
+                            <button class="theme-toggle-btn" data-theme="dark">☾ Sombre</button>
+                            <button class="theme-toggle-btn" data-theme="auto">◑ Auto</button>
+                        </div>
+                    </div>
+                    <p id="theme-auto-hint" class="apikey-intro" style="display:none;margin-top:8px;font-size:0.75rem;opacity:.7">Le mode automatique permet d'adapter le thème en fonction de celui du système. Certains navigateurs ne sont pas compatibles.</p>
+                    </div>
+                </div>
+                <!-- Panel Statistiques -->
+                <div class="apikeys-panel" id="panel-statistiques">
+                    <h3>Statistiques</h3>
+                    <div class="apikeys-panel-body">
+                    <div class="dashboard-tabs">
+                        <button class="dashboard-tab active" data-tab="periodes">Périodes</button>
+                        <button class="dashboard-tab" data-tab="conversations">Conversations</button>
+                        <button class="dashboard-tab" data-tab="modeles">Modèles</button>
+                        <button class="dashboard-tab" data-tab="editeurs">Éditeurs</button>
+                        <button class="dashboard-tab" data-tab="categories">Catégories</button>
+                    </div>
+                    <div id="dashboard-content" class="dashboard-content"></div>
+                    </div>
+                </div>
+                <!-- Panel Logs et événements -->
+                <div class="apikeys-panel" id="panel-logs">
+                    <h3>Logs et événements</h3>
+                    <p class="apikey-intro">Journalisation structurée des erreurs et incidents. Analyse IA via Mimo 2.5.</p>
+                    <div class="apikeys-panel-body">
+                        <div id="logs-status" class="logs-status">
+                            <span class="logs-status-dot"></span>
+                            <span id="logs-status-text">Collecte active</span>
+                        </div>
+                        <div class="logs-controls">
+                            <select id="logs-period" class="audio-setting-select">
+                                <option value="15m">15 minutes</option>
+                                <option value="1h" selected>1 heure</option>
+                                <option value="24h">24 heures</option>
+                                <option value="7d">7 jours</option>
+                            </select>
+                            <select id="logs-level" class="audio-setting-select">
+                                <option value="all">Tous les niveaux</option>
+                                <option value="error">Erreurs</option>
+                                <option value="warning">Warnings</option>
+                                <option value="info">Info</option>
+                            </select>
+                            <button type="button" id="logs-refresh-btn" class="models-save-btn">Actualiser</button>
+                        </div>
+                        <div class="logs-counters">
+                            <div class="logs-counter"><span class="logs-counter-value" id="logs-errors-count">0</span><span class="logs-counter-label">Erreurs</span></div>
+                            <div class="logs-counter"><span class="logs-counter-value" id="logs-warnings-count">0</span><span class="logs-counter-label">Warnings</span></div>
+                            <div class="logs-counter"><span class="logs-counter-value" id="logs-incidents-count">0</span><span class="logs-counter-label">Incidents</span></div>
+                            <div class="logs-counter"><span class="logs-counter-value" id="logs-p95-count">—</span><span class="logs-counter-label">Latence p95</span></div>
+                        </div>
+                        <div id="logs-timeline" class="logs-timeline">
+                            <div class="logs-empty">Aucun événement pour cette période.</div>
+                        </div>
+                        <div id="logs-detail" class="logs-detail" style="display:none">
+                            <h4>Détail de l'événement</h4>
+                            <pre id="logs-detail-content"></pre>
+                        </div>
+                        <div id="logs-incidents" class="logs-incidents" style="display:none">
+                            <h4>Incidents corrélés</h4>
+                            <div id="logs-incidents-list"></div>
+                        </div>
+                        <div class="logs-actions">
+                            <button type="button" id="logs-analyze-btn" class="models-save-btn">🤖 Analyser avec Mimo 2.5</button>
+                            <button type="button" id="logs-export-btn" class="models-cancel-btn">Exporter JSON</button>
+                        </div>
+                        <div id="logs-report" class="logs-report" style="display:none">
+                            <h4>Rapport IA</h4>
+                            <div id="logs-report-content"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Panel Stockage -->
+                <div class="apikeys-panel" id="panel-stockage" data-storage-view="home">
+                    <h3 class="storage-heading">
+                        <button type="button" class="storage-back-btn" id="storage-back-btn" title="Retour" aria-label="Retour">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <span class="storage-heading-main">Stockage</span><span class="storage-heading-sep" id="storage-heading-sep"> - </span><span class="storage-heading-sub" id="storage-heading-sub"></span>
+                    </h3>
+                    <div class="apikeys-panel-body">
+
+                    <!-- Vue d'accueil : total + description + actions -->
+                    <div class="storage-home" id="storage-home">
+                        <div class="storage-overview" id="storage-overview">
+                            <div class="storage-overview-head">
+                                <span class="storage-overview-label">Espace utilisé</span>
+                                <span class="storage-overview-value" id="storage-total-size">—</span>
+                            </div>
+                            <div class="storage-overview-bar" id="storage-overview-bar"></div>
+                            <div class="storage-overview-legend" id="storage-overview-legend"></div>
+                        </div>
+                        <p class="storage-home-description">Consultez la taille de chaque conversation et de ses médias, téléchargez ceux que vous voulez conserver, puis supprimez ce dont vous n'avez plus besoin pour libérer de l'espace dans votre navigateur.</p>
+                        <div class="storage-home-actions">
+                            <button type="button" class="storage-home-btn" data-storage-action="conversations">
+                                <span class="storage-home-btn-top">
+                                    <span class="storage-home-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+                                    <span class="storage-home-btn-size" id="storage-size-conv">—</span>
+                                </span>
+                                <span class="storage-home-btn-bottom">
+                                    <span class="storage-home-btn-text">
+                                        <span class="storage-home-btn-title">Conversations</span>
+                                        <span class="storage-home-btn-meta"><span id="storage-count-conv">0</span> conversation(s)</span>
+                                    </span>
+                                    <span class="storage-home-btn-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+                                </span>
+                            </button>
+                            <button type="button" class="storage-home-btn" data-storage-action="medias">
+                                <span class="storage-home-btn-top">
+                                    <span class="storage-home-btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+                                    <span class="storage-home-btn-size" id="storage-size-media">—</span>
+                                </span>
+                                <span class="storage-home-btn-bottom">
+                                    <span class="storage-home-btn-text">
+                                        <span class="storage-home-btn-title">Médias</span>
+                                        <span class="storage-home-btn-meta"><span id="storage-count-media">0</span> média(s)</span>
+                                    </span>
+                                    <span class="storage-home-btn-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Vue liste : UI existante -->
+                    <div class="storage-list-view" id="storage-list-view">
+                    <div class="storage-controls controls-conv search-active" id="storage-controls">
+                        <div class="storage-search-wrap">
+                            <span class="storage-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                            <input type="search" id="storage-search" class="storage-search-input" placeholder="Rechercher par titre, contenu, fichier…">
+                        </div>
+                        <button type="button" id="storage-search-btn" class="storage-icon-btn" title="Rechercher">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </button>
+                        <button type="button" id="storage-sort-btn" class="storage-icon-btn" title="Trier">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13"/><path d="M3 12h9"/><path d="M3 18h5"/><path d="M17 9l3 -3l3 3"/><path d="M20 6v12"/></svg>
+                        </button>
+                        <div class="storage-sort-wrap">
+                            <select id="storage-sort" class="storage-sort-select">
+                                <option value="date">Plus récents</option>
+                                <option value="date-asc">Plus anciens</option>
+                                <option value="size">Plus lourds</option>
+                                <option value="size-asc">Plus légers</option>
+                            </select>
+                        </div>
+                        <div class="storage-filter-group" id="storage-media-filter" style="display:none">
+                            <button type="button" class="storage-filter-chip active" data-mediatype="all">Tous</button>
+                            <button type="button" class="storage-filter-chip" data-mediatype="image">Images</button>
+                            <button type="button" class="storage-filter-chip" data-mediatype="file">Fichiers</button>
+                        </div>
+                        <div class="storage-viewmode-toggle" id="storage-viewmode-toggle" style="display:none" role="group" aria-label="Mode d'affichage">
+                            <button type="button" class="storage-viewmode-btn" data-viewmode="list" title="Vue Liste" aria-label="Vue Liste">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                            </button>
+                            <button type="button" class="storage-viewmode-btn" data-viewmode="grid" title="Vue Grille" aria-label="Vue Grille">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="storage-toolbar">
+                        <label class="storage-master-label"><input type="checkbox" id="storage-select-all"> <span>Tout sélectionner</span></label>
+                        <span class="storage-summary" id="storage-summary">—</span>
+                    </div>
+
+                    <div id="storage-list" class="storage-list"></div>
+
+                    <div class="storage-action-bar" id="storage-action-bar">
+                        <span class="storage-action-info" id="storage-action-info">0 sélectionné</span>
+                        <button type="button" id="storage-clear-btn" class="storage-clear-btn">Désélectionner</button>
+                        <button type="button" id="storage-download-btn" class="storage-download-btn" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Télécharger</button>
+                        <button type="button" id="storage-delete-btn" class="storage-delete-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg> Supprimer</button>
+                    </div>
+                    </div>
+
+                    <!-- Spinner de transition -->
+                    <div class="storage-loading" id="storage-loading"><div class="storage-spinner"></div></div>
+
+                    </div>
+                </div>
+                <!-- Panel Utilisateurs -->
+                <div class="apikeys-panel" id="panel-users">
+                    <h3>Utilisateurs</h3>
+                    <div class="apikeys-panel-body">
+                    <p class="apikey-intro">Gérez les comptes utilisateurs pouvant accéder à Cetas.</p>
+                    <div id="users-list" class="users-list"></div>
+                    <div style="margin-top:16px">
+                        <button type="button" id="users-add-btn" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer">+ Ajouter un utilisateur</button>
+                    </div>
+                    </div>
+                </div>
+                <!-- Panel FAQ -->
+                <!-- Panel Conversation (content migré depuis #right-panel par JS à l'init) -->
+                <div class="apikeys-panel" id="panel-conversation">
+                    <h3>Réglages de la conversation</h3>
+                    <div class="apikeys-panel-body" id="panel-conversation-body"></div>
+                </div>
+                <!-- Panel FAQ -->
+                <div class="apikeys-panel" id="panel-faq">
+                    <h3>Questions fréquentes</h3>
+                    <div class="apikeys-panel-body">
+                    <div id="faq-tabs" class="faq-tabs"></div>
+                    <div id="faq-container" class="faq-container"></div>
+                    </div>
+                </div>
+                <!-- Panel Partager -->
+                <div class="apikeys-panel" id="panel-share">
+                    <h3>Partager Cetas</h3>
+                    <div class="apikeys-panel-body">
+                    <div class="share-panel-content">
+                        <div class="share-panel-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                        </div>
+                        <p class="share-panel-text">Cetas est un projet gratuit et open-source porté par <strong>Marexsoft Corporation</strong>. En partageant Cetas autour de vous, vous aidez d'autres personnes à découvrir un outil puissant et vous contribuez à faire grandir la communauté.</p>
+                        <p class="share-panel-text">Chaque partage compte et aide à maintenir ce projet vivant !</p>
+                        <div class="share-panel-link-box">
+                            <input type="text" id="share-link-input" class="share-link-input" value="" readonly placeholder="Lien de partage Marexsoft Corporation">
+                            <button id="share-copy-btn" class="share-copy-btn" title="Copier le lien">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                Copier le lien
+                            </button>
+                        </div>
+                        <p class="share-panel-text">Deux petites règles seulement : <strong>ne pas vendre Cetas</strong>, et le partager <strong>uniquement depuis le lien ci-dessus</strong>. C'est tout !</p>
+                        <p class="share-panel-text">Merci à toutes celles et ceux qui partagent Cetas autour d'eux 🙏</p>
+                    </div>
+                    </div>
+                </div>
+                <!-- Barre de sauvegarde globale (sticky, visible sur tous les onglets) -->
+                <div class="apikeys-global-save-row">
+                    <span class="apikeys-global-save-hint">Tous les paramètres sont sauvegardés automatiquement.</span>
+                    <button type="button" id="global-save-btn" class="models-save-btn">💾 Sauvegarder tout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dock prévisualisation conversation (depuis Stockage) -->
+    <div id="storage-preview-dock" class="storage-preview-dock" style="display:none">
+        <div class="storage-preview-dock-info">
+            <span class="storage-preview-dock-label">Aperçu :</span>
+            <span class="storage-preview-dock-title" id="storage-preview-dock-title">—</span>
+        </div>
+        <div class="storage-preview-dock-actions">
+            <button type="button" id="storage-preview-cancel" class="storage-preview-btn storage-preview-btn-ghost">Annuler</button>
+            <button type="button" id="storage-preview-select" class="storage-preview-btn storage-preview-btn-primary">Sélectionner</button>
+            <button type="button" id="storage-preview-delete" class="storage-preview-btn storage-preview-btn-danger">Supprimer</button>
+        </div>
+    </div>
+
+
+    <!-- Modale Sauvegarde / Import-Export -->
+    <div id="save-modal-overlay" class="sp-modal-overlay" style="display:none">
+        <div class="sp-modal save-modal">
+            <button id="save-modal-close" class="save-modal-close-x" title="Fermer">&times;</button>
+            <div class="save-modal-header">
+                <div class="save-modal-icon-circle">
+                    <svg width="22" height="22" viewBox="0 0 24 24"><use href="images/icons.svg#icon-save"/></svg>
+                </div>
+                <h3>Sauvegarde des données</h3>
+            </div>
+            <div class="save-modal-warning">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="save-modal-warning-icon"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <p>Vos conversations et réglages sont stockés dans le navigateur (IndexedDB). <strong>Ces données sont supprimées si vous videz vos cookies</strong> ou vos données de navigation.</p>
+            </div>
+            <p class="save-modal-desc">Exportez régulièrement une sauvegarde pour ne rien perdre. Vous pourrez la réimporter à tout moment.</p>
+            <label class="save-modal-option" for="save-modal-include-keys">
+                <input type="checkbox" id="save-modal-include-keys">
+                <span>
+                    <strong>Inclure les clés API dans l'export</strong>
+                    <small>À n'activer que pour un usage personnel. Ne partagez jamais un fichier contenant vos clés API (cloud, forum, email…).</small>
+                </span>
+            </label>
+            <div class="save-modal-btns">
+                <button id="save-modal-export-btn" class="save-modal-action-btn save-modal-action-btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span class="save-modal-btn-content">
+                        <strong>Exporter</strong>
+                        <small>Télécharger un fichier de sauvegarde</small>
+                    </span>
+                </button>
+                <button id="save-modal-import-btn" class="save-modal-action-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24"><use href="images/icons.svg#icon-download"/></svg>
+                    <span class="save-modal-btn-content">
+                        <strong>Importer</strong>
+                        <small>Restaurer depuis un fichier</small>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Gestion des Rôles -->
+    <div id="roles-manage-overlay" class="sp-modal-overlay" style="display:none">
+        <div class="sp-modal manage-list-modal">
+            <div class="manage-list-header">
+                <h3>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Gestion des rôles
+                </h3>
+                <button id="roles-manage-close" class="cat-manage-close-btn" title="Fermer">&times;</button>
+            </div>
+            <div id="roles-manage-list" class="manage-list-items"></div>
+            <div class="manage-list-empty" id="roles-manage-empty" style="display:none">Aucun rôle enregistré</div>
+            <div class="manage-list-footer">
+                <button id="roles-manage-add" class="cat-manage-add-btn">+ Nouveau rôle</button>
+                <button id="roles-manage-import" class="cat-manage-add-btn cat-manage-add-btn-icon" title="Importer un rôle"><svg width="13" height="13" viewBox="0 0 24 24"><use href="images/icons.svg#icon-download"/></svg> Importer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale Gestion des Prompts -->
+    <div id="prompts-manage-overlay" class="sp-modal-overlay" style="display:none">
+        <div class="sp-modal manage-list-modal">
+            <div class="manage-list-header">
+                <h3>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    Prompts enregistrés
+                </h3>
+                <button id="prompts-manage-close" class="cat-manage-close-btn" title="Fermer">&times;</button>
+            </div>
+            <div id="prompts-manage-list" class="manage-list-items"></div>
+            <div class="manage-list-empty" id="prompts-manage-empty" style="display:none">Aucun prompt enregistré</div>
+            <div class="manage-list-footer">
+                <button id="prompts-manage-add" class="cat-manage-add-btn">+ Nouveau prompt</button>
+                <button id="prompts-manage-import" class="cat-manage-add-btn cat-manage-add-btn-icon" title="Importer un prompt"><svg width="13" height="13" viewBox="0 0 24 24"><use href="images/icons.svg#icon-download"/></svg> Importer</button>
+            </div>
+            <input type="file" id="pr-import-file" accept=".json" hidden>
+        </div>
+    </div>
+
+    <!-- Modale Gestion des catégories -->
+    <div id="cat-modal-overlay" class="sp-modal-overlay" style="display:none">
+        <div class="sp-modal cat-manage-modal">
+            <!-- Vue liste -->
+            <div id="cat-manage-list-view">
+                <div class="cat-manage-header">
+                    <h3>Gestion des catégories</h3>
+                    <button id="cat-manage-close" class="cat-manage-close-btn" title="Fermer">&times;</button>
+                </div>
+                <div id="cat-manage-list" class="cat-manage-list"></div>
+                <button id="cat-manage-add-btn" class="cat-manage-add-btn">+ Nouvelle catégorie</button>
+            </div>
+            <!-- Vue édition -->
+            <div id="cat-manage-edit-view" style="display:none">
+                <div class="cat-manage-header">
+                    <h3 id="cat-modal-title">Nouvelle catégorie</h3>
+                </div>
+                <div class="cat-name-row-labels">
+                    <span class="sp-modal-label cat-label-emoji">Emoji</span>
+                    <span class="sp-modal-label">Nom</span>
+                </div>
+                <div class="cat-name-row">
+                    <div class="emoji-picker-wrapper">
+                        <button type="button" id="cat-modal-icone-btn" class="emoji-picker-btn" title="Choisir un emoji">
+                            <span id="cat-modal-icone-preview">?</span>
+                        </button>
+                        <input type="hidden" id="cat-modal-icone">
+                        <div id="emoji-picker" class="emoji-picker" style="display:none">
+                            <input type="text" id="emoji-search" class="emoji-search" placeholder="Rechercher...">
+                            <div id="emoji-tabs" class="emoji-tabs"></div>
+                            <div id="emoji-grid" class="emoji-grid"></div>
+                        </div>
+                    </div>
+                    <input type="text" id="cat-modal-nom" class="sp-modal-input" placeholder="Ex : Travail">
+                </div>
+                <label class="sp-modal-label">Couleur</label>
+                <div id="cat-color-grid" class="cat-color-grid"></div>
+                <div class="sp-modal-actions">
+                    <button id="cat-modal-delete" class="cat-modal-delete-btn" style="display:none">Supprimer</button>
+                    <span class="sp-modal-spacer"></span>
+                    <button id="cat-modal-back" class="sp-modal-btn sp-modal-btn-cancel">&#8249; Retour</button>
+                    <button id="cat-modal-cancel" class="sp-modal-btn sp-modal-btn-cancel" style="display:none">Annuler</button>
+                    <button id="cat-modal-save" class="sp-modal-btn sp-modal-btn-save">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="lightbox-overlay" class="lightbox-overlay" style="display:none">
+        <button id="lightbox-close" class="lightbox-close">&times;</button>
+        <img id="lightbox-img" class="lightbox-img" src="" alt="">
+    </div>
+
+    <div id="file-viewer-overlay" class="lightbox-overlay" style="display:none">
+        <button id="file-viewer-close" class="lightbox-close">&times;</button>
+        <div id="file-viewer-container" class="file-viewer-container">
+            <div id="file-viewer-title" class="file-viewer-title"></div>
+            <iframe id="file-viewer-iframe" class="file-viewer-iframe" sandbox="allow-scripts"></iframe>
+        </div>
+    </div>

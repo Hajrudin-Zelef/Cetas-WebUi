@@ -18,6 +18,7 @@ import importlib.util
 import datetime
 import time
 import threading
+import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 
@@ -41,6 +42,9 @@ from observability import (
     redact_event as _obs_redact,
     generate_id as _obs_id,
 )
+
+# Backend Marexcode (sandbox exécution + sessions + arborescence workspace)
+from marexcode import MarexcodeMixin
 
 logging.basicConfig(level=logging.INFO, format="[proxy] %(message)s")
 log = logging.getLogger(__name__)
@@ -684,7 +688,13 @@ def _analyze_with_mimo(incidents):
             pass
 
 
-class ProxyHandler(BaseHTTPRequestHandler):
+# ── Marexcode backend : sandbox + sessions + arborescence ──────────────
+# Implémenté dans server/marexcode.py (mixin MarexcodeMixin hérité par
+# ProxyHandler). Constantes EXEC_*, helpers workspace/sessions et handlers
+# /api/exec + /api/marexcode/* y sont définis.
+
+
+class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
     # Mapping provider names .env → frontend API_KEYS
     _KEY_MAP = {
         'nvidia_nim': 'nvidia',
@@ -1051,54 +1061,6 @@ class ProxyHandler(BaseHTTPRequestHandler):
             _save_users_locked()
         self._respond_json({"ok": True})
 
-    def _handle_get(self, write_body: bool = True):
-        # Indique aux helpers (_respond_json/_error/proxy) s'ils doivent écrire le body
-        self._write_body = write_body
-        if self.path in ("/health", "/api/health"):
-            self._respond_json({"status": "ok", "keys_loaded": len(api_keys)})
-            return
-        if self.path == "/api/keys":
-            username = self._require_admin()
-            if not username:
-                return
-            mapped = {}
-            for k, v in api_keys.items():
-                frontend_key = self._KEY_MAP.get(k, k)
-                mapped[frontend_key] = v
-            self._respond_json(mapped)
-            return
-        # Auth / Users
-        if self.path == "/api/users":
-            self._users_list()
-            return
-        if self.path.startswith("/api/users/"):
-            # GET /api/users/<username> not needed for MVP
-            self.send_response(404)
-            self.end_headers()
-            return
-        # Conversations
-        if self.path == "/api/conversations":
-            self._conv_list()
-            return
-        if self.path.startswith("/api/conversations/"):
-            filename = self.path[len("/api/conversations/"):]
-            self._conv_get(filename)
-            return
-        # Settings utilisateur
-        if self.path == "/api/settings":
-            self._settings_get()
-            return
-        # Tavily web search proxy
-        if self.path.startswith("/api/tavily/search"):
-            self._tavily_search()
-            return
-        # Proxy
-        if self.path.startswith("/api/proxy/"):
-            self._proxy_request("GET")
-            return
-        self.send_response(404)
-        self.end_headers()
-
     def do_GET(self):
         self._handle_get(write_body=True)
 
@@ -1114,7 +1076,34 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if path == "/api/health" or path == "/health":
             self._respond_json({"status": "ok", "keys_loaded": len(api_keys)})
             return
-        # Settings
+        # API keys (admin)
+        if path == "/api/keys":
+            username = self._require_admin()
+            if not username:
+                return
+            mapped = {}
+            for k, v in api_keys.items():
+                frontend_key = self._KEY_MAP.get(k, k)
+                mapped[frontend_key] = v
+            self._respond_json(mapped)
+            return
+        # Users (admin)
+        if path == "/api/users":
+            self._users_list()
+            return
+        if path.startswith("/api/users/"):
+            self.send_response(404)
+            self.end_headers()
+            return
+        # Conversations
+        if path == "/api/conversations":
+            self._conv_list()
+            return
+        if path.startswith("/api/conversations/"):
+            filename = path[len("/api/conversations/"):]
+            self._conv_get(filename)
+            return
+        # Settings utilisateur
         if path == "/api/settings":
             self._settings_get()
             return
@@ -1122,6 +1111,32 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if path == "/api/logs/summary":
             self._log_summary()
             return
+        # Tavily web search proxy
+        if path.startswith("/api/tavily/search"):
+            self._tavily_search()
+            return
+        # Proxy
+        if path.startswith("/api/proxy/"):
+            self._proxy_request("GET")
+            return
+        # Marexcode tree
+        if path == "/api/marexcode/tree":
+            self._marex_tree_get()
+            return
+        # Marexcode projet actif
+        if path == "/api/marexcode/project":
+            self._marex_project_get()
+            return
+        # Marexcode sessions
+        if path == "/api/marexcode/sessions":
+            self._marex_sessions_list_get()
+            return
+        if path.startswith("/api/marexcode/sessions/"):
+            sid = path[len("/api/marexcode/sessions/"):]
+            self._marex_sessions_item_get(sid)
+            return
+        self.send_response(404)
+        self.end_headers()
 
     def do_HEAD(self):
         # Conforme HTTP : mêmes status/headers que GET, sans le body
@@ -1143,6 +1158,12 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if self.path.startswith("/api/proxy/"):
             self._proxy_request("POST")
             return
+        if self.path == "/api/exec":
+            self._exec_tool()
+            return
+        if self.path == "/api/marexcode/upload":
+            self._marex_upload_project()
+            return
         self.send_response(404)
         self.end_headers()
 
@@ -1159,6 +1180,13 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if self.path == "/api/settings":
             self._settings_put()
             return
+        if self.path.startswith("/api/marexcode/sessions/"):
+            sid = self.path[len("/api/marexcode/sessions/"):]
+            self._marex_sessions_item_put(sid)
+            return
+        if self.path == "/api/marexcode/project":
+            self._marex_project_put()
+            return
         self.send_response(404)
         self.end_headers()
 
@@ -1173,6 +1201,10 @@ class ProxyHandler(BaseHTTPRequestHandler):
         if self.path.startswith("/api/conversations/"):
             filename = self.path[len("/api/conversations/"):]
             self._conv_delete(filename)
+            return
+        if self.path.startswith("/api/marexcode/sessions/"):
+            sid = self.path[len("/api/marexcode/sessions/"):]
+            self._marex_sessions_item_delete(sid)
             return
         self.send_response(404)
         self.end_headers()
@@ -1449,9 +1481,6 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
     def _error(self, code: int, msg: str):
         body = json.dumps({"error": msg}).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
         origin = self.headers.get("Origin", "")
         self.send_header("Access-Control-Allow-Origin", _cors_origin(origin))
         self.send_header("Vary", "Origin")

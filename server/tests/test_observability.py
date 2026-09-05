@@ -1,4 +1,4 @@
-"""Tests for proxy/observability.py — structured event logging.
+"""Tests for server/observability.py — structured event logging.
 
 All file I/O uses tmp_path — never touches real log files.
 """
@@ -14,7 +14,7 @@ import pytest
 # ---------------------------------------------------------------------------
 # Import setup
 # ---------------------------------------------------------------------------
-_PROXY_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "proxy")
+_PROXY_DIR = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, os.path.abspath(_PROXY_DIR))
 
 from observability import (

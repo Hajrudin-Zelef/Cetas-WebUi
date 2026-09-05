@@ -1,10 +1,10 @@
 // Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
-const CACHE_NAME = 'cetas-cache-v5';
+const CACHE_NAME = 'cetas-cache-v6';
 const OFFLINE_URLS = [
   './',
   './index.html',
   './manifest.json',
-  './models.js',
+  './js/data/models.js',
   './css/style.css',
   './images/cetas2.svg',
   './images/icon-192.png',
@@ -35,6 +35,24 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
+  const isHTML = url.pathname.endsWith('.html') || url.pathname === '/' || !url.pathname.includes('.');
+  const isMarexcode = url.pathname.includes('/marexcode/');
+  if (isHTML || isMarexcode) {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        }
+        return response;
+      }).catch(() => caches.match(event.request) || new Response(
+        JSON.stringify({ error: 'Service indisponible' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      ))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const networkFetch = fetch(event.request)
@@ -45,7 +63,14 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => cached);
+        .catch(() => cached || new Response(
+          JSON.stringify({ error: 'Service indisponible' }),
+          {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: { 'Content-Type': 'application/json' }
+          }
+        ));
       return cached || networkFetch;
     })
   );

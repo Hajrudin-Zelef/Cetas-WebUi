@@ -1,0 +1,746 @@
+import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder } from './api.js';
+import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
+import { createChat } from './chat.js';
+import { initRouter } from './router.js';
+import { COMPETENCES } from './skills.js';
+import { getPermission, setPermission, checkToolPermission } from './marex-permission.js';
+
+const $ = id => document.getElementById(id);
+
+// Préférences du menu "+" (Réflexion / Recherche web) — visuel pour l'instant,
+// branchement fonctionnel réel à faire une fois streamModelWithTools consulté.
+const marexPrefs = {
+    reflection: false,
+    effort: 'medium',
+    webSearch: false,
+    webSearchDepth: 'standard'
+};
+
+const refs = {
+    authGate: $('auth-gate'),
+    mainFrame: $('main-frame'),
+    settingsFrame: $('settings-frame'),
+    settingsBackBtn: $('settings-back-btn'),
+    settingsContent: document.querySelector('.settings-content'),
+    sidebar: document.querySelector('.sidebar'),
+    hamburgerBtn: $('hamburger-btn'),
+    sbCloseBtn: $('sb-close-btn'),
+    mobileNewBtn: $('mobile-new-btn'),
+    mobileTitle: $('mobile-title'),
+    newSessionBtn: $('new-session-btn'),
+    toggleWorkspace: $('toggle-workspace'),
+    panelWorkspace: $('panel-workspace'),
+    workspaceTree: $('workspace-tree'),
+    workspaceEmpty: $('workspace-empty'),
+    toggleHistory: $('toggle-history'),
+    panelHistory: $('panel-history'),
+    sessionsList: $('sessions-list'),
+    sessionsEmpty: $('sessions-empty'),
+    userWrap: $('user-wrap'),
+    userBtn: $('user-btn'),
+    userMenu: $('user-menu'),
+    userEmailText: $('user-email-text'),
+    openSettings: $('open-settings'),
+    logoutBtn: $('logout-btn'),
+    userAvatar: $('user-avatar'),
+    userName: $('user-name'),
+    btnPermission: $('btn-permission'),
+    menuPermission: $('menu-permission'),
+    labelPermission: $('label-permission'),
+    btnWorkspace: $('btn-workspace'),
+    menuWorkspace: $('menu-workspace'),
+    labelWorkspace: $('label-workspace'),
+    itemUploadedProject: $('item-uploaded-project'),
+    uploadedProjectDesc: $('uploaded-project-desc'),
+    btnUploadFolder: $('btn-upload-folder'),
+    btnModel: $('btn-model'),
+    menuModel: $('menu-model'),
+    labelModel: $('label-model'),
+    plusBtn: $('plus-btn'),
+    menuPlus: $('menu-plus'),
+    skillChip: $('skill-chip'),
+    skillChipName: $('skill-chip-name'),
+    skillChipClear: $('skill-chip-clear'),
+    ta: $('marex-input'),
+    sendBtn: $('marex-send-btn'),
+    stopBtn: $('stop-btn'),
+    chatPanel: $('marex-chat-panel'),
+    chatLog: $('marex-chat-log'),
+    setUsername: $('set-username'),
+    setRole: $('set-role'),
+    setSessionsCount: $('set-sessions-count'),
+    setClearAll: $('set-clear-all'),
+    setLogout: $('set-logout'),
+    fileViewer: $('file-viewer'),
+    fvPath: $('fv-path'),
+    fvBody: $('fv-body'),
+    fvClose: $('fv-close'),
+    authLoginBtn: $('auth-login-btn'),
+    composerProjectName: $('composer-project-name'),
+    sbProjectHeaderName: $('sb-project-header-name'),
+    sidePanel: $('side-panel'),
+    sidePanelBody: $('side-panel-body'),
+    sidePanelEmpty: $('side-panel-empty'),
+    sidePanelSpinner: $('side-panel-spinner'),
+    sidePanelClose: $('side-panel-close')
+};
+
+let currentSessionId = null;
+let activeProjectName = 'Marexcode (serveur)';
+
+function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = String(s == null ? '' : s);
+    return d.innerHTML;
+}
+
+// ── Permission active (Read only / Espace Write / Ask permission) ──
+// Point d'entrée unique appelé par tool-search.js (_execMarexcodeTool)
+// avant tout appel réseau vers /api/exec, qu'il vienne de l'agent ou
+// d'une action manuelle (ex: file viewer).
+window._marexCheckPermission = (toolName, args) => checkToolPermission(toolName, args);
+
+function setupPermissionSelector() {
+    if (!refs.menuPermission || !refs.labelPermission) return;
+
+    const current = getPermission();
+    refs.menuPermission.querySelectorAll('.cdrop-item').forEach(item => {
+        const isCurrent = item.getAttribute('data-permission') === current;
+        item.classList.toggle('selected', isCurrent);
+    });
+    refs.labelPermission.textContent = current;
+
+    refs.menuPermission.querySelectorAll('.cdrop-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const value = item.getAttribute('data-permission');
+            refs.menuPermission.querySelectorAll('.cdrop-item').forEach(o => o.classList.remove('selected'));
+            item.classList.add('selected');
+            refs.labelPermission.textContent = value;
+            setPermission(value);
+            refs.menuPermission.classList.remove('open');
+        });
+    });
+}
+
+// ── Projet actif (workspace serveur / dossier importé) ──
+function applyProjectUI(name) {
+    activeProjectName = name;
+    refs.labelWorkspace.textContent = name;
+    if (refs.composerProjectName) refs.composerProjectName.textContent = name;
+    if (refs.sbProjectHeaderName) refs.sbProjectHeaderName.textContent = name;
+    refs.menuWorkspace.querySelectorAll('.cdrop-item[data-project]').forEach(item => {
+        item.classList.toggle('selected', item.getAttribute('data-project') === name);
+    });
+}
+
+async function refreshProjectState() {
+    try {
+        const data = await getProject();
+        applyProjectUI(data.active);
+        const uploaded = (data.projects || []).find(p => p.name === 'Projet importé');
+        const available = uploaded ? !!uploaded.available : false;
+        refs.itemUploadedProject.disabled = !available;
+        refs.uploadedProjectDesc.textContent = available
+            ? 'Dossier importé disponible'
+            : "Aucun dossier importé pour l'instant";
+    } catch (e) {
+        // silencieux : reste sur l'état par défaut affiché dans le HTML
+    }
+}
+
+function setupWorkspaceSelector() {
+    if (!refs.menuWorkspace || !refs.btnWorkspace) return;
+
+    refs.menuWorkspace.querySelectorAll('.cdrop-item[data-project]').forEach(item => {
+        item.addEventListener('click', async () => {
+            if (item.disabled) return;
+            const name = item.getAttribute('data-project');
+            try {
+                await setProject(name);
+                applyProjectUI(name);
+                refs.menuWorkspace.classList.remove('open');
+                await refreshTree();
+            } catch (e) {
+                alert('Erreur lors du changement de projet : ' + (e.message || e));
+            }
+        });
+    });
+
+    // Input file caché en mode dossier, réutilisé à chaque clic sur "Importer un dossier…"
+    const folderInput = document.createElement('input');
+    folderInput.type = 'file';
+    folderInput.webkitdirectory = true;
+    folderInput.style.display = 'none';
+    document.body.appendChild(folderInput);
+
+    refs.btnUploadFolder.addEventListener('click', (e) => {
+        e.stopPropagation();
+        folderInput.value = '';
+        folderInput.click();
+    });
+
+    folderInput.addEventListener('change', async () => {
+        if (!folderInput.files || folderInput.files.length === 0) return;
+        const originalLabel = refs.btnUploadFolder.textContent;
+        refs.btnUploadFolder.textContent = 'Import en cours…';
+        refs.btnUploadFolder.disabled = true;
+        try {
+            await uploadProjectFolder(folderInput.files);
+            await refreshProjectState();
+            refs.menuWorkspace.classList.remove('open');
+            await refreshTree();
+        } catch (e) {
+            alert("Erreur lors de l'import du dossier : " + (e.message || e));
+        } finally {
+            refs.btnUploadFolder.textContent = originalLabel;
+            refs.btnUploadFolder.disabled = false;
+        }
+    });
+}
+
+// ── Menu "+" (modèles + compétences) ──
+let activeSkill = null;
+
+function applySkill(sk) {
+    activeSkill = sk;
+    refs.skillChip.style.display = 'inline-flex';
+    refs.skillChipName.textContent = sk.name;
+}
+
+function clearSkill() {
+    activeSkill = null;
+    refs.skillChip.style.display = 'none';
+    refs.skillChipName.textContent = '';
+}
+
+function setupPlusMenu() {
+    const menu = refs.menuPlus;
+    menu.innerHTML = '';
+
+    if (!refs._plusFileInput) {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.md,.txt,.pdf,.png,.jpg,.jpeg,.webp,.json,.csv,.js,.ts,.py,.html,.css';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+        fileInput.addEventListener('change', async () => {
+            if (!fileInput.files || fileInput.files.length === 0) return;
+            try {
+                await uploadProjectFolder(fileInput.files);
+                await refreshProjectState();
+                await refreshTree();
+            } catch (e) {
+                alert("Erreur lors de l'ajout du fichier : " + (e.message || e));
+            } finally {
+                fileInput.value = '';
+            }
+        });
+        refs._plusFileInput = fileInput;
+    }
+
+    const fileLabel = document.createElement('div');
+    fileLabel.className = 'cdrop-section-label';
+    fileLabel.textContent = 'Fichier';
+    menu.appendChild(fileLabel);
+
+    const fileBtn = document.createElement('button');
+    fileBtn.className = 'cdrop-item';
+    fileBtn.innerHTML = '<span class="cdrop-item-left"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span class="cdrop-item-text"><span class="t">Ajouter un fichier</span></span></span>';
+    fileBtn.addEventListener('click', () => {
+        menu.classList.remove('open');
+        refs._plusFileInput.click();
+    });
+    menu.appendChild(fileBtn);
+
+    const skLabel = document.createElement('div');
+    skLabel.className = 'cdrop-section-label';
+    skLabel.textContent = 'Compétences';
+    menu.appendChild(skLabel);
+
+    if (activeSkill) {
+        const noneBtn = document.createElement('button');
+        noneBtn.className = 'cdrop-item';
+        noneBtn.innerHTML = '<span class="cdrop-item-left"><span class="cdrop-item-text"><span class="t">Aucune compétence</span></span></span>';
+        noneBtn.addEventListener('click', () => {
+            clearSkill();
+            menu.classList.remove('open');
+        });
+        menu.appendChild(noneBtn);
+    }
+
+    for (const sk of COMPETENCES) {
+        const b = document.createElement('button');
+        b.className = 'cdrop-item' + (activeSkill && activeSkill.id === sk.id ? ' selected' : '');
+        b.innerHTML = '<span class="cdrop-item-left"><span class="cdrop-item-text"><span class="t">' + esc(sk.name) + '</span></span></span>' +
+            '<svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>';
+        b.addEventListener('click', () => {
+            applySkill(sk);
+            menu.classList.remove('open');
+        });
+        menu.appendChild(b);
+    }
+
+    refs.skillChipClear.addEventListener('click', clearSkill);
+
+    // ── Séparateur + Réflexion + Recherche web ──
+    const divider = document.createElement('div');
+    divider.className = 'cdrop-divider';
+    menu.appendChild(divider);
+
+    // Section Réflexion
+    const reflLabel = document.createElement('div');
+    reflLabel.className = 'cdrop-section-label';
+    reflLabel.textContent = 'Réflexion';
+    menu.appendChild(reflLabel);
+
+    const reflRow = document.createElement('div');
+    reflRow.className = 'cdrop-row';
+    reflRow.innerHTML = '<span class="cdrop-row-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A5.5 5.5 0 0 0 4 7.5c0 2 1 3 1.5 4S7 13.5 7 15h4c0-1.5.5-2.5 1.5-3.5S14 9.5 14 7.5A5.5 5.5 0 0 0 8.5 2z"/><path d="M7 18h4"/><path d="M8 21h2"/></svg><span>Réflexion</span></span>' +
+        '<label class="cdrop-toggle"><input type="checkbox" id="marex-reflection-toggle"><span class="cdrop-toggle-slider"></span></label>';
+    menu.appendChild(reflRow);
+
+    const effortPills = document.createElement('div');
+    effortPills.className = 'cdrop-pills disabled';
+    effortPills.id = 'marex-effort-pills';
+    const effortLevels = [['low', 'Faible'], ['medium', 'Moyen'], ['high', 'Élevé']];
+    effortPills.innerHTML = effortLevels.map(([val, label]) =>
+        '<button type="button" class="cdrop-pill' + (marexPrefs.effort === val ? ' active' : '') + '" data-effort="' + val + '">' + label + '</button>'
+    ).join('');
+    menu.appendChild(effortPills);
+
+    const reflToggle = reflRow.querySelector('#marex-reflection-toggle');
+    reflToggle.checked = marexPrefs.reflection;
+    reflToggle.addEventListener('change', () => {
+        marexPrefs.reflection = reflToggle.checked;
+        effortPills.classList.toggle('disabled', !reflToggle.checked);
+    });
+    effortPills.querySelectorAll('.cdrop-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            if (!reflToggle.checked) return;
+            marexPrefs.effort = pill.dataset.effort;
+            effortPills.querySelectorAll('.cdrop-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+        });
+    });
+
+    // Section Recherche web
+    const divider2 = document.createElement('div');
+    divider2.className = 'cdrop-divider';
+    menu.appendChild(divider2);
+
+    const webLabel = document.createElement('div');
+    webLabel.className = 'cdrop-section-label';
+    webLabel.textContent = 'Recherche web';
+    menu.appendChild(webLabel);
+
+    const webRow = document.createElement('div');
+    webRow.className = 'cdrop-row';
+    webRow.innerHTML = '<span class="cdrop-row-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Recherche web</span></span>' +
+        '<label class="cdrop-toggle"><input type="checkbox" id="marex-websearch-toggle"><span class="cdrop-toggle-slider"></span></label>';
+    menu.appendChild(webRow);
+
+    const webPills = document.createElement('div');
+    webPills.className = 'cdrop-pills';
+    webPills.id = 'marex-websearch-pills';
+    webPills.style.display = marexPrefs.webSearch ? 'flex' : 'none';
+    const webDepths = [['standard', 'Standard'], ['deep', 'Approfondie']];
+    webPills.innerHTML = webDepths.map(([val, label]) =>
+        '<button type="button" class="cdrop-pill' + (marexPrefs.webSearchDepth === val ? ' active' : '') + '" data-depth="' + val + '">' + label + '</button>'
+    ).join('');
+    menu.appendChild(webPills);
+
+    const webToggle = webRow.querySelector('#marex-websearch-toggle');
+    webToggle.checked = marexPrefs.webSearch;
+    webToggle.addEventListener('change', () => {
+        marexPrefs.webSearch = webToggle.checked;
+        webPills.style.display = webToggle.checked ? 'flex' : 'none';
+    });
+    webPills.querySelectorAll('.cdrop-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            marexPrefs.webSearchDepth = pill.dataset.depth;
+            webPills.querySelectorAll('.cdrop-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+        });
+    });
+}
+
+// ── Dropdowns (cdrops) ──
+function setupCdrops() {
+    const allCdrops = [
+        { wrap: 'dd-workspace', btn: 'btn-workspace', menu: 'menu-workspace' },
+        { wrap: 'dd-permission', btn: 'btn-permission', menu: 'menu-permission' },
+        { wrap: 'dd-model', btn: 'btn-model', menu: 'menu-model' },
+        { wrap: 'dd-plus', btn: 'plus-btn', menu: 'menu-plus' }
+    ];
+    function closeAll(except) {
+        for (const c of allCdrops) {
+            if (c.menu !== except) $(c.menu).classList.remove('open');
+        }
+    }
+    function positionMenu(btn, menu) {
+        const r = btn.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.left = r.left + 'px';
+        menu.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+        menu.style.top = 'auto';
+        requestAnimationFrame(() => {
+            const mw = menu.offsetWidth;
+            if (r.left + mw > window.innerWidth - 8) {
+                menu.style.left = 'auto';
+                menu.style.right = (window.innerWidth - r.right) + 'px';
+            }
+        });
+    }
+    for (const c of allCdrops) {
+        const btn = $(c.btn);
+        const menu = $(c.menu);
+        if (!btn || !menu) continue;
+        document.body.appendChild(menu); // sort du .composer (overflow:hidden) pour flotter librement
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const willOpen = !menu.classList.contains('open');
+            closeAll(willOpen ? c.menu : null);
+            if (willOpen) positionMenu(btn, menu);
+            menu.classList.toggle('open', willOpen);
+            if (willOpen) menu.scrollTop = 0;
+        });
+    }
+    document.addEventListener('click', (e) => {
+        const inside = allCdrops.some(c => {
+            const wrap = $(c.wrap);
+            return wrap && wrap.contains(e.target);
+        });
+        if (!inside) closeAll(null);
+    });
+}
+
+// ── Sidebar toggles ──
+function setupToggles() {
+    function makeToggle(toggleId, panelId) {
+        const toggle = $(toggleId);
+        const panel = $(panelId);
+        if (!toggle || !panel) return;
+        const chevron = toggle.querySelector('svg');
+        toggle.addEventListener('click', () => {
+            const hidden = panel.classList.toggle('hidden');
+            if (chevron) chevron.classList.toggle('collapsed', hidden);
+        });
+    }
+    makeToggle('toggle-workspace', 'panel-workspace');
+    makeToggle('toggle-history', 'panel-history');
+
+    refs.panelWorkspace.classList.remove('hidden');
+    refs.panelHistory.classList.remove('hidden');
+    const wChevron = refs.toggleWorkspace.querySelector('svg');
+    const hChevron = refs.toggleHistory.querySelector('svg');
+    if (wChevron) wChevron.classList.remove('collapsed');
+    if (hChevron) hChevron.classList.remove('collapsed');
+}
+
+// ── Sidebar mobile drawer ──
+function setupSidebar() {
+    const closeSidebar = () => refs.sidebar.classList.remove('open');
+    const openSidebar = () => refs.sidebar.classList.add('open');
+    if (refs.hamburgerBtn) refs.hamburgerBtn.addEventListener('click', openSidebar);
+    if (refs.sbCloseBtn) refs.sbCloseBtn.addEventListener('click', closeSidebar);
+}
+
+function setupUserMenu() {
+    if (!refs.userBtn || !refs.userMenu || !refs.userWrap) return;
+    refs.userBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        refs.userMenu.classList.toggle('open');
+        refs.userBtn.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+        if (!refs.userWrap.contains(e.target)) {
+            refs.userMenu.classList.remove('open');
+            refs.userBtn.classList.remove('open');
+        }
+    });
+}
+
+function fillUserInfo() {
+    let username = 'Utilisateur';
+    try {
+        if (typeof Auth !== 'undefined' && Auth.getUsername) username = Auth.getUsername() || username;
+    } catch (e) {}
+    refs.userName.textContent = username;
+    refs.userAvatar.textContent = (username[0] || 'U').toUpperCase();
+    refs.userEmailText.textContent = username;
+    refs.setUsername.textContent = username;
+    refs.setRole.textContent = 'Utilisateur';
+}
+
+// ── Sessions (groupées par projet, façon "Projets" de Codex) ──
+function esc2(s) { return esc(s); }
+
+async function refreshSessions() {
+    try {
+        const list = await listSessions();
+        const sorted = list.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        refs.sessionsList.innerHTML = '';
+        refs.sessionsEmpty.style.display = sorted.length ? 'none' : 'block';
+
+        const groups = new Map();
+        for (const s of sorted) {
+            const proj = s.project || 'Marexcode (serveur)';
+            if (!groups.has(proj)) groups.set(proj, []);
+            groups.get(proj).push(s);
+        }
+
+        for (const [proj, items] of groups) {
+            const label = document.createElement('div');
+            label.className = 'sb-history-group-label';
+            label.textContent = proj;
+            refs.sessionsList.appendChild(label);
+
+            for (const s of items) {
+                const b = document.createElement('button');
+                b.className = 'sb-hist-item' + (s.id === currentSessionId ? ' active' : '');
+                b.title = s.title || '';
+                b.innerHTML = '<span class="sb-hist-label">' + esc2(s.title || 'Sans titre') + '</span>' +
+                    '<span class="sb-hist-del" title="Supprimer" role="button">' +
+                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+                    '</span>';
+                b.addEventListener('click', (e) => {
+                    if (e.target.closest('.sb-hist-del')) {
+                        e.stopPropagation();
+                        if (confirm('Supprimer cette session ?')) {
+                            apiDeleteSession(s.id).then(() => {
+                                if (currentSessionId === s.id) { currentSessionId = null; chat.newSession(); }
+                                refreshSessions();
+                            }).catch(() => refreshSessions());
+                        }
+                        return;
+                    }
+                    openSession(s.id);
+                });
+                refs.sessionsList.appendChild(b);
+            }
+        }
+        refs.setSessionsCount.textContent = String(sorted.length);
+        return list;
+    } catch (e) {
+        return [];
+    }
+}
+
+async function openSession(id) {
+    try {
+        const data = await apiLoadSession(id);
+        currentSessionId = id;
+        chat.setSession(data);
+        const model = data.model || getSelectedModelId(refs.menuModel);
+        if (model) selectModel(refs.menuModel, refs.labelModel, model, (m) => {
+            const s = chat.getSession();
+            if (s) s.model = m;
+        });
+        refs.mobileTitle.textContent = data.title || 'Marexcode';
+        refreshSessions();
+    } catch (e) {}
+}
+
+// ── Workspace tree ──
+async function refreshTree() {
+    try {
+        const files = await listTree();
+        refs.workspaceTree.innerHTML = '';
+        refs.workspaceEmpty.style.display = files.length ? 'none' : 'block';
+        refs.workspaceEmpty.textContent = files.length ? '' : 'Aucun fichier dans le workspace.';
+        for (const f of files) {
+            const b = document.createElement('button');
+            b.className = 'sb-tree-item';
+            b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>' +
+                '<span>' + esc(f.path) + '</span>';
+            b.title = f.path;
+            b.addEventListener('click', () => openFileViewer(f.path));
+            refs.workspaceTree.appendChild(b);
+        }
+    } catch (e) {
+        refs.workspaceEmpty.style.display = 'block';
+        refs.workspaceEmpty.textContent = 'Erreur chargement du workspace.';
+    }
+}
+
+async function openFileViewer(path) {
+    refs.fvPath.textContent = path;
+    refs.fvBody.textContent = 'Chargement…';
+    refs.fvBody.classList.add('loading');
+    refs.fileViewer.classList.add('open');
+    try {
+        const data = await readFile(path);
+        refs.fvBody.textContent = (data && data.content != null) ? data.content : (data.error || 'Fichier vide.');
+    } catch (e) {
+        refs.fvBody.textContent = 'Erreur : ' + (e.message || e);
+    }
+    refs.fvBody.classList.remove('loading');
+}
+
+// ── Settings ──
+function setupSettings(router) {
+    refs.settingsBackBtn.addEventListener('click', () => {
+        router.showMain();
+        refs.settingsContent.scrollTop = 0;
+    });
+    document.querySelectorAll('.settings-nav-item[data-panel]').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.settings-nav-item[data-panel]').forEach(o => o.classList.remove('active'));
+            item.classList.add('active');
+            const target = item.getAttribute('data-panel');
+            document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+            const panel = document.querySelector('.settings-panel[data-content="' + target + '"]');
+            if (panel) panel.classList.add('active');
+            refs.settingsContent.scrollTop = 0;
+        });
+    });
+    refs.openSettings.addEventListener('click', () => {
+        refs.userMenu.classList.remove('open');
+        refs.userBtn.classList.remove('open');
+        router.showSettings();
+    });
+    refs.setClearAll.addEventListener('click', async () => {
+        if (!confirm('Supprimer définitivement toutes vos sessions Marexcode ?')) return;
+        try {
+            const list = await listSessions();
+            for (const s of list) {
+                try { await apiDeleteSession(s.id); } catch (e) {}
+            }
+            currentSessionId = null;
+            chat.newSession();
+            refreshSessions();
+        } catch (e) {}
+    });
+    refs.setLogout.addEventListener('click', logout);
+    refs.logoutBtn.addEventListener('click', logout);
+}
+
+function logout() {
+    if (typeof Auth !== 'undefined' && Auth.logout) {
+        Auth.logout();
+        return;
+    }
+    try { sessionStorage.removeItem('cetas-token'); } catch (e) {}
+    window.location.reload();
+}
+
+// ── Chat wiring ──
+function setupChat() {
+    chat = createChat({
+        chatLog: refs.chatLog,
+        chatPanel: refs.chatPanel,
+        ta: refs.ta,
+        sendBtn: refs.sendBtn,
+        stopBtn: refs.stopBtn,
+        onSave: async (s) => {
+            try {
+                await apiSaveSession(s);
+                if (!currentSessionId) currentSessionId = s.id;
+                refs.mobileTitle.textContent = s.title || 'Marexcode';
+                refreshSessions();
+            } catch (e) {
+                if (e && e.message === 'AUTH_REQUIRED') { router.checkAuth(); }
+            }
+        },
+        onAuthRequired: () => router.checkAuth(),
+        getSystemPrompt: () => (activeSkill ? activeSkill.prompt : ''),
+        getActiveProject: () => activeProjectName,
+        sidePanel: refs.sidePanel,
+        sidePanelBody: refs.sidePanelBody,
+        sidePanelEmpty: refs.sidePanelEmpty,
+        sidePanelSpinner: refs.sidePanelSpinner,
+        sidePanelClose: refs.sidePanelClose
+    });
+
+    refs.sendBtn.addEventListener('click', () => chat.send());
+    refs.stopBtn.addEventListener('click', () => chat.stop());
+    refs.ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chat.send();
+        }
+    });
+    const TA_MAX_HEIGHT = 200;
+    function autoResizeTa() {
+        refs.ta.style.height = 'auto';
+        const next = Math.min(refs.ta.scrollHeight, TA_MAX_HEIGHT);
+        refs.ta.style.height = next + 'px';
+        refs.ta.style.overflowY = refs.ta.scrollHeight > TA_MAX_HEIGHT ? 'auto' : 'hidden';
+    }
+    refs.ta.addEventListener('input', autoResizeTa);
+    autoResizeTa();
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && chat.isRunning()) chat.stop();
+    });
+}
+
+// ── New session ──
+function newSession() {
+    const s = chat.newSession();
+    currentSessionId = null;
+    refs.mobileTitle.textContent = 'Marexcode';
+    refreshSessions();
+    return s;
+}
+
+function setupNewSession() {
+    const doNew = () => newSession();
+    refs.newSessionBtn.addEventListener('click', doNew);
+    refs.mobileNewBtn.addEventListener('click', doNew);
+    document.querySelectorAll('.sb-row[data-item="recherche"]').forEach(el => {
+        el.addEventListener('click', () => {
+            // Placeholder : la recherche de conversations n'est pas encore implémentée.
+        });
+    });
+}
+
+// ── Boot ──
+let chat;
+let router;
+
+function boot() {
+    router = initRouter({
+        authGate: refs.authGate,
+        mainFrame: refs.mainFrame,
+        settingsFrame: refs.settingsFrame
+    });
+
+    if (!router.checkAuth()) return;
+
+    if (typeof loadModels === 'function') {
+        try { loadModels(); } catch (e) {}
+    }
+
+    setupCdrops();
+    setupPermissionSelector();
+    setupWorkspaceSelector();
+    setupToggles();
+    setupSidebar();
+    setupUserMenu();
+    setupPlusMenu();
+    fillUserInfo();
+    setupChat();
+
+    chat.newSession();
+    initModelSelect(refs.menuModel, refs.labelModel, (m) => {
+        const s = chat.getSession();
+        if (s) s.model = m;
+    });
+
+    setupSettings(router);
+    setupNewSession();
+
+    refs.fvClose.addEventListener('click', () => refs.fileViewer.classList.remove('open'));
+    refs.fileViewer.addEventListener('click', (e) => {
+        if (e.target === refs.fileViewer) refs.fileViewer.classList.remove('open');
+    });
+    if (refs.authLoginBtn) {
+        refs.authLoginBtn.addEventListener('click', () => { window.location.href = '/'; });
+    }
+
+    refreshSessions();
+    refreshProjectState();
+    refreshTree();
+}
+
+document.addEventListener('DOMContentLoaded', boot);

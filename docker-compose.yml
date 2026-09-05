@@ -20,6 +20,7 @@ services:
 
   searxng:
     image: searxng/searxng:latest
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8904:8080"
     env_file:
@@ -41,7 +42,7 @@ networks:
   default:
     driver: bridge
     driver_opts:
-      com.docker.network.driver.mtu: 1500
+      com.docker.network.driver.mtu: 1300
 
 volumes:
   cetas-data:

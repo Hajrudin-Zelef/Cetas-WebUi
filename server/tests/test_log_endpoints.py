@@ -1,4 +1,4 @@
-"""Tests for log API endpoints in proxy/server.py."""
+"""Tests for log API endpoints in server/server.py."""
 import json
 import os
 import sys
@@ -10,7 +10,7 @@ _tmpdata = tempfile.mkdtemp()
 os.environ.setdefault("CETAS_DATA_DIR", _tmpdata)
 
 # Add proxy to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'proxy'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from observability import init_observability, log_event, read_events, generate_id, redact_event, get_summary, correlate_incidents
 

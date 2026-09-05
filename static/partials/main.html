@@ -1,0 +1,205 @@
+    <main class="main">
+        <div id="budget-alert-overlay" class="budget-alert-overlay" style="display:none">
+            <div class="budget-alert-popup">
+                <div class="budget-alert-icon">⚠️</div>
+                <div id="budget-alert-text" class="budget-alert-text"></div>
+                <button id="budget-alert-close" class="budget-alert-close">Compris</button>
+            </div>
+        </div>
+        <div id="clear-all-overlay" class="budget-alert-overlay" style="display:none">
+            <div class="budget-alert-popup" style="max-width:440px">
+                <div class="budget-alert-icon">🗑️</div>
+                <div class="budget-alert-text">
+                    <strong>Effacer TOUTES les conversations ?</strong><br><br>
+                    Cette action est <strong style="color:#ef4444">irréversible</strong>.
+                    Toutes vos conversations seront supprimées définitivement.
+                </div>
+                <div style="text-align:left;margin-bottom:10px">
+                    <label style="font-size:0.82rem;color:var(--text-secondary)">Recopiez ce code pour confirmer :<br><strong id="clear-all-code" style="font-family:monospace;letter-spacing:3px;font-size:1.2rem;color:var(--text)"></strong></label>
+                    <input type="text" id="clear-all-code-input" class="sp-modal-input" placeholder="Code à 6 caractères" maxlength="6" style="width:100%;box-sizing:border-box;margin-top:8px;font-family:monospace;letter-spacing:2px;font-size:1.1rem;text-align:center">
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                    <button id="clear-all-cancel" class="models-cancel-btn">Annuler</button>
+                    <button id="clear-all-confirm" class="models-save-btn" style="background:var(--danger,#ef4444);color:#fff;border-color:var(--danger,#ef4444)" disabled>Effacer tout</button>
+                </div>
+            </div>
+        </div>
+        <div id="no-model-alert-overlay" class="budget-alert-overlay" style="display:none">
+            <div class="budget-alert-popup">
+                <div class="budget-alert-icon">⚠️</div>
+                <div id="no-model-alert-text" class="budget-alert-text"></div>
+                <button id="no-model-alert-close" class="budget-alert-close">Compris</button>
+            </div>
+        </div>
+        <!-- Custom Alert / Confirm -->
+        <div id="custom-dialog-overlay" class="custom-dialog-overlay" style="display:none">
+            <div class="custom-dialog">
+                <div id="custom-dialog-icon" class="custom-dialog-icon"></div>
+                <div id="custom-dialog-message" class="custom-dialog-message"></div>
+                <div id="custom-dialog-actions" class="custom-dialog-actions">
+                    <button id="custom-dialog-cancel" class="custom-dialog-btn custom-dialog-btn-cancel">Annuler</button>
+                    <button id="custom-dialog-ok" class="custom-dialog-btn custom-dialog-btn-ok">OK</button>
+                </div>
+            </div>
+        </div>
+        <div id="chat-container" class="chat-container">
+            <div id="empty-chat-placeholder" class="empty-chat-placeholder">
+                <img src="images/Cetas42.png" alt="Cetas" class="empty-chat-logo">
+                <p class="empty-chat-text">Sélectionnez une conversation ou démarrez-en une nouvelle en saisissant votre message ci-dessous.</p>
+                <div id="empty-chat-category" class="empty-chat-category" style="display:none"></div>
+            </div>
+        </div>
+        <div id="model-alert" class="model-alert" style="display:none">
+            <span id="model-alert-text">Veuillez choisir un modèle (texte ou image) avant d'envoyer.</span>
+            <button id="model-alert-close" class="model-alert-close" type="button" aria-label="Fermer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="token-bar" id="token-bar">
+            <div class="export-btns-group">
+                <div class="share-btn-wrapper" style="position:relative">
+                    <button id="share-btn" class="export-action-btn" title="Télécharger" style="display:none">
+                        <svg width="16" height="16" viewBox="0 0 24 24"><use href="images/icons.svg#icon-download"/></svg>
+                    </button>
+                    <div id="share-menu" class="share-menu">
+                        <div class="share-menu-item" id="share-menu-md">Télécharger la conversation au format Markdown</div>
+                        <div class="share-menu-item" id="share-menu-html">Télécharger la conversation au format HTML</div>
+                    </div>
+                </div>
+                <button id="summary-btn" class="export-action-btn" title="Résumé IA pour nouvelle conversation" style="display:none">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/><line x1="4" y1="18" x2="10" y2="18"/></svg>
+                </button>
+            </div>
+            <span id="token-info"></span>
+            <span id="cost-info"></span>
+        </div>
+
+        <div class="input-area">
+            <div id="attach-preview"></div>
+            <div class="input-row">
+            <div class="input-wrapper">
+                <input type="file" id="file-input" accept="image/*,.pdf,.txt,.md,.csv,.json,.xml,.log,.js,.py,.html,.css" multiple hidden>
+                <!-- model-select conservé caché pour compatibilité JS (STATE, _customValue, etc.) -->
+                <select id="model-select" class="model-select" style="display:none"><option value="">—</option></select>
+                <!-- Contenu principal (textarea + ligne 2) à droite du sélecteur -->
+                <div class="input-content">
+                    <!-- Ligne 1 : textarea -->
+                    <div class="input-line-1">
+                        <textarea
+                            id="prompt-input"
+                            class="prompt-input"
+                            placeholder="Écrivez votre message..."
+                            rows="1"
+                        ></textarea>
+                    </div>
+                    <!-- Ligne 2 -->
+                    <div class="input-line-2">
+                        <div class="input-line-2-left">
+                            <button id="plus-menu-btn" class="input-icon-btn" title="Plus d'options"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                            <button id="attach-btn" title="Joindre un fichier" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24"><use href="images/icons.svg#icon-attach"/></svg></button>
+                            <button id="web-search-btn" class="input-icon-btn custom-select-info" title="Recherche web" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24"><use href="images/icons.svg#icon-globe"/></svg></button>
+                            <button id="canvas-toggle-btn" class="input-icon-btn" title="Activer le Canvas pour cette conversation" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24"><use href="images/icons.svg#icon-canvas"/></svg></button>
+                        </div>
+                        <div class="input-line-2-center">
+                            <button id="toolbar-insert-btn" class="prompt-toolbar-btn" title="Insérer un prompt enregistré" style="display:none">
+                                <svg width="14" height="14" viewBox="0 0 24 24"><use href="images/icons.svg#icon-document"/></svg>
+                                <span class="btn-label">Insérer un prompt</span>
+                            </button>
+                            <button id="toolbar-enhance-btn" class="prompt-toolbar-btn" title="Améliorer le prompt" style="display:none">
+                                <svg width="14" height="14" viewBox="0 0 24 24"><use href="images/icons.svg#icon-sparkle"/></svg>
+                                <span class="btn-label">Améliorer le prompt</span>
+                            </button>
+                            <button id="toolbar-save-btn" class="prompt-toolbar-btn" title="Enregistrer le prompt" style="display:none">
+                                <svg width="14" height="14" viewBox="0 0 24 24"><use href="images/icons.svg#icon-save"/></svg>
+                                <span class="btn-label">Enregistrer le prompt</span>
+                            </button>
+                        </div>
+                        <div class="input-line-2-right">
+                            <button id="mobile-send-btn" class="mobile-send-btn" title="Envoyer" style="display:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                            <button id="mic-btn" class="mic-btn" title="Dicter"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                        </div>
+                    </div>
+                </div>
+                <div id="prompt-picker-dropdown-wrapper" class="prompt-picker-dropdown-wrapper" style="display:none"><div id="prompt-picker-dropdown" class="prompt-picker-dropdown"></div></div>
+                <!-- Éléments cachés conservés pour compatibilité -->
+                <button id="enhance-prompt-btn" class="enhance-prompt-btn" style="display:none!important" disabled></button>
+                <button id="prompt-picker-btn" style="display:none"></button>
+                <button id="send-btn" class="send-btn" style="display:none!important" disabled></button>
+                <div id="prompt-toolbar" class="prompt-toolbar" style="display:none!important"></div>
+            </div>
+            <button id="chat-header-settings" class="input-settings-btn" title="Réglages de la conversation">
+                <svg width="18" height="18" viewBox="0 0 24 24"><use href="images/icons.svg#icon-settings"/></svg>
+            </button>
+            </div>
+            <div id="plus-menu-dropdown" class="plus-menu-dropdown" style="display:none">
+                <!-- Section Fichiers -->
+                <button type="button" class="plus-menu-item" data-action="attach">
+                    <span class="plus-menu-item-icon"><svg width="18" height="18" viewBox="0 0 24 24"><use href="images/icons.svg#icon-attach"/></svg></span>
+                    <span class="plus-menu-item-text">
+                        <span class="plus-menu-item-title">Ajouter des fichiers</span>
+                        <span class="plus-menu-item-desc">Images, PDF, .md, .txt, .csv…</span>
+                    </span>
+                </button>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Modèles -->
+                <div class="plus-menu-section" id="plus-model-section">
+                    <div class="plus-menu-section-title">Modèles</div>
+                    <div class="plus-model-tabs" id="plus-model-tabs">
+                        <button type="button" class="plus-model-tab active" data-tab="text">Texte</button>
+                        <button type="button" class="plus-model-tab" data-tab="image">Image</button>
+                        <button type="button" class="plus-model-tab" data-tab="search">Recherche</button>
+                    </div>
+                    <div id="plus-model-list" class="plus-model-list"></div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Mode Réflexion -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-row">
+                        <span class="plus-menu-row-label">
+                            <span class="plus-menu-row-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg></span>
+                            Mode Réflexion
+                        </span>
+                        <label class="plus-menu-toggle" id="plus-reflection-toggle-label">
+                            <input type="checkbox" id="plus-reflection-toggle">
+                            <span class="plus-menu-toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Effort -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-section-title">Effort</div>
+                    <div class="plus-menu-pills" id="plus-effort-pills">
+                        <button type="button" class="plus-menu-pill" data-effort="low">Faible <span class="plus-menu-pill-hint">Rapide</span></button>
+                        <button type="button" class="plus-menu-pill active" data-effort="medium">Moyen <span class="plus-menu-pill-hint">Équilibré</span></button>
+                        <button type="button" class="plus-menu-pill" data-effort="high">Max <span class="plus-menu-pill-hint">Qualité</span></button>
+                    </div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Compétences -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-section-title">Compétences</div>
+                    <div id="plus-menu-skills" class="plus-menu-skills"></div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Recherche web -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-row">
+                        <span class="plus-menu-row-label">
+                            <span class="plus-menu-row-icon"><svg width="16" height="16" viewBox="0 0 24 24"><use href="images/icons.svg#icon-globe"/></svg></span>
+                            Recherche web
+                        </span>
+                        <label class="plus-menu-toggle" id="plus-websearch-toggle-label">
+                            <input type="checkbox" id="plus-websearch-toggle">
+                            <span class="plus-menu-toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="plus-menu-pills plus-menu-pills-tight" id="plus-websearch-depth" style="display:none">
+                        <button type="button" class="plus-menu-pill active" data-depth="standard">Standard</button>
+                        <button type="button" class="plus-menu-pill" data-depth="deep">Approfondi</button>
+                    </div>
+                </div>
+            </div>
+            <span class="input-hint" id="input-hint"></span>
+        </div>
+    </main>

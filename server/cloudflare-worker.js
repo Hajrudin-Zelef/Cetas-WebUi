@@ -56,7 +56,7 @@ export default {
     const upstreamPath = match[2];
 
     // ── Configuration providers ──────────────────────────────────
-    // Même structure que proxy/server.py — ProviderConfig
+    // Même structure que server/server.py — ProviderConfig
     const PROVIDERS = {
       deepseek: {
         base: 'https://api.deepseek.com',

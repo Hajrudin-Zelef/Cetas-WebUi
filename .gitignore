@@ -19,14 +19,14 @@ SECURITY_AUDIT.md
 cetas-page-snapshot.yml
 
 # Backend prive
-core/
+/core/
 setup.py
 setup.py.bak
 setup.py.or
-proxy/server.py.back
-proxy/encrypt_keys.py
-proxy/cloudflare-worker.js
-proxy/wrangler.toml
+server/server.py.back
+server/encrypt_keys.py
+server/cloudflare-worker.js
+server/wrangler.toml
 tools/
 
 # Backups
@@ -35,6 +35,7 @@ tools/
 *.bak2
 
 # Dossiers internes
+Docs/
 Rapport/
 RAPPORT/
 TAF/
@@ -42,3 +43,8 @@ __pycache__/
 searxng-data/
 node_modules/
 skills-lock.json
+*.22
+*.tar.gz
+apply_fix.sh
+*22
+.opencode/
