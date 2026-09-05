@@ -107,3 +107,19 @@ test('skills.js exporte les compétences CETAS', async () => {
         assert.ok(sk.id && sk.name && sk.prompt, 'compétence incomplète: ' + (sk.id || '?'));
     }
 });
+
+test('tool-search.js : contenu modèle = data.text (format concis)', () => {
+    const src = readFileSync(resolve(ROOT, 'js/integrations/tool-search.js'), 'utf8');
+    assert.match(src, /result:\s*\(data\s*&&\s*data\.text\)/);
+});
+
+test('composer.html : sélecteurs par outil (6)', () => {
+    const html = read('components/composer.html');
+    for (const t of ['read', 'grep', 'ls', 'write', 'edit', 'bash']) {
+        assert.match(html, new RegExp('data-tool="' + t + '"'));
+    }
+});
+test('app.js : câblage setRule par outil', () => {
+    const src = readFileSync(resolve(MX, 'js/app.js'), 'utf8');
+    assert.match(src, /setRule\(sel\.getAttribute\('data-tool'\)/);
+});

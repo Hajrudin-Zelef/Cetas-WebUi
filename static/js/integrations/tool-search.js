@@ -48,7 +48,7 @@ async function _execMarexcodeTool(e){
       detail: { name: name, args: args, result: data, phase: "end" },
     }));
     if (!resp.ok) return { id: e.id, name: name, result: { error: data.error || ("Erreur exec " + resp.status) } };
-    return { id: e.id, name: name, result: data };
+    return { id: e.id, name: name, result: (data && data.text) ? data.text : data };
   } catch (err) {
     if (err && err.name === "AbortError") return { id: e.id, name: name, result: { error: "Timeout exécution (20s)" } };
     return { id: e.id, name: name, result: { error: err && err.message ? err.message : "Erreur réseau exec" } };

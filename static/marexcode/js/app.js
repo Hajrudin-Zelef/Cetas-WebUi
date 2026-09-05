@@ -3,7 +3,7 @@ import { initModelSelect, selectModel, getSelectedModelId } from './model-select
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
 import { COMPETENCES } from './skills.js';
-import { getPermission, setPermission, checkToolPermission } from './marex-permission.js';
+import { getPermission, setPermission, checkToolPermission, getRule, setRule } from './marex-permission.js';
 
 const $ = id => document.getElementById(id);
 
@@ -120,6 +120,12 @@ function setupPermissionSelector() {
             setPermission(value);
             refs.menuPermission.classList.remove('open');
         });
+    });
+
+    const selects = refs.menuPermission.querySelectorAll('select[data-tool]');
+    selects.forEach(sel => {
+        sel.value = getRule(sel.getAttribute('data-tool'));
+        sel.addEventListener('change', () => setRule(sel.getAttribute('data-tool'), sel.value));
     });
 }
 
