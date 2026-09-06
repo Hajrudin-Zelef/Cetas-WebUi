@@ -88,6 +88,7 @@ def apply_frozen_defaults():
     Ne remplace jamais une variable déjà définie par l'utilisateur.
     """
     if not getattr(sys, "frozen", False):
+        log.info("Mode dev: apply_frozen_defaults ignoré (sys.frozen=%s)", getattr(sys, "frozen", None))
         return
     base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
     os.environ.setdefault("CETAS_BASE_DIR", base)
@@ -99,6 +100,7 @@ def apply_frozen_defaults():
     os.environ.setdefault("CETAS_PROJECT_DIR", os.path.join(cetas_dir, "workspace"))
     os.environ.setdefault("CETAS_VAULT_PATH", os.path.join(cetas_dir, ".vault", ".enc"))
     os.environ.setdefault("CETAS_ENV_PATH", os.path.join(cetas_dir, ".env"))
+    log.info("Frozen defaults: VAULT=%s", os.environ.get("CETAS_VAULT_PATH"))
 
 
 # ── Vault local UI (M3) ─────────────────────────────────────────────
