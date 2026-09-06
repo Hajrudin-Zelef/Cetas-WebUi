@@ -115,6 +115,37 @@ def _load_secure_vault():
     return mod.SecureVault(vault_path)
 
 
+def _password_file() -> str:
+    """Chemin du fichier contenant le mot de passe vault (desktop only)."""
+    data_dir = os.environ.get("CETAS_DATA_DIR", DATA_DIR)
+    return os.path.join(data_dir, ".password")
+
+
+def save_vault_password(password: str):
+    """Sauvegarde le mot de passe vault en clair (desktop, fichier local)."""
+    try:
+        with open(_password_file(), "w", encoding="utf-8") as f:
+            f.write(password)
+        try:
+            os.chmod(_password_file(), 0o600)
+        except OSError:
+            pass
+    except Exception as e:
+        log.warning("Impossible de sauvegarder le mot de passe vault: %s", e)
+
+
+def load_vault_password() -> str:
+    """Charge le mot de passe vault depuis le fichier local."""
+    pf = _password_file()
+    if not os.path.isfile(pf):
+        return ""
+    try:
+        with open(pf, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except Exception:
+        return ""
+
+
 def setup_save_vault(data: dict) -> bool:
     """Chiffre les clés API et les sauvegarde dans le vault + génère .env."""
     import secrets as _pysecrets
@@ -171,6 +202,7 @@ def setup_save_vault(data: dict) -> bool:
         pass
 
     log.info("Vault créé, .env généré (%d clés).", len(api_keys))
+    save_vault_password(data.get("password", ""))
     return True
 
 # ── Static serving local (M0) : mode autonome sans nginx ───────────

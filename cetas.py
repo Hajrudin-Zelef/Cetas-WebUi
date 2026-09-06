@@ -19,7 +19,7 @@ except Exception as e:
     _log_error(e)
     raise
 
-from server.server import apply_frozen_defaults, create_server, vault_exists
+from server.server import apply_frozen_defaults, create_server, vault_exists, load_vault_password
 
 
 def _get_icon_path():
@@ -74,6 +74,13 @@ def _is_autostart_enabled():
 
 def main():
     apply_frozen_defaults()
+
+    # Charger le mot de passe vault depuis le fichier local (desktop)
+    if not os.environ.get("CETAS_VAULT_PASSWORD"):
+        saved = load_vault_password()
+        if saved:
+            os.environ["CETAS_VAULT_PASSWORD"] = saved
+
     if not vault_exists():
         os.environ["CETAS_SETUP_MODE"] = "1"
 
