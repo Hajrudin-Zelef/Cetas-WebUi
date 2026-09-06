@@ -124,10 +124,12 @@ def _password_file() -> str:
 def save_vault_password(password: str):
     """Sauvegarde le mot de passe vault en clair (desktop, fichier local)."""
     try:
-        with open(_password_file(), "w", encoding="utf-8") as f:
+        pf = _password_file()
+        os.makedirs(os.path.dirname(pf), exist_ok=True)
+        with open(pf, "w", encoding="utf-8") as f:
             f.write(password)
         try:
-            os.chmod(_password_file(), 0o600)
+            os.chmod(pf, 0o600)
         except OSError:
             pass
     except Exception as e:
