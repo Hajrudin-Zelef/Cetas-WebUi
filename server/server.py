@@ -1472,7 +1472,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
                 try:
                     self.wfile.write(chunk)
                     self.wfile.flush()
-                except (BrokenPipeError, ConnectionResetError):
+                except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
                     break
 
             log.info("%s /api/proxy/%s/... -> %d", method, provider, status)
