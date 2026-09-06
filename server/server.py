@@ -12,8 +12,6 @@ import re
 import sys
 import json
 import hashlib
-import gzip
-import tempfile
 import hmac
 import http.client
 import logging
@@ -110,44 +108,6 @@ def apply_frozen_defaults():
     os.environ.setdefault("CETAS_VAULT_PATH", os.path.join(cetas_dir, ".vault", ".enc"))
     os.environ.setdefault("CETAS_ENV_PATH", os.path.join(cetas_dir, ".env"))
     log.info("Frozen defaults: VAULT=%s", os.environ.get("CETAS_VAULT_PATH"))
-
-
-# ── Optimisations performance (desktop) ───────────────────────────
-_SSI_CACHE: dict[str, tuple[str, float]] = {}  # rel_path → (rendered, mtime)
-_GZIP_MIN = 1024  # taille min pour compresser (octets)
-_COMPRESSIBLE = {
-    "text/html", "text/css", "text/javascript", "application/javascript",
-    "application/json", "text/xml", "image/svg+xml", "text/plain",
-}
-
-
-def _gzip_compress(data: bytes) -> bytes:
-    """Compresse avec gzip si le contenu est compressible et > _GZIP_MIN."""
-    return gzip.compress(data, compresslevel=6)
-
-
-def _static_etag(data: bytes) -> str:
-    """Génère un ETag basé sur le hash du contenu."""
-    return hashlib.md5(data).hexdigest()
-
-
-def _atomic_write(path: str, data: bytes):
-    """Écriture atomique : temp + rename (évite corruption sur crash)."""
-    dir_name = os.path.dirname(path)
-    os.makedirs(dir_name, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=dir_name, prefix=".tmp_")
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(data)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, path)
-    except Exception:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
 
 
 # ── Vault local UI (M3) ─────────────────────────────────────────────
@@ -569,8 +529,8 @@ def _save_users() -> None:
 def _save_users_locked() -> None:
     """Écrit users.json — l'appelant doit déjà tenir _users_lock."""
     data = {"version": 2, "users": _users}
-    body = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
-    _atomic_write(USERS_PATH, body)
+    with open(USERS_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 def _get_jwt_secret() -> str:
     global _jwt_secret
@@ -797,8 +757,8 @@ def load_user_conversations(username: str) -> dict[str, dict]:
 def save_user_conversation(username: str, filename: str, data: dict) -> None:
     """Sauvegarde une conversation (disque + cache RAM)."""
     fp = _conv_file_path(username, filename)
-    body = json.dumps(data, ensure_ascii=False).encode("utf-8")
-    _atomic_write(fp, body)
+    with open(fp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
     with _conv_cache_lock:
         _conv_cache.setdefault(username, {})[filename] = data
         _conv_cache_ts.setdefault(username, time.time())
@@ -1257,26 +1217,17 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _respond_json(self, data: dict, status: int = 200):
         body = json.dumps(data).encode()
-        # Gzip pour les réponses JSON volumineuses
-        accept_gzip = "gzip" in (self.headers.get("Accept-Encoding", "") or "")
-        compressed = body
-        if accept_gzip and len(body) > _GZIP_MIN:
-            compressed = _gzip_compress(body)
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        if accept_gzip and compressed is not body:
-            self.send_header("Content-Encoding", "gzip")
-            self.send_header("Content-Length", str(len(compressed)))
-        else:
-            self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(len(body)))
         origin = self.headers.get("Origin", "")
         self.send_header("Access-Control-Allow-Origin", _cors_origin(origin))
-        self.send_header("Vary", "Origin, Accept-Encoding")
+        self.send_header("Vary", "Origin")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         if getattr(self, "_write_body", True):
-            self.wfile.write(compressed)
+            self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -1349,55 +1300,19 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             full = os.path.join(root, norm)
         try:
             if norm.endswith(".html"):
-                # Cache SSI : revalider si mtime changé
-                try:
-                    mtime = os.path.getmtime(full)
-                except OSError:
-                    mtime = 0
-                cached = _SSI_CACHE.get(norm)
-                if cached and cached[1] == mtime:
-                    data = cached[0].encode("utf-8")
-                else:
-                    rendered = _ssi_render(norm)
-                    _SSI_CACHE[norm] = (rendered, mtime)
-                    data = rendered.encode("utf-8")
+                data = _ssi_render(norm).encode("utf-8")
             else:
                 with open(full, "rb") as f:
                     data = f.read()
         except OSError:
             return False
-
-        # ETag
-        etag = _static_etag(data)
-        if_none = self.headers.get("If-None-Match", "")
-        if if_none == etag:
-            self.send_response(304)
-            self.end_headers()
-            return True
-
-        # Gzip
-        accept_gzip = "gzip" in (self.headers.get("Accept-Encoding", "") or "")
-        compressed = data
-        ct = _static_content_type(norm)
-        if accept_gzip and len(data) > _GZIP_MIN and any(ct.startswith(t) for t in _COMPRESSIBLE):
-            compressed = _gzip_compress(data)
-
         self.send_response(200)
-        self.send_header("Content-Type", ct)
-        self.send_header("ETag", etag)
-        if accept_gzip and compressed is not data:
-            self.send_header("Content-Encoding", "gzip")
-            self.send_header("Content-Length", str(len(compressed)))
-        else:
-            self.send_header("Content-Length", str(len(data)))
-        # Cache : assets versionnés (?) → 1 an, sinon 1 heure
-        if "?" in self.path:
-            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
-        else:
-            self.send_header("Cache-Control", "public, max-age=3600")
+        self.send_header("Content-Type", _static_content_type(norm))
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         if self._write_body:
-            self.wfile.write(compressed)
+            self.wfile.write(data)
         return True
 
     def _serve_setup(self):
