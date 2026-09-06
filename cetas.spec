@@ -12,6 +12,11 @@ datas = [
     ('core/api-keys-seed.json', 'core'),
 ]
 
+import os as _os
+icon_path = _os.path.join(_os.path.dirname(_os.path.abspath(SPECPATH)), 'static', 'images', 'Cetas42.ico')
+if not _os.path.exists(icon_path):
+    icon_path = None
+
 a = Analysis(
     ['cetas.py'],
     pathex=[],
@@ -59,6 +64,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
+    icon=icon_path,
 )
 
 coll = COLLECT(

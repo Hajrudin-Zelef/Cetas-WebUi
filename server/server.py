@@ -1305,6 +1305,11 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
                 return
             ok = setup_save_vault(data)
             if ok:
+                # Recharger les clés en mémoire après création du vault
+                os.environ.pop("CETAS_SETUP_MODE", None)
+                global api_keys
+                api_keys = {}
+                load_api_keys()
                 self._respond_json({"ok": True})
             else:
                 self._respond_json({"error": "Échec de la sauvegarde du vault"}, 500)
