@@ -1,11 +1,62 @@
 #!/usr/bin/env python3
-"""Cetas Desktop — fenêtre native avec serveur intégré (pywebview)."""
+"""Cetas Desktop — fenêtre native avec serveur intégré (pywebview + tray icon)."""
 import os
+import sys
 import threading
 
 import webview
 
 from server.server import apply_frozen_defaults, create_server, vault_exists
+
+
+def _get_icon_path():
+    """Chemin vers l'icône .ico (frozen ou dev)."""
+    if getattr(sys, "frozen", False):
+        base = sys._MEIPASS
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, "static", "images", "Cetas42.ico")
+
+
+def _toggle_autostart(enable):
+    """Active/désactive le démarrage automatique au login (Windows)."""
+    if sys.platform != "win32":
+        return
+    import winreg
+    key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE)
+        if enable:
+            exe = sys.executable
+            if getattr(sys, "frozen", False):
+                exe = os.path.abspath(sys.executable)
+            winreg.SetValueEx(key, "Cetas", 0, winreg.REG_SZ, f'"{exe}"')
+        else:
+            try:
+                winreg.DeleteValue(key, "Cetas")
+            except FileNotFoundError:
+                pass
+        winreg.CloseKey(key)
+    except Exception:
+        pass
+
+
+def _is_autostart_enabled():
+    """Vérifie si l'auto-start est actif."""
+    if sys.platform != "win32":
+        return False
+    import winreg
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_READ)
+        try:
+            winreg.QueryValueEx(key, "Cetas")
+            winreg.CloseKey(key)
+            return True
+        except FileNotFoundError:
+            winreg.CloseKey(key)
+            return False
+    except Exception:
+        return False
 
 
 def main():
@@ -32,6 +83,62 @@ def main():
         resizable=True,
         text_select=True,
     )
+
+    # ── Tray icon (M5) ──────────────────────────────────────────────
+    _tray_icon = None
+    _tray_thread = None
+
+    def _start_tray():
+        nonlocal _tray_icon, _tray_thread
+        if _tray_icon is not None:
+            return
+        try:
+            import pystray
+            from PIL import Image
+
+            icon_path = _get_icon_path()
+            if os.path.exists(icon_path):
+                image = Image.open(icon_path)
+            else:
+                image = Image.new("RGB", (64, 64), "#5b7fff")
+
+            def on_show(icon, item):
+                window.show()
+
+            def on_quit(icon, item):
+                icon.stop()
+                window.destroy()
+
+            def on_toggle_autostart(icon, item):
+                current = _is_autostart_enabled()
+                _toggle_autostart(not current)
+                icon.menu = _build_menu(not current)
+
+            def _build_menu(auto_enabled):
+                return pystray.Menu(
+                    pystray.MenuItem("Ouvrir Cetas", on_show, default=True),
+                    pystray.MenuItem(
+                        f"{'Désactiver' if auto_enabled else 'Activer'} le démarrage auto",
+                        on_toggle_autostart,
+                    ),
+                    pystray.Menu.SEPARATOR,
+                    pystray.MenuItem("Quitter Cetas", on_quit),
+                )
+
+            _tray_icon = pystray.Icon("Cetas", image, "Cetas", _build_menu(_is_autostart_enabled()))
+            _tray_thread = threading.Thread(target=_tray_icon.run, daemon=True)
+            _tray_thread.start()
+        except ImportError:
+            pass
+
+    def on_close():
+        """Fermeture de la fenêtre → minimiser au tray au lieu de quitter."""
+        window.hide()
+        _start_tray()
+        return False
+
+    window.events.closing += on_close
+
     webview.start(debug=False)
 
 

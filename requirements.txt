@@ -1,3 +1,5 @@
 cryptography
 PyJWT
 pywebview
+pystray
+Pillow
