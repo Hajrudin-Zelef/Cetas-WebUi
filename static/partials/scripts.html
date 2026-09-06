@@ -38,14 +38,17 @@
             <form id="login-form" class="login-form">
                 <div class="login-field">
                     <label for="login-username">Nom d'utilisateur</label>
-                    <input type="text" id="login-username" autocomplete="username" placeholder="admin" autofocus>
+                    <input type="text" id="login-username" autocomplete="username" placeholder="admin">
                 </div>
                 <div class="login-field">
                     <label for="login-password">Mot de passe</label>
-                    <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••">
+                    <input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••" autofocus>
                 </div>
                 <div id="login-error" class="login-error" style="display:none"></div>
                 <button type="submit" id="login-btn" class="login-btn">Se connecter</button>
+                <div class="login-footer">
+                    <a href="#" id="login-forgot" class="login-forgot">Mot de passe oublié ?</a>
+                </div>
             </form>
         </div>
     </div>
@@ -83,6 +86,30 @@
         </div>
     </div>
 
+    <script>
+    // Auto-fill username depuis localStorage + autofocus password
+    (function() {
+        try {
+            var user = JSON.parse(localStorage.getItem('cetas-user'));
+            if (user && user.username) {
+                var input = document.getElementById('login-username');
+                if (input) input.value = user.username;
+            }
+        } catch(e) {}
+        // Autofocus password si username déjà rempli
+        setTimeout(function() {
+            var u = document.getElementById('login-username');
+            var p = document.getElementById('login-password');
+            if (u && u.value && p) p.focus();
+        }, 100);
+        // Forgot password
+        var fg = document.getElementById('login-forgot');
+        if (fg) fg.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Pour réinitialiser votre mot de passe :\n\n1. Serveur : demandez à l\'administrateur\n2. Desktop : supprimez %APPDATA%\\Cetas\\data\\users.json et recréez le compte');
+        });
+    })();
+    </script>
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {

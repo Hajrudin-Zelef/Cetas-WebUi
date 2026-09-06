@@ -1301,6 +1301,18 @@ body.storage-preview-mode .code-copy-btn {
 .login-btn:hover {
     opacity: 0.9;
 }
+.login-footer {
+    text-align: center;
+    margin-top: 12px;
+}
+.login-forgot {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 13px;
+}
+.login-forgot:hover {
+    text-decoration: underline;
+}
 
 /* Bloque l'accès à l'app tant que non connecté */
 body.auth-locked #sidebar,
