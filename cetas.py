@@ -3,8 +3,21 @@
 import os
 import sys
 import threading
+import traceback
 
-import webview
+def _log_error(e):
+    """Écrit l'erreur dans un fichier log à côté de l'exe."""
+    log_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "cetas_error.log")
+    with open(log_path, "a", encoding="utf-8") as f:
+        f.write(f"--- {__import__('datetime').datetime.now()} ---\n")
+        traceback.print_exc(file=f)
+        f.write("\n")
+
+try:
+    import webview
+except Exception as e:
+    _log_error(e)
+    raise
 
 from server.server import apply_frozen_defaults, create_server, vault_exists
 
@@ -143,4 +156,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        _log_error(e)
+        raise
