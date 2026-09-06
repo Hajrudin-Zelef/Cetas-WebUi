@@ -159,7 +159,7 @@ def main():
 
     window.events.closing += on_close
 
-    webview.start(debug=False)
+    webview.start(debug=False, gui="edgechromium", private_mode=False)
 
 
 if __name__ == "__main__":
