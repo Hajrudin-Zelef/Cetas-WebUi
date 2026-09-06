@@ -1257,26 +1257,17 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _respond_json(self, data: dict, status: int = 200):
         body = json.dumps(data).encode()
-        # Gzip pour les réponses JSON volumineuses
-        accept_gzip = "gzip" in (self.headers.get("Accept-Encoding", "") or "")
-        compressed = body
-        if accept_gzip and len(body) > _GZIP_MIN:
-            compressed = _gzip_compress(body)
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        if accept_gzip and compressed is not body:
-            self.send_header("Content-Encoding", "gzip")
-            self.send_header("Content-Length", str(len(compressed)))
-        else:
-            self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(len(body)))
         origin = self.headers.get("Origin", "")
         self.send_header("Access-Control-Allow-Origin", _cors_origin(origin))
-        self.send_header("Vary", "Origin, Accept-Encoding")
+        self.send_header("Vary", "Origin")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         if getattr(self, "_write_body", True):
-            self.wfile.write(compressed)
+            self.wfile.write(body)
 
     def do_OPTIONS(self):
         self.send_response(204)
@@ -1375,29 +1366,15 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             self.end_headers()
             return True
 
-        # Gzip
-        accept_gzip = "gzip" in (self.headers.get("Accept-Encoding", "") or "")
-        compressed = data
         ct = _static_content_type(norm)
-        if accept_gzip and len(data) > _GZIP_MIN and any(ct.startswith(t) for t in _COMPRESSIBLE):
-            compressed = _gzip_compress(data)
-
         self.send_response(200)
         self.send_header("Content-Type", ct)
         self.send_header("ETag", etag)
-        if accept_gzip and compressed is not data:
-            self.send_header("Content-Encoding", "gzip")
-            self.send_header("Content-Length", str(len(compressed)))
-        else:
-            self.send_header("Content-Length", str(len(data)))
-        # Cache : assets versionnés (?) → 1 an, sinon 1 heure
-        if "?" in self.path:
-            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
-        else:
-            self.send_header("Cache-Control", "public, max-age=3600")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         if self._write_body:
-            self.wfile.write(compressed)
+            self.wfile.write(data)
         return True
 
     def _serve_setup(self):
