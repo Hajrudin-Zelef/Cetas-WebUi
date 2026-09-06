@@ -63,6 +63,11 @@ log = logging.getLogger(__name__)
 # ── Chemins (local dev ou Docker) ──────────────────────────────────
 BASE_DIR = os.environ.get("CETAS_BASE_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 VAULT_PATH = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault", ".enc"))
+
+
+def _vault_path() -> str:
+    """Chemin du vault, lu lazy (après apply_frozen_defaults)."""
+    return os.environ.get("CETAS_VAULT_PATH", VAULT_PATH)
 ENV_PATH = os.environ.get("CETAS_ENV_PATH", os.path.join(BASE_DIR, ".env"))
 
 
@@ -607,11 +612,11 @@ def load_api_keys():
         log.error("CETAS_VAULT_PASSWORD non défini — arrêt.")
         sys.exit(1)
 
-    if not os.path.exists(VAULT_PATH):
+    if not os.path.exists(_vault_path()):
         if setup_mode:
             log.warning("Mode setup : vault absent, clés vides.")
             return
-        log.error("Vault introuvable: %s", VAULT_PATH)
+        log.error("Vault introuvable: %s", _vault_path())
         sys.exit(1)
 
     if not os.path.exists(ENV_PATH):
@@ -622,7 +627,7 @@ def load_api_keys():
         sys.exit(1)
 
     SecureVault = _load_vault()
-    vault = SecureVault(VAULT_PATH)
+    vault = SecureVault(_vault_path())
 
     try:
         data = vault.load(password)
