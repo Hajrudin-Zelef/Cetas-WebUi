@@ -33,19 +33,29 @@ import jwt
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 # Observabilité structurée
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from observability import (
-    init_observability as _init_obs,
-    log_event as _obs_log,
-    read_events as _obs_read,
-    correlate_incidents as _obs_correlate,
-    get_summary as _obs_summary,
-    redact_event as _obs_redact,
-    generate_id as _obs_id,
-)
-
-# Backend Marexcode (sandbox exécution + sessions + arborescence workspace)
-from marexcode import MarexcodeMixin
+try:
+    from .observability import (
+        init_observability as _init_obs,
+        log_event as _obs_log,
+        read_events as _obs_read,
+        correlate_incidents as _obs_correlate,
+        get_summary as _obs_summary,
+        redact_event as _obs_redact,
+        generate_id as _obs_id,
+    )
+    from .marexcode import MarexcodeMixin
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from observability import (
+        init_observability as _init_obs,
+        log_event as _obs_log,
+        read_events as _obs_read,
+        correlate_incidents as _obs_correlate,
+        get_summary as _obs_summary,
+        redact_event as _obs_redact,
+        generate_id as _obs_id,
+    )
+    from marexcode import MarexcodeMixin
 
 logging.basicConfig(level=logging.INFO, format="[proxy] %(message)s")
 log = logging.getLogger(__name__)

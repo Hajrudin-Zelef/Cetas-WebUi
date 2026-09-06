@@ -14,7 +14,7 @@ datas = [
 
 a = Analysis(
     ['cetas.py'],
-    pathex=['server'],
+    pathex=[],
     binaries=[],
     datas=datas,
     hiddenimports=[
