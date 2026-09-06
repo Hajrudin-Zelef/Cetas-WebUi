@@ -1586,7 +1586,8 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         pass  # On logue nous-mêmes dans _proxy_request
 
 
-def main():
+def create_server():
+    """Crée et configure le serveur sans le démarrer."""
     port = int(os.environ.get("PROXY_PORT", "8080"))
     log_dir = os.path.join(DATA_DIR, "logs")
     _init_obs(log_dir)
@@ -1596,6 +1597,11 @@ def main():
     log.info("%d utilisateur(s) chargés, JWT prêt.", len(_users))
     server = ThreadingHTTPServer(("127.0.0.1", port), ProxyHandler)
     log.info("Proxy prêt sur 127.0.0.1:%d", port)
+    return server
+
+
+def main():
+    server = create_server()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
