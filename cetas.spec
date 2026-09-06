@@ -23,6 +23,8 @@ a = Analysis(
         'webview',
         'webview.platforms.winforms',
         'webview.platforms.edgechromium',
+        'observability',
+        'marexcode',
     ],
     hookspath=[],
     runtime_hooks=[],
