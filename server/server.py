@@ -64,6 +64,84 @@ def _crypto_path() -> str:
         return os.path.join(BASE_DIR, "core", "win", "crypto_windows.py")
     return os.path.join(BASE_DIR, "core", "linux", "crypto_linux.py")
 
+
+# ── Vault local UI (M3) ─────────────────────────────────────────────
+def vault_exists() -> bool:
+    vault_path = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault", ".enc"))
+    return os.path.isfile(vault_path)
+
+
+def _load_secure_vault():
+    crypto = _crypto_path()
+    if not os.path.exists(crypto):
+        return None
+    spec = importlib.util.spec_from_file_location("crypto_module", crypto)
+    if spec is None or spec.loader is None:
+        return None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    vault_path = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault", ".enc"))
+    return mod.SecureVault(vault_path)
+
+
+def setup_save_vault(data: dict) -> bool:
+    """Chiffre les clés API et les sauvegarde dans le vault + génère .env."""
+    import secrets as _pysecrets
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError:
+        log.warning("cryptography non disponible — export .env ignoré.")
+        return False
+
+    password = data.get("password", "")
+    api_keys = data.get("keys", {})
+    local_keys = data.get("local", {})
+
+    vault_path = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault", ".enc"))
+    os.makedirs(os.path.dirname(vault_path), exist_ok=True)
+
+    vault = _load_secure_vault()
+    if vault is None:
+        log.error("Module crypto introuvable pour setup vault.")
+        return False
+
+    # Sauvegarder les clés dans le vault
+    vault_data = {"api_keys": api_keys, "local": local_keys}
+    vault.save(password, vault_data)
+
+    # Générer proxy_key et .env
+    proxy_key = _pysecrets.token_hex(32)
+    vault_data["proxy_key"] = proxy_key
+    vault.save(password, vault_data)
+
+    # Générer .env chiffré
+    proxy_key_bytes = bytes.fromhex(proxy_key)
+    env_lines = []
+    OC_NORMALIZE = {"OpenCode Zen": "opencode", "OpenCode Go": "opencode-go"}
+    for provider, key in api_keys.items():
+        normalized = OC_NORMALIZE.get(provider, provider.lower().replace(" ", "_"))
+        iv = _pysecrets.token_bytes(12)
+        aesgcm = AESGCM(proxy_key_bytes)
+        ct = aesgcm.encrypt(iv, key.encode("utf-8"), normalized.encode("utf-8"))
+        env_lines.append(f"{normalized}_key={iv.hex()}:{ct.hex()}")
+
+    for provider, url in local_keys.items():
+        normalized = provider.lower().replace(" ", "_")
+        iv = _pysecrets.token_bytes(12)
+        aesgcm = AESGCM(proxy_key_bytes)
+        ct = aesgcm.encrypt(iv, url.encode("utf-8"), normalized.encode("utf-8"))
+        env_lines.append(f"{normalized}_key={iv.hex()}:{ct.hex()}")
+
+    with open(ENV_PATH, "w", encoding="utf-8") as f:
+        f.write("\n".join(sorted(env_lines)) + "\n")
+    try:
+        os.chmod(ENV_PATH, 0o600)
+    except OSError:
+        pass
+
+    log.info("Vault créé, .env généré (%d clés).", len(api_keys))
+    return True
+
 # ── Static serving local (M0) : mode autonome sans nginx ───────────
 _SSI_RE = re.compile(r'<!--#include\s+file="([^"]+)"\s*-->')
 STATIC_MIME = {
@@ -455,16 +533,26 @@ def _load_vault():
 
 def load_api_keys():
     """Déchiffre les clés API depuis .env en utilisant le proxy_key du vault."""
+    setup_mode = os.environ.get("CETAS_SETUP_MODE", "") == "1"
     password = os.environ.get("CETAS_VAULT_PASSWORD", "").strip()
     if not password:
+        if setup_mode:
+            log.warning("Mode setup : pas de mot de passe vault requis.")
+            return
         log.error("CETAS_VAULT_PASSWORD non défini — arrêt.")
         sys.exit(1)
 
     if not os.path.exists(VAULT_PATH):
+        if setup_mode:
+            log.warning("Mode setup : vault absent, clés vides.")
+            return
         log.error("Vault introuvable: %s", VAULT_PATH)
         sys.exit(1)
 
     if not os.path.exists(ENV_PATH):
+        if setup_mode:
+            log.warning("Mode setup : .env absent, clés vides.")
+            return
         log.error(".env introuvable: %s — lancez setup.py d'abord.", ENV_PATH)
         sys.exit(1)
 
@@ -1148,6 +1236,47 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             self.wfile.write(data)
         return True
 
+    def _serve_setup(self):
+        """Sert la page de configuration initiale (vault local)."""
+        root = os.path.realpath(_static_dir())
+        setup_file = os.path.join(root, "setup.html")
+        if not os.path.isfile(setup_file):
+            self.send_response(404)
+            self.end_headers()
+            return
+        try:
+            with open(setup_file, "r", encoding="utf-8") as f:
+                body = f.read()
+            data = body.encode("utf-8")
+        except OSError:
+            self.send_response(500)
+            self.end_headers()
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        if self._write_body:
+            self.wfile.write(data)
+
+    def _setup_save_handler(self):
+        """POST /setup/save — reçoit password + clés, crée le vault."""
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        if not data.get("password"):
+            self._respond_json({"error": "Mot de passe requis"}, 400)
+            return
+        ok = setup_save_vault(data)
+        if ok:
+            self._respond_json({"ok": True})
+        else:
+            self._respond_json({"error": "Échec de la sauvegarde du vault"}, 500)
+
     def do_GET(self):
         self._handle_get(write_body=True)
 
@@ -1222,6 +1351,13 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             sid = path[len("/api/marexcode/sessions/"):]
             self._marex_sessions_item_get(sid)
             return
+        # Setup vault (M3)
+        if path == "/setup" or path == "/setup/":
+            self._serve_setup()
+            return
+        if path == "/api/vault/exists":
+            self._respond_json({"exists": vault_exists()})
+            return
         if self._serve_static():
             return
         self.send_response(404)
@@ -1252,6 +1388,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             return
         if self.path == "/api/marexcode/upload":
             self._marex_upload_project()
+            return
+        if self.path == "/setup/save":
+            self._setup_save_handler()
             return
         self.send_response(404)
         self.end_headers()
