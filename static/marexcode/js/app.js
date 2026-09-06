@@ -478,6 +478,8 @@ function setupSidebar() {
     const openSidebar = () => refs.sidebar.classList.add('open');
     if (refs.hamburgerBtn) refs.hamburgerBtn.addEventListener('click', openSidebar);
     if (refs.sbCloseBtn) refs.sbCloseBtn.addEventListener('click', closeSidebar);
+    const backBtn = document.getElementById('sb-back-btn');
+    if (backBtn) backBtn.addEventListener('click', () => { window.location.href = '/'; });
 }
 
 function setupUserMenu() {

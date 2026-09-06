@@ -92,6 +92,8 @@ html,body{
 }
 .icon-btn:hover{ background:var(--bg-input-btn); color:var(--text-secondary); }
 
+.sb-back-btn{ display:flex; align-items:center; gap:6px; width:100%; padding:8px 12px; background:none; border:none; color:var(--accent); cursor:pointer; font-size:13px; border-bottom:1px solid var(--border); }
+.sb-back-btn:hover{ background:var(--bg-input-btn); }
 .new-session-btn{
   display:flex;
   align-items:center;
