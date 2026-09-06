@@ -68,7 +68,14 @@ VAULT_PATH = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault",
 def _vault_path() -> str:
     """Chemin du vault, lu lazy (après apply_frozen_defaults)."""
     return os.environ.get("CETAS_VAULT_PATH", VAULT_PATH)
+
+
 ENV_PATH = os.environ.get("CETAS_ENV_PATH", os.path.join(BASE_DIR, ".env"))
+
+
+def _env_path() -> str:
+    """Chemin du .env, lu lazy (après apply_frozen_defaults)."""
+    return os.environ.get("CETAS_ENV_PATH", ENV_PATH)
 
 
 def _crypto_path() -> str:
@@ -203,10 +210,10 @@ def setup_save_vault(data: dict) -> bool:
         ct = aesgcm.encrypt(iv, url.encode("utf-8"), normalized.encode("utf-8"))
         env_lines.append(f"{normalized}_key={iv.hex()}:{ct.hex()}")
 
-    with open(ENV_PATH, "w", encoding="utf-8") as f:
+    with open(_env_path(), "w", encoding="utf-8") as f:
         f.write("\n".join(sorted(env_lines)) + "\n")
     try:
-        os.chmod(ENV_PATH, 0o600)
+        os.chmod(_env_path(), 0o600)
     except OSError:
         pass
 
@@ -621,11 +628,11 @@ def load_api_keys():
         log.error("Vault introuvable: %s", _vault_path())
         sys.exit(1)
 
-    if not os.path.exists(ENV_PATH):
+    if not os.path.exists(_env_path()):
         if setup_mode:
             log.warning("Mode setup : .env absent, clés vides.")
             return
-        log.error(".env introuvable: %s — lancez setup.py d'abord.", ENV_PATH)
+        log.error(".env introuvable: %s — lancez setup.py d'abord.", _env_path())
         sys.exit(1)
 
     SecureVault = _load_vault()
@@ -644,7 +651,7 @@ def load_api_keys():
     proxy_key = bytes.fromhex(data["proxy_key"])
 
     loaded = 0
-    with open(ENV_PATH, "r", encoding="utf-8") as f:
+    with open(_env_path(), "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:
