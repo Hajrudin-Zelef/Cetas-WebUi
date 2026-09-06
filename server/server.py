@@ -60,8 +60,9 @@ def _crypto_path() -> str:
     override = os.environ.get("CETAS_CRYPTO_PATH")
     if override:
         return override
-    sub = "win" if os.name == "nt" else "linux"
-    return os.path.join(BASE_DIR, "core", sub, "crypto_%s.py" % sub)
+    if os.name == "nt":
+        return os.path.join(BASE_DIR, "core", "win", "crypto_windows.py")
+    return os.path.join(BASE_DIR, "core", "linux", "crypto_linux.py")
 
 # ── Static serving local (M0) : mode autonome sans nginx ───────────
 _SSI_RE = re.compile(r'<!--#include\s+file="([^"]+)"\s*-->')

@@ -47,13 +47,13 @@ def test_bash_complet_off(monkeypatch, tmp_path):
 def test_crypto_path_windows(monkeypatch):
     monkeypatch.setattr("os.name", "nt")
     from server import _crypto_path
-    assert "core" in _crypto_path() and "win" in _crypto_path()
+    assert _crypto_path().endswith("core/win/crypto_windows.py"), _crypto_path()
 
 
 def test_crypto_path_linux(monkeypatch):
     monkeypatch.setattr("os.name", "posix")
     from server import _crypto_path
-    assert "linux" in _crypto_path()
+    assert _crypto_path().endswith("core/linux/crypto_linux.py"), _crypto_path()
 
 
 def test_resolve_safe_path_win_backslash(monkeypatch, tmp_path):
