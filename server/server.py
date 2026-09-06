@@ -1341,6 +1341,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             if ok:
                 # Recharger les clés en mémoire après création du vault
                 os.environ.pop("CETAS_SETUP_MODE", None)
+                os.environ["CETAS_VAULT_PASSWORD"] = data.get("password", "")
                 global api_keys
                 api_keys = {}
                 load_api_keys()
