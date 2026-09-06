@@ -13,7 +13,7 @@ datas = [
 ]
 
 import os as _os
-icon_path = _os.path.join(_os.path.dirname(_os.path.abspath(SPECPATH)), 'static', 'images', 'Cetas42.ico')
+icon_path = _os.path.join(SPECPATH, 'static', 'images', 'Cetas42.ico')
 if not _os.path.exists(icon_path):
     icon_path = None
 
