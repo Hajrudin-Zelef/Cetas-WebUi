@@ -1292,21 +1292,25 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _setup_save_handler(self):
         """POST /setup/save — reçoit password + clés, crée le vault."""
-        content_len = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
         try:
-            data = json.loads(body)
-        except json.JSONDecodeError:
-            self._respond_json({"error": "JSON invalide"}, 400)
-            return
-        if not data.get("password"):
-            self._respond_json({"error": "Mot de passe requis"}, 400)
-            return
-        ok = setup_save_vault(data)
-        if ok:
-            self._respond_json({"ok": True})
-        else:
-            self._respond_json({"error": "Échec de la sauvegarde du vault"}, 500)
+            content_len = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+            try:
+                data = json.loads(body)
+            except json.JSONDecodeError:
+                self._respond_json({"error": "JSON invalide"}, 400)
+                return
+            if not data.get("password"):
+                self._respond_json({"error": "Mot de passe requis"}, 400)
+                return
+            ok = setup_save_vault(data)
+            if ok:
+                self._respond_json({"ok": True})
+            else:
+                self._respond_json({"error": "Échec de la sauvegarde du vault"}, 500)
+        except Exception as e:
+            log.error("Erreur setup_save: %s", e, exc_info=True)
+            self._respond_json({"error": str(e)}, 500)
 
     def do_GET(self):
         self._handle_get(write_body=True)
