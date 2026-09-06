@@ -5,10 +5,11 @@ import threading
 
 import webview
 
-from server.server import create_server, vault_exists
+from server.server import apply_frozen_defaults, create_server, vault_exists
 
 
 def main():
+    apply_frozen_defaults()
     if not vault_exists():
         os.environ["CETAS_SETUP_MODE"] = "1"
 

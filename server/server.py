@@ -65,6 +65,27 @@ def _crypto_path() -> str:
     return os.path.join(BASE_DIR, "core", "linux", "crypto_linux.py")
 
 
+def apply_frozen_defaults():
+    """En environnement PyInstaller (sys.frozen), définit les chemins par défaut.
+
+    - static/ + crypto depuis le bundle (_MEIPASS)
+    - data/workspace/vault/env dans %APPDATA%/Cetas (writable)
+    Ne remplace jamais une variable déjà définie par l'utilisateur.
+    """
+    if not getattr(sys, "frozen", False):
+        return
+    base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    os.environ.setdefault("CETAS_BASE_DIR", base)
+    os.environ.setdefault("CETAS_STATIC_DIR", os.path.join(base, "static"))
+    os.environ.setdefault("CETAS_CRYPTO_PATH",
+                          os.path.join(base, "core", "win", "crypto_windows.py"))
+    cetas_dir = os.path.join(os.environ.get("APPDATA", os.path.dirname(sys.executable)), "Cetas")
+    os.environ.setdefault("CETAS_DATA_DIR", os.path.join(cetas_dir, "data"))
+    os.environ.setdefault("CETAS_PROJECT_DIR", os.path.join(cetas_dir, "workspace"))
+    os.environ.setdefault("CETAS_VAULT_PATH", os.path.join(cetas_dir, ".vault", ".enc"))
+    os.environ.setdefault("CETAS_ENV_PATH", os.path.join(cetas_dir, ".env"))
+
+
 # ── Vault local UI (M3) ─────────────────────────────────────────────
 def vault_exists() -> bool:
     vault_path = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault", ".enc"))
