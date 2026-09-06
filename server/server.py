@@ -682,9 +682,11 @@ def load_api_keys():
                 sys.exit(1)
 
     log.info("%d clés API chargées en mémoire.", loaded)
-    if loaded == 0:
+    if loaded == 0 and not setup_mode:
         log.error("Aucune clé chargée — vérifiez .env et le vault.")
         sys.exit(1)
+    if loaded == 0 and setup_mode:
+        log.warning("Mode setup : aucune clé — utilisez /setup pour en ajouter.")
 
 # ── Stockage conversations (sync multi-appareils) ──────────────────
 DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
