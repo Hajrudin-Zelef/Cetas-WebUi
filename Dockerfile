@@ -16,7 +16,7 @@ RUN npm install -g typescript-language-server typescript@5 bash-language-server 
 RUN pyright --version && typescript-language-server --version && bash-language-server --help | head -1
 
 # MCP client for external tool servers (Marexcode Phase 3)
-RUN pip3 install --break-system-packages mcp
+RUN pip3 install --break-system-packages mcp mcp-server-fetch
 
 # Proxy Python
 COPY server/server.py /app/server.py
