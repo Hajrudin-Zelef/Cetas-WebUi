@@ -710,6 +710,53 @@ function buildSessionItem(s) {
 
 window.activeWorkspaceId = null;
 
+function openInstructionsModal(wsName, wsId, initialContent) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal-instructions">
+            <div class="modal-instructions-header">
+                <h2>Project Instructions</h2>
+                <p>Define guidelines for the agent when working on <strong>${esc(wsName)}</strong></p>
+            </div>
+            <textarea class="modal-instructions-textarea" rows="14" placeholder="Describe project context, conventions, constraints...">${esc(initialContent || '')}</textarea>
+            <div class="modal-instructions-footer">
+                <button class="modal-instructions-save" type="button">Save</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add('open'));
+
+    const textarea = overlay.querySelector('.modal-instructions-textarea');
+    const saveBtn = overlay.querySelector('.modal-instructions-save');
+    textarea.focus();
+
+    async function save() {
+        try {
+            await saveWorkspaceInstructions(wsId, textarea.value);
+            saveBtn.textContent = 'Saved';
+            saveBtn.disabled = true;
+            setTimeout(() => {
+                overlay.classList.remove('open');
+                setTimeout(() => overlay.remove(), 200);
+            }, 600);
+        } catch (e) {
+            saveBtn.textContent = 'Error';
+            setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
+        }
+    }
+
+    function close() {
+        overlay.classList.remove('open');
+        setTimeout(() => overlay.remove(), 200);
+    }
+
+    saveBtn.addEventListener('click', save);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+}
+
 async function refreshWorkspaces() {
     try {
         const workspaces = await listWorkspaces();
@@ -780,10 +827,7 @@ async function refreshWorkspaces() {
                     e.stopPropagation();
                     try {
                         const data = await getWorkspaceInstructions(ws.id);
-                        const newContent = prompt('Instructions du projet "' + ws.name + '" :', data.content || '');
-                        if (newContent !== null) {
-                            await saveWorkspaceInstructions(ws.id, newContent);
-                        }
+                        openInstructionsModal(ws.name, ws.id, data.content || '');
                     } catch (err) { console.error(err); }
                     return;
                 }
