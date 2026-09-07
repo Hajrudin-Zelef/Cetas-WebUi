@@ -889,6 +889,8 @@ html,body{
 
 .tool-perms { padding: 6px 10px 10px; display: grid; gap: 6px; }
 .tool-perm-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; }
+.tool-perm-row,
+.tool-perm-row span { color: #ffffff !important; }
 .tool-perm-select { background: var(--bg-input, #1a1d23); color: inherit; border: 1px solid rgba(255,255,255,.12); border-radius: 6px; padding: 3px 6px; }
 
 .cdrop-item{
