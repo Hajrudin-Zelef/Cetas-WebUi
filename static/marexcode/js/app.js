@@ -1351,11 +1351,84 @@ async function openFileViewer(path) {
     refs.fileViewer.classList.add('open');
     try {
         const data = await readFile(path);
-        refs.fvBody.textContent = (data && data.content != null) ? data.content : (data.error || 'Fichier vide.');
+        const content = (data && data.content != null) ? data.content : (data.error || 'Fichier vide.');
+        const lines = content.split('\n');
+        refs.fvBody.innerHTML = '';
+        refs.fvBody.classList.remove('loading');
+        if (lines.length === 1 && !lines[0]) {
+            refs.fvBody.textContent = 'Fichier vide.';
+            return;
+        }
+        const codeEl = document.createElement('div');
+        codeEl.className = 'fv-code';
+        let hoverTimer = null;
+        let tooltipEl = null;
+        for (let i = 0; i < lines.length; i++) {
+            const lineEl = document.createElement('div');
+            lineEl.className = 'fv-line';
+            const numEl = document.createElement('span');
+            numEl.className = 'fv-line-num';
+            numEl.textContent = String(i + 1);
+            const textEl = document.createElement('span');
+            textEl.className = 'fv-line-text';
+            textEl.textContent = lines[i];
+            lineEl.appendChild(numEl);
+            lineEl.appendChild(textEl);
+            lineEl.dataset.line = i;
+            lineEl.addEventListener('mouseenter', (e) => {
+                clearTimeout(hoverTimer);
+                const line = parseInt(lineEl.dataset.line);
+                const text = lines[line] || '';
+                const charIdx = getHoverCharIndex(e, textEl);
+                hoverTimer = setTimeout(async () => {
+                    try {
+                        const token = (typeof Auth !== 'undefined' && Auth.getToken) ? Auth.getToken() : null;
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (token) headers['Authorization'] = 'Bearer ' + token;
+                        const resp = await fetch('/api/lsp/hover', {
+                            method: 'POST', headers,
+                            body: JSON.stringify({ file: path, line: line, character: charIdx }),
+                            signal: AbortSignal.timeout(8000)
+                        });
+                        if (!resp.ok) return;
+                        const result = await resp.json();
+                        const text = (result && result.contents)
+                            ? (typeof result.contents === 'string' ? result.contents : (result.contents.value || ''))
+                            : '';
+                        if (!text) return;
+                        if (!tooltipEl) {
+                            tooltipEl = document.createElement('div');
+                            tooltipEl.className = 'fv-tooltip';
+                            refs.fvBody.appendChild(tooltipEl);
+                        }
+                        tooltipEl.textContent = text;
+                        tooltipEl.style.display = 'block';
+                        const rect = lineEl.getBoundingClientRect();
+                        const bodyRect = refs.fvBody.getBoundingClientRect();
+                        tooltipEl.style.top = (rect.top - bodyRect.top + refs.fvBody.scrollTop - 4) + 'px';
+                        tooltipEl.style.left = '60px';
+                    } catch (_) { /* ignore hover errors */ }
+                }, 400);
+            });
+            lineEl.addEventListener('mouseleave', () => {
+                clearTimeout(hoverTimer);
+                if (tooltipEl) tooltipEl.style.display = 'none';
+            });
+            codeEl.appendChild(lineEl);
+        }
+        refs.fvBody.appendChild(codeEl);
     } catch (e) {
+        refs.fvBody.classList.remove('loading');
         refs.fvBody.textContent = 'Erreur : ' + (e.message || e);
     }
-    refs.fvBody.classList.remove('loading');
+}
+
+function getHoverCharIndex(e, textEl) {
+    const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+    if (range && range.startContainer === textEl.firstChild) {
+        return range.startOffset;
+    }
+    return Math.floor((e.clientX - textEl.getBoundingClientRect().left) / 8);
 }
 
 // ── Settings ──

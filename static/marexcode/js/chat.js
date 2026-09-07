@@ -141,6 +141,7 @@ export function createChat(deps) {
         if (n === 'bash' || n === 'build') return '▪';
         if (n === 'write' || n === 'edit') return '✎';
         if (n === 'glob') return '◎';
+        if (n === 'lsp') return '⟡';
         return '•';
     }
 
@@ -156,6 +157,7 @@ export function createChat(deps) {
         if (n === 'write') return 'Write ' + path;
         if (n === 'edit') return 'Edit ' + path;
         if (n === 'glob') return 'Glob "' + (args.pattern || '') + '" (' + (result && result.count != null ? result.count : '?') + ' files)';
+        if (n === 'lsp') return 'LSP ' + (args.operation || '') + ' ' + (args.file || '') + ':' + (args.line || 0);
         return name;
     }
 
@@ -525,6 +527,7 @@ export function createChat(deps) {
                 Edit: 'Editing ' + (path || 'file') + '…',
                 Grep: 'Searching' + (d.args && d.args.pattern ? ' "' + d.args.pattern.substring(0, 30) + '"' : '') + '…',
                 Glob: 'Finding files' + (d.args && d.args.pattern ? ' "' + d.args.pattern.substring(0, 30) + '"' : '') + '…',
+                LSP: 'LSP ' + (d.args && d.args.operation || 'definition') + '…',
                 TodoWrite: 'Updating todos…'
             };
             updateStatus(actionMap[d.name] || 'Processing…');

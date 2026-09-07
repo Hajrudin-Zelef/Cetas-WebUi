@@ -1516,6 +1516,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path == "/api/exec":
             self._exec_tool()
             return
+        if self.path.startswith("/api/lsp/"):
+            operation = self.path[len("/api/lsp/"):]
+            self._lsp_operation(operation)
+            return
         if self.path == "/api/marexcode/upload":
             self._marex_upload_project()
             return

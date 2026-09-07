@@ -32,6 +32,11 @@ import logging
 import subprocess
 import fnmatch
 
+try:
+    from .lsp import LSPManager
+except ImportError:
+    from lsp import LSPManager
+
 log = logging.getLogger(__name__)
 
 DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
@@ -576,6 +581,42 @@ class MarexcodeMixin:
         if "error" in result:
             status = result.get("code", 500) if result.get("code", 500) >= 400 else 500
             self._respond_json({"error": result["error"], "tool": tool}, status)
+            return
+        self._respond_json(result)
+
+    # ── LSP (Language Server Protocol) ─────────────────────────────────
+
+    def _lsp_operation(self, operation: str):
+        """POST /api/lsp/{operation} — exécute une opération LSP.
+        Body: {"file": "path", "line": 0, "character": 0}
+        """
+        from server import _rate_check
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if not _rate_check("lsp:" + username, 60, 60):
+            self._respond_json({"error": "Trop de requêtes. Réessayez dans une minute."}, 429)
+            return
+        self._marex_root = marex_project_root(username)
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        file_path = str(data.get("file", ""))
+        line = data.get("line")
+        character = data.get("character")
+        log.info("lsp operation=%s file=%s user=%s", operation, file_path, username)
+        manager = LSPManager(self._marex_root)
+        try:
+            result = manager.request(operation, file=file_path, line=line, character=character)
+        except Exception as e:
+            self._respond_json({"error": "Erreur LSP: %s" % e}, 500)
+            return
+        if "error" in result:
+            self._respond_json({"error": result["error"]}, 400)
             return
         self._respond_json(result)
 
