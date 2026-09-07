@@ -1,8 +1,8 @@
 const PROVIDER_GROUPS = [
-    { label: 'OpenCode Go', editeurs: ['opencode-go'] },
-    { label: 'OpenCode Zen', editeurs: ['opencode'] },
-    { label: 'DeepSeek', editeurs: ['deepseek'] },
-    { label: 'OpenRouter', editeurs: ['openrouter'] },
+    { label: 'OpenCode Go', editeurs: ['opencode-go'], icon: '/images/Opencode.svg' },
+    { label: 'OpenCode Zen', editeurs: ['opencode'], icon: '/images/Opencode.svg' },
+    { label: 'DeepSeek', editeurs: ['deepseek'], icon: '/images/DeepSeek.svg' },
+    { label: 'OpenRouter', editeurs: ['openrouter'], icon: '/images/OpenRouter.svg' },
 ];
 
 export function getCatalog() {
@@ -47,7 +47,7 @@ export function initModelSelect(menuEl, labelEl, onSelect) {
         if (!firstId) firstId = all[0].id;
         const lbl = document.createElement('div');
         lbl.className = 'cdrop-section-label';
-        lbl.textContent = grp.label;
+        lbl.innerHTML = (grp.icon ? '<img src="' + grp.icon + '" width="14" height="14" style="vertical-align:-2px;margin-right:4px;border-radius:2px" alt=""> ' : '') + grp.label;
         menuEl.appendChild(lbl);
         for (const m of all) {
             const b = document.createElement('button');
