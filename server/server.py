@@ -44,7 +44,7 @@ try:
         redact_event as _obs_redact,
         generate_id as _obs_id,
     )
-    from .marexcode import MarexcodeMixin
+    from marexcode import MarexcodeMixin
 except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from observability import (
@@ -2009,7 +2009,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _workspaces_list_get(self):
         """GET /api/marexcode/workspaces — liste les workspaces."""
-        from .marexcode import (marex_workspaces_dir, marex_workspace_dir,
+        from marexcode import (marex_workspaces_dir, marex_workspace_dir,
                                 marex_load_workspace_meta, marex_get_active_workspace)
         username = self._get_authenticated_user()
         if not username:
@@ -2033,7 +2033,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _workspace_activate_put(self, ws_id: str):
         """PUT /api/marexcode/workspaces/:id/activate — active un workspace."""
-        from .marexcode import (marex_workspace_dir, marex_set_active_workspace,
+        from marexcode import (marex_workspace_dir, marex_set_active_workspace,
                                 marex_load_workspace_meta, marex_save_workspace_meta)
         username = self._get_authenticated_user()
         if not username:
@@ -2060,7 +2060,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _workspace_delete(self, ws_id: str):
         """DELETE /api/marexcode/workspaces/:id — supprime un workspace."""
-        from .marexcode import (marex_workspace_dir, marex_get_active_workspace,
+        from marexcode import (marex_workspace_dir, marex_get_active_workspace,
                                 marex_set_active_workspace)
         username = self._get_authenticated_user()
         if not username:
@@ -2081,7 +2081,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _workspace_instructions_get(self, ws_id: str):
         """GET /api/marexcode/workspaces/:id/instructions — lit MAREXCODE.md."""
-        from .marexcode import marex_workspace_instructions_path
+        from marexcode import marex_workspace_instructions_path
         username = self._get_authenticated_user()
         if not username:
             return
@@ -2102,7 +2102,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _workspace_instructions_put(self, ws_id: str):
         """PUT /api/marexcode/workspaces/:id/instructions — sauvegarde MAREXCODE.md."""
-        from .marexcode import marex_workspace_instructions_path
+        from marexcode import marex_workspace_instructions_path
         username = self._get_authenticated_user()
         if not username:
             return
@@ -2127,7 +2127,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _global_instructions_get(self):
         """GET /api/marexcode/global-instructions — lit global_instructions.md."""
-        from .marexcode import marex_global_instructions_path
+        from marexcode import marex_global_instructions_path
         username = self._get_authenticated_user()
         if not username:
             return
@@ -2145,7 +2145,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
     def _global_instructions_put(self):
         """PUT /api/marexcode/global-instructions — sauvegarde global_instructions.md."""
-        from .marexcode import marex_global_instructions_path
+        from marexcode import marex_global_instructions_path
         username = self._get_authenticated_user()
         if not username:
             return
