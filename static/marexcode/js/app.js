@@ -440,7 +440,7 @@ function setupCdrops() {
             if (willOpen) menu.scrollTop = 0;
         });
     }
-    document.addEventListener('click', (e) => {
+    document.addEventListener('mousedown', (e) => {
         const inside = allCdrops.some(c => {
             const wrap = $(c.wrap);
             return wrap && wrap.contains(e.target);
