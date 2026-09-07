@@ -1643,6 +1643,13 @@ html,body{
 .profile-skill-name{ font-size:13px; color:var(--text-primary); flex:1; }
 .profile-skill-mode{ font-size:11px; color:var(--accent); background:rgba(91,127,255,.15); padding:2px 8px; border-radius:4px; }
 
+/* Profile animations */
+@keyframes fadeIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:translateY(0); } }
+.profile-stat-card{ transition:transform 0.2s, box-shadow 0.2s; }
+.profile-stat-card:hover{ transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+.profile-avatar{ transition:transform 0.3s; }
+.profile-user-card:hover .profile-avatar{ transform:scale(1.05); }
+
 /* Reduce motion */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after{ animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
 

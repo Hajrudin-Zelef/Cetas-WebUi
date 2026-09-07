@@ -746,40 +746,49 @@ function loadGeneralPanel() {
 }
 
 async function loadProfilePanel() {
+    // Show loading state
+    ['stat-tokens', 'stat-chats', 'stat-streak', 'stat-model', 'ov-mode', 'ov-reasoning', 'ov-skills', 'ov-chats'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '...';
+    });
+    document.getElementById('profile-top-skills').innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Chargement...</div>';
+
     try {
-        const { getProfileStats, getProfileActivity } = await import('./api.js');
-        const [stats, activity] = await Promise.all([
-            getProfileStats(),
-            getProfileActivity()
+        const { getProfileStats, getProfileActivity, listSkillsConfig } = await import('./api.js');
+        const [stats, activity, skills] = await Promise.all([
+            getProfileStats().catch(() => ({})),
+            getProfileActivity().catch(() => ({})),
+            listSkillsConfig().catch(() => [])
         ]);
 
         // User info
         const username = document.getElementById('set-username')?.textContent || 'Utilisateur';
-        document.getElementById('profile-username').textContent = username;
-        document.getElementById('profile-avatar').textContent = (username[0] || 'U').toUpperCase();
-        document.getElementById('profile-email').textContent = username;
+        const emailEl = document.getElementById('profile-email');
+        const unameEl = document.getElementById('profile-username');
+        const avatarEl = document.getElementById('profile-avatar');
+        if (unameEl) unameEl.textContent = username;
+        if (avatarEl) avatarEl.textContent = (username[0] || 'U').toUpperCase();
+        if (emailEl) emailEl.textContent = username;
 
-        // Stats
-        document.getElementById('stat-tokens').textContent = formatTokens(stats.total_tokens || 0);
-        document.getElementById('stat-chats').textContent = String(stats.total_chats || 0);
-        document.getElementById('stat-streak').textContent = (stats.streak || 0) + ' jours';
-        document.getElementById('stat-model').textContent = shortModel(stats.top_model);
+        // Animate stats
+        animateValue('stat-tokens', formatTokens(stats.total_tokens || 0));
+        animateValue('stat-chats', String(stats.total_chats || 0));
+        animateValue('stat-streak', (stats.streak || 0) + ' jours');
+        animateValue('stat-model', shortModel(stats.top_model));
 
         // Overview
-        document.getElementById('ov-mode').textContent = 'Activé';
-        document.getElementById('ov-reasoning').textContent = 'Auto';
         const sk = stats.skills || {};
-        document.getElementById('ov-skills').textContent = (sk.auto || 0) + ' auto · ' + (sk.manual || 0) + ' manuel · ' + (sk.on_demand || 0) + ' demande';
-        document.getElementById('ov-chats').textContent = String(stats.total_chats || 0);
+        setText('ov-mode', 'Activé');
+        setText('ov-reasoning', 'Auto');
+        setText('ov-skills', (sk.auto || 0) + ' auto · ' + (sk.manual || 0) + ' manuel · ' + (sk.on_demand || 0) + ' demande');
+        setText('ov-chats', String(stats.total_chats || 0));
 
         // Top skills
         const topSkillsEl = document.getElementById('profile-top-skills');
-        const { listSkillsConfig } = await import('./api.js');
-        const skills = await listSkillsConfig();
         const autoSkills = skills.filter(s => s.enabled && s.mode === 'auto').slice(0, 5);
         if (autoSkills.length) {
             topSkillsEl.innerHTML = autoSkills.map((s, i) =>
-                '<div class="profile-skill-row">' +
+                '<div class="profile-skill-row" style="animation:fadeIn 0.2s ease ' + (i * 0.05) + 's both">' +
                     '<span class="profile-skill-rank">#' + (i + 1) + '</span>' +
                     '<span class="profile-skill-name">' + esc(s.name) + '</span>' +
                     '<span class="profile-skill-mode">auto</span>' +
@@ -789,36 +798,59 @@ async function loadProfilePanel() {
             topSkillsEl.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Aucun skill actif en mode auto</div>';
         }
 
-        // Heatmap
-        const canvas = document.getElementById('profile-heatmap');
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            const w = canvas.clientWidth;
-            const h = canvas.clientHeight;
-            canvas.width = w * dpr;
-            canvas.height = h * dpr;
-            ctx.scale(dpr, dpr);
-            ctx.clearRect(0, 0, w, h);
-            const colors = ['#16161b', '#1a472a', '#238636', '#26a641'];
-            const cellW = 10, cellH = 10, gap = 3;
-            const cols = Math.floor(w / (cellW + gap));
-            const today = new Date();
-            for (let col = 0; col < cols; col++) {
-                const d = new Date(today);
-                d.setDate(d.getDate() - (cols - 1 - col));
-                const key = d.toISOString().slice(0, 10);
-                const count = activity[key] || 0;
-                const color = count === 0 ? colors[0] : count <= 2 ? colors[1] : count <= 5 ? colors[2] : colors[3];
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.roundRect(col * (cellW + gap), 0, cellW, cellH, 2);
-                ctx.fill();
-            }
-        }
+        // Heatmap - use requestAnimationFrame for smooth render
+        requestAnimationFrame(() => renderHeatmap(activity));
     } catch (e) {
         console.error('Profile load error:', e);
     }
+}
+
+function renderHeatmap(activity) {
+    const canvas = document.getElementById('profile-heatmap');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.parentElement.clientWidth || 520;
+    const h = 90;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+    const colors = ['#16161b', '#1a472a', '#238636', '#26a641'];
+    const cellW = 10, cellH = 10, gap = 3;
+    const cols = Math.floor(w / (cellW + gap));
+    const today = new Date();
+    for (let col = 0; col < cols; col++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - (cols - 1 - col));
+        const key = d.toISOString().slice(0, 10);
+        const count = activity[key] || 0;
+        const color = count === 0 ? colors[0] : count <= 2 ? colors[1] : count <= 5 ? colors[2] : colors[3];
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(col * (cellW + gap), 0, cellW, cellH, 2);
+        ctx.fill();
+    }
+}
+
+function animateValue(id, finalText) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    el.textContent = finalText;
+    requestAnimationFrame(() => {
+        el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+    });
+}
+
+function setText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
 }
 
 function formatTokens(n) {
