@@ -268,10 +268,10 @@ export function createModelSelect({
     function updateTriggerDisplay(e) {
         if (!e._customUI) return void ("function" == typeof updateInputHint && updateInputHint());
         const {triggerText: t, triggerIcon: n} = e._customUI, o = e._customValue;
-        if (!o) return t.textContent = hasAnyProviderKey() ? "Aucun" : "Choisir modèle",
+        if (!o) return t.textContent = '',
         void (n && (n.style.display = "none", n.removeAttribute("src")));
         const a = e._customModels.find((e => e.id === o));
-        if (t.textContent = a ? a.label : o, n) {
+        if (t.textContent = '', n) {
             const e = a && EDITEUR_ICONS[a.editeur];
             e ? (n.src = `images/${e}`, n.style.display = "") : (n.style.display = "none", n.removeAttribute("src"));
         }
