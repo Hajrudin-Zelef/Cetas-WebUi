@@ -299,37 +299,30 @@
           </div>
 
           <div class="settings-group-label">À propos</div>
-                <p>Confirmer avant d'exécuter des commandes shell.</p>
-              </div>
-              <select id="gen-perm-bash" class="settings-select">
-                <option value="allow">Toujours autoriser</option>
-                <option value="ask" selected>Demander</option>
-                <option value="deny">Toujours bloquer</option>
-              </select>
-            </div>
+          <div class="settings-card">
             <div class="settings-row">
               <div class="settings-row-text">
-                <h3>Write</h3>
-                <p>Confirmer avant d'écrire/créer des fichiers.</p>
+                <h3>Licences open source</h3>
+                <p>Libraries tierces utilisées par Marexcode.</p>
               </div>
-              <select id="gen-perm-write" class="settings-select">
-                <option value="allow">Toujours autoriser</option>
-                <option value="ask">Demander</option>
-                <option value="deny">Toujours bloquer</option>
-              </select>
+              <button class="settings-btn" id="gen-licenses">Voir les licences</button>
             </div>
-            <div class="settings-row">
+            <div class="settings-row settings-row-clickable" id="gen-lang-row">
               <div class="settings-row-text">
-                <h3>Edit</h3>
-                <p>Confirmer avant de modifier des fichiers existants.</p>
+                <h3>Langue interface</h3>
+                <p>Change la langue de l'interface Marexcode.</p>
               </div>
-              <select id="gen-perm-edit" class="settings-select">
-                <option value="allow">Toujours autoriser</option>
-                <option value="ask">Demander</option>
-                <option value="deny">Toujours bloquer</option>
-              </select>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <div class="settings-row settings-row-clickable" id="gen-expert-row">
+              <div class="settings-row-text">
+                <h3>Mode expert</h3>
+                <p>Accès complet aux commandes shell. Désactivé par défaut.</p>
+              </div>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </div>
           </div>
+        </div>
 
           <div class="settings-group-label">Bac à sable</div>
           <div class="settings-card">
