@@ -165,7 +165,7 @@ export function createChat(deps) {
         if (statusEl) return statusEl;
         statusEl = document.createElement('div');
         statusEl.className = 'chat-status-line';
-        statusEl.innerHTML = '<span class="status-dot"></span><span class="status-action">Prêt</span><span class="status-model">' + esc(session?.model || '') + '</span>';
+        statusEl.innerHTML = '<span class="status-dot"></span><span class="status-action">Ready</span><span class="status-model">' + esc(session?.model || '') + '</span>';
         chatLog.appendChild(statusEl);
         chatLog.scrollTop = chatLog.scrollHeight;
         return statusEl;
@@ -203,7 +203,7 @@ export function createChat(deps) {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'think-badge';
-        b.innerHTML = '<span class="think-spinner"></span><span>Réflexion</span>';
+        b.innerHTML = '<span class="think-spinner"></span><span>Thinking</span>';
         b.addEventListener('click', () => {
             userClosedPanel = false;
             openSidePanel();
@@ -221,7 +221,7 @@ export function createChat(deps) {
         if (!thinkBlockEl) {
             thinkBlockEl = document.createElement('div');
             thinkBlockEl.className = 'sp-think-block';
-            thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Raisonnement</div><div class="sp-think-text"></div>';
+            thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
             if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
             const group = ensureToolGroup();
             thinkStepEl = document.createElement('div');
@@ -318,7 +318,7 @@ export function createChat(deps) {
         const text = ta.value.trim();
         if (!text || running) return;
         const model = session && session.model;
-        if (!model) { addMsg('error', 'Sélectionnez un modèle.'); return; }
+        if (!model) { addMsg('error', 'Select a model.'); return; }
         setRunning(true);
         ta.value = '';
         ta.dispatchEvent(new Event('input'));
@@ -332,7 +332,7 @@ export function createChat(deps) {
         session.messages.push({ role: 'user', content: text });
         addMsg('user', text);
 
-        const baseSys = 'Tu es Marexcode, un assistant de codage IA professionnel intégré à Cetas. RÈGLE PRIORITAIRE : si la question de l\'utilisateur est générale, conceptuelle, ou ne nécessite pas d\'action sur le workspace (ex: "c\'est quoi JSON", "explique-moi X", question de culture générale ou de discussion) — réponds directement en texte, SANS utiliser aucun outil. N\'utilise Ls/Read/Write/Edit/Grep/Bash/TodoWrite QUE si la tâche demande explicitement de lire, créer, modifier ou analyser des fichiers du workspace. Tu aides l utilisateur à lire, écrire, éditer et analyser du code dans son workspace quand c\'est pertinent. RÈGLES POUR LES TÂCHES DE CODE : 1) Utilise les outils (Ls, Read, Write, Edit, Grep, Bash, TodoWrite) pour accomplir la tâche concrètement, PAS juste expliquer. 2) Utilise Ls pour découvrir la structure du workspace avant de lire des fichiers. 3) Lis ensuite les fichiers concernés avant de proposer des modifications. 4) Après chaque modification, indique le fichier et la ligne. 5) Si une commande échoue, lis l erreur et corrige. 6) Sois concis et cite les chemins exacts. 7) Ne modifie jamais hors sandbox, ne demande jamais sudo. 8) Pour toute tâche à plusieurs étapes : utilise TodoWrite AU DÉBUT pour lister le plan, puis rappelle-le après chaque étape complétée pour mettre à jour les statuts (pending → in_progress → completed). 9) Pour une tâche complexe : analyse → plan (TodoWrite) → exécution → vérification. 10) Quand tu dois planifier ou implémenter une tâche complexe, utilise AU MINIMUM un skill pertinent parmi les SKILLS DISPONIBLES ci-dessous pour guider ton approche. 11) RÈGLE DE LECTURE STRICTE, SANS EXCEPTION : chaque appel Read DOIT avoir limit=50 et offset explicites, quelle que soit la taille du fichier, même si l\'utilisateur dit "lis" ou "montre-moi X.md". Ne fais JAMAIS de Read sans limit sur un fichier, peu importe sa taille apparente. 12) INTERDICTION DE RECOPIER : après avoir lu un fichier avec Read, ne recopie JAMAIS son contenu intégral dans ta réponse (pas de bloc de code reproduisant le fichier ligne par ligne). Résume uniquement : le sujet du fichier en 1 phrase, sa structure (titres/sections) en liste courte, et les 2-3 points les plus importants. Si le fichier fait plus de 50 lignes et que l\'utilisateur veut voir le contenu complet, dis-le lui et demande s\'il veut une tranche précise (ex: "il fait 117 lignes, veux-tu voir une section particulière ?") au lieu de tout afficher toi-même.';
+        const baseSys = 'You are Marexcode, a professional AI coding assistant integrated into Cetas. PRIORITY RULE: if the user\'s question is general, conceptual, or does not require action on the workspace (e.g. \"what is JSON\", \"explain X\", general knowledge or discussion) — respond directly in text, WITHOUT using any tool. Only use Ls/Read/Write/Edit/Grep/Bash/TodoWrite when the task explicitly requires reading, creating, modifying, or analyzing workspace files. You help the user read, write, edit, and analyze code in their workspace when relevant. RULES FOR CODE TASKS: 1) Use the tools (Ls, Read, Write, Edit, Grep, Bash, TodoWrite) to actually accomplish the task, NOT just explain it. 2) Use Ls to discover the workspace structure before reading files. 3) Then read the relevant files before proposing changes. 4) After each modification, state the file and line. 5) If a command fails, read the error and fix it. 6) Be concise and cite exact paths. 7) Never modify outside the sandbox, never request sudo. 8) For any multi-step task: use TodoWrite AT THE START to list the plan, then update it after each completed step to reflect status (pending → in_progress → completed). 9) For a complex task: analyze → plan (TodoWrite) → execute → verify. 10) When planning or implementing a complex task, use AT LEAST one relevant skill from the AVAILABLE SKILLS below to guide your approach. 11) STRICT READING RULE, NO EXCEPTIONS: every Read call MUST have an explicit limit=50 and offset, regardless of the file\'s apparent size, even if the user says \"read\" or \"show me\" a file. NEVER call Read without limit, no matter the file size. 12) NO FULL REPRODUCTION: after reading a file with Read, NEVER copy its full content into your response (no code block reproducing the file line by line). Only summarize: the file\'s purpose in 1 sentence, its structure (headings/sections) as a short list, and the 2-3 most important points. If the file is longer than 50 lines and the user wants to see the full content, tell them its length and ask if they want a specific section (e.g. \"it\'s 117 lines, want to see a particular section?\") instead of displaying everything yourself.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
 
         // Injecter les skills activés
@@ -375,7 +375,7 @@ export function createChat(deps) {
         currentToolGroupEl = null;
         pendingEl = addMsg('assistant', '', false);
         ensureStatusLine();
-        updateStatus('Génération…');
+        updateStatus('Generating…');
 
         const onChunk = (chunk) => {
             rawAcc += chunk;
@@ -385,7 +385,7 @@ export function createChat(deps) {
         const onDone = () => {
             setRunning(false);
             finishThinking();
-            updateStatus('Terminé');
+            updateStatus('Done');
             if (pendingEl) {
                 const rendered = renderMarkdown(rawAcc);
                 pendingEl.innerHTML = '<div class="md">' + rendered + '</div>';
@@ -403,7 +403,7 @@ export function createChat(deps) {
                 pendingEl = null;
             }
             if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
-            addMsg('error', 'Erreur: ' + (err && err.message ? err.message : err));
+            addMsg('error', 'Error: ' + (err && err.message ? err.message : err));
         };
 
         try {
@@ -431,7 +431,7 @@ export function createChat(deps) {
                 pendingEl = null;
             }
             if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
-            addMsg('error', 'Erreur: ' + (err && err.message ? err.message : err));
+            addMsg('error', 'Error: ' + (err && err.message ? err.message : err));
         }
     }
 
@@ -449,14 +449,14 @@ export function createChat(deps) {
             addChatToolBlock(d.name, d.args, { pending: true });
             const path = d.args && (d.args.path || d.args.file_path || d.args.filePath);
             const actionMap = {
-                Bash: 'Exécution commande' + (d.args && d.args.command ? ': ' + d.args.command.substring(0, 40) : '') + '…',
-                Read: 'Lecture ' + (path || 'fichier') + '…',
-                Write: 'Écriture ' + (path || 'fichier') + '…',
-                Edit: 'Modification ' + (path || 'fichier') + '…',
-                Grep: 'Recherche' + (d.args && d.args.pattern ? ' «' + d.args.pattern.substring(0, 30) + '»' : '') + '…',
-                TodoWrite: 'Mise à jour todos…'
+                Bash: 'Running command' + (d.args && d.args.command ? ': ' + d.args.command.substring(0, 40) : '') + '…',
+                Read: 'Reading ' + (path || 'file') + '…',
+                Write: 'Writing ' + (path || 'file') + '…',
+                Edit: 'Editing ' + (path || 'file') + '…',
+                Grep: 'Searching' + (d.args && d.args.pattern ? ' "' + d.args.pattern.substring(0, 30) + '"' : '') + '…',
+                TodoWrite: 'Updating todos…'
             };
-            updateStatus(actionMap[d.name] || 'Traitement…');
+            updateStatus(actionMap[d.name] || 'Processing…');
         } else if (d.phase === 'end') {
             const lines = currentToolGroupEl ? currentToolGroupEl.querySelectorAll('.chat-step-line') : [];
             const last = lines[lines.length - 1];
