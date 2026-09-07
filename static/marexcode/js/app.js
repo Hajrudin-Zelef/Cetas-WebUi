@@ -651,6 +651,44 @@ function loadGeneralPanel() {
         });
     }
 
+    // Plain text mode
+    const plainText = document.getElementById('gen-plain-text');
+    if (plainText) {
+        plainText.checked = localStorage.getItem('marex-plain-text') === '1';
+        plainText.addEventListener('change', () => {
+            localStorage.setItem('marex-plain-text', plainText.checked ? '1' : '0');
+        });
+    }
+
+    // Show token usage
+    const showTokens = document.getElementById('gen-show-tokens');
+    if (showTokens) {
+        showTokens.checked = localStorage.getItem('marex-show-tokens') !== '0';
+        showTokens.addEventListener('change', () => {
+            localStorage.setItem('marex-show-tokens', showTokens.checked ? '1' : '0');
+            const el = document.getElementById('token-counter');
+            if (el) el.style.display = showTokens.checked ? '' : 'none';
+        });
+    }
+
+    // Send mode
+    const sendMode = document.getElementById('gen-send-mode');
+    if (sendMode) {
+        sendMode.value = localStorage.getItem('marex-send-mode') || 'enter';
+        sendMode.addEventListener('change', () => {
+            localStorage.setItem('marex-send-mode', sendMode.value);
+        });
+    }
+
+    // Message queue
+    const queueToggle = document.getElementById('gen-message-queue');
+    if (queueToggle) {
+        queueToggle.checked = localStorage.getItem('marex-message-queue') === '1';
+        queueToggle.addEventListener('change', () => {
+            localStorage.setItem('marex-message-queue', queueToggle.checked ? '1' : '0');
+        });
+    }
+
     // Global instructions
     const textarea = document.getElementById('gen-global-instructions');
     const saveBtn = document.getElementById('gen-save-instructions');
@@ -1202,7 +1240,10 @@ function setupChat() {
     refs.sendBtn.addEventListener('click', () => chat.send());
     refs.stopBtn.addEventListener('click', () => chat.stop());
     refs.ta.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        const sendMode = localStorage.getItem('marex-send-mode') || 'enter';
+        if (e.key === 'Enter') {
+            if (sendMode === 'ctrl' && !e.ctrlKey) return;
+            if (sendMode === 'enter' && (e.shiftKey || e.ctrlKey)) return;
             e.preventDefault();
             chat.send();
         }

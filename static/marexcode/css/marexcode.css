@@ -1617,6 +1617,11 @@ html,body{
 /* Reduce motion */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after{ animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
 
+/* Token counter + queue indicator */
+.composer-info-bar{ display:flex; justify-content:space-between; padding:2px 8px; font-size:11px; color:var(--text-tertiary); }
+#token-counter{ font-family:monospace; }
+#queue-indicator{ color:var(--accent); font-weight:500; }
+
 /* Landscape court : limiter la hauteur du chat */
 @media (max-height: 600px) and (orientation: landscape){
   .hero{ gap:10px; }

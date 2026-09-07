@@ -17,6 +17,7 @@ export function createChat(deps) {
     let currentToolGroupEl = null;
     let thinkStepEl = null;
     let cachedInstructions = { global: '', workspace: '' };
+    let messageQueue = [];
 
     async function preloadInstructions() {
         try {
@@ -326,9 +327,46 @@ export function createChat(deps) {
         return session;
     }
 
+    function estimateTokens(text) {
+        if (!text) return 0;
+        return Math.ceil(text.length / 4);
+    }
+
+    function updateTokenCounter() {
+        const el = document.getElementById('token-counter');
+        if (!el) return;
+        const show = localStorage.getItem('marex-show-tokens') !== '0';
+        el.style.display = show ? '' : 'none';
+        if (!show || !session) return;
+        let total = 0;
+        for (const m of (session.messages || [])) total += estimateTokens(m.content);
+        total += estimateTokens(ta.value);
+        el.textContent = '~' + total + ' tokens';
+    }
+
+    function updateQueueIndicator() {
+        const el = document.getElementById('queue-indicator');
+        if (!el) return;
+        if (messageQueue.length > 0) {
+            el.textContent = messageQueue.length + ' message' + (messageQueue.length > 1 ? 's' : '') + ' in queue';
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    }
+
     async function send() {
         const text = ta.value.trim();
-        if (!text || running) return;
+        if (!text) return;
+        const queueEnabled = localStorage.getItem('marex-message-queue') === '1';
+        if (running && queueEnabled) {
+            messageQueue.push(text);
+            updateQueueIndicator();
+            ta.value = '';
+            ta.dispatchEvent(new Event('input'));
+            return;
+        }
+        if (running) return;
         const model = session && session.model;
         if (!model) { addMsg('error', 'Select a model.'); return; }
         setRunning(true);
@@ -343,6 +381,7 @@ export function createChat(deps) {
         }
         session.messages.push({ role: 'user', content: text });
         addMsg('user', text);
+        updateTokenCounter();
 
         const baseSys = 'You are Marexcode, a professional AI coding assistant integrated into Cetas. PRIORITY RULE: if the user\'s question is general, conceptual, or does not require action on the workspace (e.g. \"what is JSON\", \"explain X\", general knowledge or discussion) — respond directly in text, WITHOUT using any tool. Only use Ls/Read/Write/Edit/Grep/Bash/TodoWrite when the task explicitly requires reading, creating, modifying, or analyzing workspace files. You help the user read, write, edit, and analyze code in their workspace when relevant. RULES FOR CODE TASKS: 1) Use the tools (Ls, Read, Write, Edit, Grep, Bash, TodoWrite) to actually accomplish the task, NOT just explain it. 2) Use Ls to discover the workspace structure before reading files. 3) Then read the relevant files before proposing changes. 4) After each modification, state the file and line. 5) If a command fails, read the error and fix it. 6) Be concise and cite exact paths. 7) Never modify outside the sandbox, never request sudo. 8) For any multi-step task: use TodoWrite AT THE START to list the plan, then update it after each completed step to reflect status (pending → in_progress → completed). 9) For a complex task: analyze → plan (TodoWrite) → execute → verify. 10) When planning or implementing a complex task, use AT LEAST one relevant skill from the AVAILABLE SKILLS below to guide your approach. 11) STRICT READING RULE, NO EXCEPTIONS: every Read call MUST have an explicit limit=50 and offset, regardless of the file\'s apparent size, even if the user says \"read\" or \"show me\" a file. NEVER call Read without limit, no matter the file size. 12) NO FULL REPRODUCTION: after reading a file with Read, NEVER copy its full content into your response (no code block reproducing the file line by line). Only summarize: the file\'s purpose in 1 sentence, its structure (headings/sections) as a short list, and the 2-3 most important points. If the file is longer than 50 lines and the user wants to see the full content, tell them its length and ask if they want a specific section (e.g. \"it\'s 117 lines, want to see a particular section?\") instead of displaying everything yourself.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
@@ -392,6 +431,7 @@ export function createChat(deps) {
             setRunning(false);
             finishThinking();
             updateStatus('Done');
+            updateQueueIndicator();
             if (pendingEl) {
                 const rendered = renderMarkdown(rawAcc);
                 pendingEl.innerHTML = '<div class="md">' + rendered + '</div>';
@@ -399,6 +439,13 @@ export function createChat(deps) {
                 pendingEl = null;
             }
             if (onSave) onSave(session);
+            // Process queue
+            if (messageQueue.length > 0) {
+                const next = messageQueue.shift();
+                updateQueueIndicator();
+                ta.value = next;
+                send();
+            }
         };
         const onError = (err) => {
             setRunning(false);

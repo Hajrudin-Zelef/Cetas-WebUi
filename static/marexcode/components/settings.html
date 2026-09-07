@@ -170,6 +170,58 @@
             </div>
           </div>
 
+          <div class="settings-group-label">Éditeur</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Éditeur en texte brut</h3>
+                <p>Conserve le code, le Markdown et les liens en texte brut lors de la rédaction.</p>
+              </div>
+              <label class="settings-toggle">
+                <input type="checkbox" id="gen-plain-text">
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Afficher l'utilisation du contexte</h3>
+                <p>Affiche le nombre de tokens utilisés / disponibles au-dessus du champ de saisie.</p>
+              </div>
+              <label class="settings-toggle">
+                <input type="checkbox" id="gen-show-tokens" checked>
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Raccourci d'envoi</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Comportement de la touche Entrée</h3>
+                <p>Choisir dans quels cas Entrée envoie un prompt ou insère une nouvelle ligne.</p>
+              </div>
+              <select id="gen-send-mode" class="settings-select">
+                <option value="enter">Entrée envoie</option>
+                <option value="ctrl">Ctrl+Entrée envoie</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Comportement de suivi</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>File d'attente des messages</h3>
+                <p>Mettre les suivis en file d'attente pendant que l'agent s'exécute, ou interrompre l'exécution en cours.</p>
+              </div>
+              <label class="settings-toggle">
+                <input type="checkbox" id="gen-message-queue">
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
           <div class="settings-group-label">Instructions</div>
           <div class="settings-card">
             <div class="settings-row" style="flex-direction:column;gap:8px;">
