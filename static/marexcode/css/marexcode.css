@@ -880,8 +880,10 @@ html,body{
 
 .cdrop-section-label{
   font-size:11px;
-  color:var(--text-tertiary);
-  font-weight:500;
+  color:var(--accent);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
   padding:6px 10px 4px 10px;
 }
 
