@@ -441,6 +441,7 @@ function setupCdrops() {
         });
     }
     document.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.tool-perm-select') || e.target.closest('.tool-perm-row')) return;
         const inside = allCdrops.some(c => {
             const wrap = $(c.wrap);
             return wrap && wrap.contains(e.target);
