@@ -271,7 +271,8 @@ export function createModelSelect({
         if (!o) return t.textContent = '',
         void (n && (n.style.display = "none", n.removeAttribute("src")));
         const a = e._customModels.find((e => e.id === o));
-        if (t.textContent = '', n) {
+        t.textContent = '';
+        if (n) {
             const e = a && EDITEUR_ICONS[a.editeur];
             e ? (n.src = `images/${e}`, n.style.display = "") : (n.style.display = "none", n.removeAttribute("src"));
         }
