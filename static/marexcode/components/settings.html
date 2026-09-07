@@ -297,6 +297,100 @@
             </div>
           </div>
 
+          <div class="settings-group-label">Politique d'approbation</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Bash</h3>
+                <p>Confirmer avant d'exécuter des commandes shell.</p>
+              </div>
+              <select id="gen-perm-bash" class="settings-select">
+                <option value="allow">Toujours autoriser</option>
+                <option value="ask" selected>Demander</option>
+                <option value="deny">Toujours bloquer</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Write</h3>
+                <p>Confirmer avant d'écrire/créer des fichiers.</p>
+              </div>
+              <select id="gen-perm-write" class="settings-select">
+                <option value="allow">Toujours autoriser</option>
+                <option value="ask">Demander</option>
+                <option value="deny">Toujours bloquer</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Edit</h3>
+                <p>Confirmer avant de modifier des fichiers existants.</p>
+              </div>
+              <select id="gen-perm-edit" class="settings-select">
+                <option value="allow">Toujours autoriser</option>
+                <option value="ask">Demander</option>
+                <option value="deny">Toujours bloquer</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Bac à sable</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Sandbox strict</h3>
+                <p>Restreint l'agent aux seuls fichiers du workspace actif. Désactivé = accès étendu au serveur.</p>
+              </div>
+              <label class="settings-toggle">
+                <input type="checkbox" id="gen-sandbox-strict" checked>
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Recherche Web</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Activer la recherche web</h3>
+                <p>L'agent peut rechercher sur le web via SearXNG.</p>
+              </div>
+              <label class="settings-toggle">
+                <input type="checkbox" id="gen-web-search" checked>
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Niveau de détail</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Mode de sortie</h3>
+                <p>Verbeux = réponses complètes. Compressé = réponses courtes (mode caveman).</p>
+              </div>
+              <select id="gen-output-mode" class="settings-select">
+                <option value="verbose">Verbeux</option>
+                <option value="compressed">Compressé</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Raisonnement</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Affichage du raisonnement</h3>
+                <p>Comment afficher le processus de réflexion de l'agent.</p>
+              </div>
+              <select id="gen-thinking-mode" class="settings-select">
+                <option value="all">Afficher tout</option>
+                <option value="summary">Résumé uniquement</option>
+                <option value="hidden">Masqué</option>
+              </select>
+            </div>
+          </div>
+
           <div class="settings-group-label">Instructions</div>
           <div class="settings-card">
             <div class="settings-row" style="flex-direction:column;gap:8px;">

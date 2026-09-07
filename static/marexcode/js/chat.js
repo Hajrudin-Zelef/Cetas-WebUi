@@ -228,14 +228,16 @@ export function createChat(deps) {
     }
 
     function onThinking(t) {
+        const mode = localStorage.getItem('marex-thinking-mode') || 'all';
+        if (mode === 'hidden') return;
         ensureThinkBadge();
-        openSidePanel();
+        if (mode === 'all') openSidePanel();
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'block';
         if (!thinkBlockEl) {
             thinkBlockEl = document.createElement('div');
             thinkBlockEl.className = 'sp-think-block';
             thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
-            if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
+            if (sidePanelBody && mode === 'all') sidePanelBody.appendChild(thinkBlockEl);
             const group = ensureToolGroup();
             thinkStepEl = document.createElement('div');
             thinkStepEl.className = 'chat-step-line';
@@ -251,8 +253,8 @@ export function createChat(deps) {
             }, 50);
         }
         const txt = thinkBlockEl.querySelector('.sp-think-text');
-        if (txt) txt.textContent += t;
-        if (sidePanelBody) sidePanelBody.scrollTop = sidePanelBody.scrollHeight;
+        if (txt && mode === 'all') txt.textContent += t;
+        if (sidePanelBody && mode === 'all') sidePanelBody.scrollTop = sidePanelBody.scrollHeight;
     }
 
     function finishThinking() {
@@ -414,7 +416,14 @@ export function createChat(deps) {
             instructionsBlock += '\n\nPROJECT-SPECIFIC INSTRUCTIONS:\n' + cachedInstructions.workspace;
         }
 
-        const sys = (skill ? skill + '\n\n' : '') + baseSys + instructionsBlock + skillsPrompt;
+        // Output mode
+        const outputMode = localStorage.getItem('marex-output-mode') || 'verbose';
+        let outputInstruction = '';
+        if (outputMode === 'compressed') {
+            outputInstruction = '\n\nOUTPUT MODE: COMPRESSED. Keep responses extremely short. One sentence max per answer. No explanations unless asked. Fragments OK. No preamble, no conclusion.';
+        }
+
+        const sys = (skill ? skill + '\n\n' : '') + baseSys + instructionsBlock + skillsPrompt + outputInstruction;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
         pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
         todoBlockEl = null; statusEl = null;

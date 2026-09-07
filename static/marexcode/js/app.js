@@ -692,6 +692,54 @@ function loadGeneralPanel() {
         });
     }
 
+    // Permission policy (Bash/Write/Edit)
+    ['bash', 'write', 'edit'].forEach(tool => {
+        const sel = document.getElementById('gen-perm-' + tool);
+        if (sel) {
+            sel.value = localStorage.getItem('marex-perm-' + tool) || (tool === 'bash' ? 'ask' : 'allow');
+            sel.addEventListener('change', () => {
+                localStorage.setItem('marex-perm-' + tool, sel.value);
+                setRule(tool, sel.value);
+            });
+        }
+    });
+
+    // Sandbox strict
+    const sandboxStrict = document.getElementById('gen-sandbox-strict');
+    if (sandboxStrict) {
+        sandboxStrict.checked = localStorage.getItem('marex-sandbox-strict') !== '0';
+        sandboxStrict.addEventListener('change', () => {
+            localStorage.setItem('marex-sandbox-strict', sandboxStrict.checked ? '1' : '0');
+        });
+    }
+
+    // Web search
+    const webSearch = document.getElementById('gen-web-search');
+    if (webSearch) {
+        webSearch.checked = localStorage.getItem('marex-web-search') !== '0';
+        webSearch.addEventListener('change', () => {
+            localStorage.setItem('marex-web-search', webSearch.checked ? '1' : '0');
+        });
+    }
+
+    // Output mode (verbose/compressed)
+    const outputMode = document.getElementById('gen-output-mode');
+    if (outputMode) {
+        outputMode.value = localStorage.getItem('marex-output-mode') || 'verbose';
+        outputMode.addEventListener('change', () => {
+            localStorage.setItem('marex-output-mode', outputMode.value);
+        });
+    }
+
+    // Thinking mode (all/summary/hidden)
+    const thinkingMode = document.getElementById('gen-thinking-mode');
+    if (thinkingMode) {
+        thinkingMode.value = localStorage.getItem('marex-thinking-mode') || 'all';
+        thinkingMode.addEventListener('change', () => {
+            localStorage.setItem('marex-thinking-mode', thinkingMode.value);
+        });
+    }
+
     // Global instructions
     const textarea = document.getElementById('gen-global-instructions');
     const saveBtn = document.getElementById('gen-save-instructions');
