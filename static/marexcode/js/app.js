@@ -84,6 +84,7 @@ const refs = {
     sidePanelEmpty: $('side-panel-empty'),
     sidePanelSpinner: $('side-panel-spinner'),
     sidePanelClose: $('side-panel-close'),
+    sidePanelResizer: $('side-panel-resizer'),
     btnArchivedChats: $('btn-archived-chats'),
     btnSuggestions: $('btn-suggestions')
 };
@@ -486,6 +487,35 @@ function setupSidebar() {
     if (backBtn) backBtn.addEventListener('click', () => { window.location.href = '/'; });
 }
 
+function setupSidePanelResize() {
+    const resizer = refs.sidePanelResizer;
+    const panel = refs.sidePanel;
+    if (!resizer || !panel) return;
+    let dragging = false;
+
+    resizer.addEventListener('mousedown', (e) => {
+        dragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const newWidth = window.innerWidth - e.clientX;
+        const clamped = Math.min(Math.max(newWidth, 280), 700);
+        panel.style.width = clamped + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (dragging) {
+            dragging = false;
+            resizer.classList.remove('dragging');
+            document.body.style.userSelect = '';
+        }
+    });
+}
+
 function setupUserMenu() {
     if (!refs.userBtn || !refs.userMenu || !refs.userWrap) return;
     refs.userBtn.addEventListener('click', (e) => {
@@ -790,6 +820,7 @@ function boot() {
     setupToggles();
     setupSidebar();
     setupUserMenu();
+    setupSidePanelResize();
     setupPlusMenu();
     fillUserInfo();
     setupChat();
