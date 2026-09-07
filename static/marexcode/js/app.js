@@ -1,4 +1,4 @@
-import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions, trackActivity } from './api.js';
+import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions, trackActivity, getProfileStats, getProfileActivity } from './api.js';
 import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
@@ -754,7 +754,6 @@ async function loadProfilePanel() {
     document.getElementById('profile-top-skills').innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Chargement...</div>';
 
     try {
-        const { getProfileStats, getProfileActivity, listSkillsConfig } = await import('./api.js');
         const [stats, activity, skills] = await Promise.all([
             getProfileStats().catch(() => ({})),
             getProfileActivity().catch(() => ({})),
@@ -1309,7 +1308,8 @@ function setupSettings(router) {
         loadSkillsPanel();
         loadInstructionsPanel();
         loadGeneralPanel();
-        loadProfilePanel();
+        // Delay profile load to ensure DOM is ready
+        setTimeout(() => loadProfilePanel(), 50);
     });
     // Profile button (user avatar or dedicated button)
     const profileBtn = document.getElementById('btn-profile') || refs.userAvatar;
