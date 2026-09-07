@@ -1455,6 +1455,17 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             skill_id = path[len("/api/marexcode/skills/"):-len("/content")]
             self._skills_content_get(skill_id)
             return
+        # Workspaces
+        if path == "/api/marexcode/workspaces":
+            self._workspaces_list_get()
+            return
+        if path.startswith("/api/marexcode/workspaces/") and path.endswith("/instructions"):
+            ws_id = path[len("/api/marexcode/workspaces/"):-len("/instructions")]
+            self._workspace_instructions_get(ws_id)
+            return
+        if path == "/api/marexcode/global-instructions":
+            self._global_instructions_get()
+            return
         # Setup vault (M3)
         if path == "/setup" or path == "/setup/":
             self._serve_setup()
@@ -1522,6 +1533,17 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path == "/api/marexcode/skills/config":
             self._skills_config_put()
             return
+        if self.path.startswith("/api/marexcode/workspaces/") and self.path.endswith("/activate"):
+            ws_id = self.path[len("/api/marexcode/workspaces/"):-len("/activate")]
+            self._workspace_activate_put(ws_id)
+            return
+        if self.path.startswith("/api/marexcode/workspaces/") and self.path.endswith("/instructions"):
+            ws_id = self.path[len("/api/marexcode/workspaces/"):-len("/instructions")]
+            self._workspace_instructions_put(ws_id)
+            return
+        if self.path == "/api/marexcode/global-instructions":
+            self._global_instructions_put()
+            return
         self.send_response(404)
         self.end_headers()
 
@@ -1543,6 +1565,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             return
         if self.path == "/api/marexcode/project":
             self._marex_project_delete()
+            return
+        if self.path.startswith("/api/marexcode/workspaces/"):
+            ws_id = self.path[len("/api/marexcode/workspaces/"):]
+            self._workspace_delete(ws_id)
             return
         self.send_response(404)
         self.end_headers()
@@ -1978,6 +2004,166 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
                     self._error(500, f"Erreur lecture: {e}")
                     return
         self._error(404, "Pas de fichier .md trouvé")
+
+    # ── Workspaces multi-projets ───────────────────────────────────────
+
+    def _workspaces_list_get(self):
+        """GET /api/marexcode/workspaces — liste les workspaces."""
+        from .marexcode import (marex_workspaces_dir, marex_workspace_dir,
+                                marex_load_workspace_meta, marex_get_active_workspace)
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        active_id = marex_get_active_workspace(username)
+        ws_dir = marex_workspaces_dir(username)
+        result = []
+        if os.path.isdir(ws_dir):
+            for name in sorted(os.listdir(ws_dir)):
+                ws_path = os.path.join(ws_dir, name)
+                if not os.path.isdir(ws_path):
+                    continue
+                meta = marex_load_workspace_meta(username, name)
+                result.append({
+                    "id": name,
+                    "name": meta.get("name", name),
+                    "created": meta.get("created", ""),
+                    "active": name == active_id,
+                })
+        self._respond_json(result)
+
+    def _workspace_activate_put(self, ws_id: str):
+        """PUT /api/marexcode/workspaces/:id/activate — active un workspace."""
+        from .marexcode import (marex_workspace_dir, marex_set_active_workspace,
+                                marex_load_workspace_meta, marex_save_workspace_meta)
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if ".." in ws_id or "/" in ws_id:
+            self._error(400, "ID invalide")
+            return
+        ws_path = marex_workspace_dir(username, ws_id)
+        if not os.path.isdir(ws_path):
+            self._error(404, "Workspace non trouvé")
+            return
+        # Désactiver l'ancien
+        old_id = __import__('marexcode', fromlist=['marex_get_active_workspace']).marex_get_active_workspace(username)
+        if old_id:
+            old_meta = marex_load_workspace_meta(username, old_id)
+            old_meta["active"] = False
+            marex_save_workspace_meta(username, old_id, old_meta)
+        # Activer le nouveau
+        marex_set_active_workspace(username, ws_id)
+        meta = marex_load_workspace_meta(username, ws_id)
+        meta["active"] = True
+        marex_save_workspace_meta(username, ws_id, meta)
+        self._respond_json({"ok": True, "id": ws_id})
+
+    def _workspace_delete(self, ws_id: str):
+        """DELETE /api/marexcode/workspaces/:id — supprime un workspace."""
+        from .marexcode import (marex_workspace_dir, marex_get_active_workspace,
+                                marex_set_active_workspace)
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if ".." in ws_id or "/" in ws_id:
+            self._error(400, "ID invalide")
+            return
+        ws_path = marex_workspace_dir(username, ws_id)
+        if not os.path.isdir(ws_path):
+            self._error(404, "Workspace non trouvé")
+            return
+        import shutil
+        shutil.rmtree(ws_path)
+        # Si c'était le workspace actif, désactiver
+        if marex_get_active_workspace(username) == ws_id:
+            marex_set_active_workspace(username, None)
+        self._respond_json({"ok": True})
+
+    def _workspace_instructions_get(self, ws_id: str):
+        """GET /api/marexcode/workspaces/:id/instructions — lit MAREXCODE.md."""
+        from .marexcode import marex_workspace_instructions_path
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if ".." in ws_id or "/" in ws_id:
+            self._error(400, "ID invalide")
+            return
+        path = marex_workspace_instructions_path(username, ws_id)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                self._respond_json({"id": ws_id, "content": content})
+                return
+            except Exception as e:
+                self._error(500, f"Erreur lecture: {e}")
+                return
+        self._respond_json({"id": ws_id, "content": ""})
+
+    def _workspace_instructions_put(self, ws_id: str):
+        """PUT /api/marexcode/workspaces/:id/instructions — sauvegarde MAREXCODE.md."""
+        from .marexcode import marex_workspace_instructions_path
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if ".." in ws_id or "/" in ws_id:
+            self._error(400, "ID invalide")
+            return
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_length) if content_length > 0 else b""
+        try:
+            data = json.loads(body)
+            content = data.get("content", "")
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        path = marex_workspace_instructions_path(username, ws_id)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+            self._respond_json({"ok": True})
+        except Exception as e:
+            self._error(500, f"Erreur écriture: {e}")
+
+    def _global_instructions_get(self):
+        """GET /api/marexcode/global-instructions — lit global_instructions.md."""
+        from .marexcode import marex_global_instructions_path
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = marex_global_instructions_path(username)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                self._respond_json({"content": content})
+                return
+            except Exception as e:
+                self._error(500, f"Erreur lecture: {e}")
+                return
+        self._respond_json({"content": ""})
+
+    def _global_instructions_put(self):
+        """PUT /api/marexcode/global-instructions — sauvegarde global_instructions.md."""
+        from .marexcode import marex_global_instructions_path
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_length) if content_length > 0 else b""
+        try:
+            data = json.loads(body)
+            content = data.get("content", "")
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        path = marex_global_instructions_path(username)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+            self._respond_json({"ok": True})
+        except Exception as e:
+            self._error(500, f"Erreur écriture: {e}")
 
     def _error(self, code: int, msg: str):
         body = json.dumps({"error": msg}).encode()

@@ -95,12 +95,13 @@ UPLOAD_MAX_FILES = int(os.environ.get("CETAS_UPLOAD_MAX_FILES", "200"))
 UPLOAD_MAX_TOTAL_BYTES = int(os.environ.get("CETAS_UPLOAD_MAX_BYTES", str(20 * 1024 * 1024)))  # 20 Mo
 UPLOADED_PROJECT_DIRNAME = "uploaded_project"
 SERVER_PROJECT_DIRNAME = "server_project"
+WORKSPACES_DIRNAME = "workspaces"
 PROJECT_SERVER = "Marexcode (serveur)"
 PROJECT_UPLOADED = "Projet importé"
 
 # Entrées techniques à la racine du workspace utilisateur, jamais migrées
 # vers server_project/ (métadonnées internes, pas du code utilisateur).
-_WORKSPACE_RESERVED_ENTRIES = {"sessions", "active_project.json", UPLOADED_PROJECT_DIRNAME, SERVER_PROJECT_DIRNAME}
+_WORKSPACE_RESERVED_ENTRIES = {"sessions", "active_project.json", UPLOADED_PROJECT_DIRNAME, SERVER_PROJECT_DIRNAME, WORKSPACES_DIRNAME}
 
 
 def marex_workspace(username: str) -> str:
@@ -146,6 +147,83 @@ def marex_set_active_project(username: str, name: str) -> bool:
     except Exception:
         return False
     return True
+
+
+# ── Multi-workspaces ──────────────────────────────────────────────────
+
+def marex_workspaces_dir(username: str) -> str:
+    """Répertoire contenant tous les workspaces d'un utilisateur."""
+    d = os.path.join(marex_workspace(username), WORKSPACES_DIRNAME)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def marex_workspace_dir(username: str, workspace_id: str) -> str:
+    """Chemin d'un workspace spécifique."""
+    return os.path.join(marex_workspaces_dir(username), workspace_id)
+
+
+def marex_workspace_meta_path(username: str, workspace_id: str) -> str:
+    """Chemin vers meta.json d'un workspace."""
+    return os.path.join(marex_workspace_dir(username, workspace_id), "meta.json")
+
+
+def marex_load_workspace_meta(username: str, workspace_id: str) -> dict:
+    """Charge les métadonnées d'un workspace."""
+    path = marex_workspace_meta_path(username, workspace_id)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"id": workspace_id, "name": workspace_id, "created": "", "active": False}
+
+
+def marex_save_workspace_meta(username: str, workspace_id: str, meta: dict):
+    """Sauvegarde les métadonnées d'un workspace."""
+    path = marex_workspace_meta_path(username, workspace_id)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(meta, f, indent=2, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def marex_get_active_workspace(username: str) -> str | None:
+    """Retourne l'ID du workspace actif, ou None."""
+    path = os.path.join(marex_workspaces_dir(username), "active.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("id")
+    except Exception:
+        return None
+
+
+def marex_set_active_workspace(username: str, workspace_id: str | None):
+    """Définit le workspace actif."""
+    path = os.path.join(marex_workspaces_dir(username), "active.json")
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"id": workspace_id}, f)
+    except Exception:
+        pass
+
+
+def marex_workspace_instructions_path(username: str, workspace_id: str) -> str:
+    """Chemin vers le fichier d'instructions d'un workspace."""
+    return os.path.join(marex_workspace_dir(username, workspace_id), "MAREXCODE.md")
+
+
+def marex_global_instructions_path(username: str) -> str:
+    """Chemin vers les instructions globales d'un utilisateur."""
+    return os.path.join(marex_workspace(username), "global_instructions.md")
+
+
+MAREXCODE_INSTRUCTIONS_TEMPLATE = """# Instructions du projet
+
+<!-- Décris ici le contexte du projet, les conventions de code, les contraintes -->
+<!-- L'agent lit ce fichier au début de chaque session sur ce workspace -->
+"""
 
 
 def marex_server_project_root(username: str) -> str:
@@ -646,13 +724,11 @@ class MarexcodeMixin:
 
     def _marex_upload_project(self):
         """POST /api/marexcode/upload — importe un dossier (multipart/form-data).
-        Chaque fichier envoyé porte un header Content-Disposition avec un
-        `filename` contenant le chemin relatif (ex: "src/app.js"), tel que
-        produit par webkitdirectory côté navigateur.
-        Remplace entièrement le contenu de uploaded_project/ et active ce
-        projet automatiquement en cas de succès.
+        Crée un nouveau workspace au lieu de remplacer l'existant.
         """
         from server import _rate_check
+        import time
+        import re
         username = self._get_authenticated_user()
         if not username:
             return
@@ -697,14 +773,32 @@ class MarexcodeMixin:
             return
 
         base = marex_workspace(username)
-        target_root = os.path.join(base, UPLOADED_PROJECT_DIRNAME)
+        ws_dir = marex_workspaces_dir(username)
 
-        # Valide tous les chemins AVANT d'écrire quoi que ce soit (atomique en intention).
+        # Extraire le nom du projet depuis le premier fichier (racine du dossier uploadé)
+        project_name = "projet"
+        if files:
+            first = files[0]["filename"].replace("\\", "/").lstrip("/")
+            parts = first.split("/")
+            if len(parts) > 1:
+                project_name = parts[0]
+            else:
+                project_name = os.path.splitext(first)[0] or "projet"
+
+        # Générer un ID unique (slug + timestamp)
+        import re
+        import time
+        slug = re.sub(r'[^a-z0-9]+', '-', project_name.lower()).strip('-') or "projet"
+        ws_id = f"{slug}-{int(time.time())}"
+        target_root = os.path.join(ws_dir, ws_id)
+
+        # Valide tous les chemins AVANT d'écrire quoi que ce soit
         resolved = []
         for f in files:
             rel = f["filename"].replace("\\", "/").lstrip("/")
             # Retire un éventuel dossier racine unique ajouté par webkitdirectory
-            # (ex: "mon-projet/src/app.js" → on garde tel quel, c'est déjà relatif au dossier choisi)
+            if len(parts) > 1 and rel.startswith(project_name + "/"):
+                rel = rel[len(project_name) + 1:]
             candidate = os.path.realpath(os.path.join(target_root, rel))
             real_root = os.path.realpath(target_root)
             if candidate != real_root and not candidate.startswith(real_root + os.sep):
@@ -715,10 +809,6 @@ class MarexcodeMixin:
             resolved.append((candidate, f["content"]))
 
         try:
-            # Remplace entièrement le projet importé précédent.
-            import shutil
-            if os.path.isdir(target_root):
-                shutil.rmtree(target_root)
             os.makedirs(target_root, exist_ok=True)
             for path, content in resolved:
                 parent = os.path.dirname(path)
@@ -730,9 +820,26 @@ class MarexcodeMixin:
             self._respond_json({"error": f"Erreur écriture upload: {e}"}, 500)
             return
 
-        marex_set_active_project(username, PROJECT_UPLOADED)
-        log.info("upload project user=%s files=%d bytes=%d", username, len(resolved), total_bytes)
-        self._respond_json({"ok": True, "files": len(resolved), "bytes": total_bytes, "active": PROJECT_UPLOADED})
+        # Générer MAREXCODE.md automatiquement
+        instructions_path = marex_workspace_instructions_path(username, ws_id)
+        if not os.path.exists(instructions_path):
+            with open(instructions_path, "w", encoding="utf-8") as f:
+                f.write(MAREXCODE_INSTRUCTIONS_TEMPLATE)
+
+        # Sauvegarder les métadonnées
+        meta = {
+            "id": ws_id,
+            "name": project_name,
+            "created": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "active": True,
+        }
+        marex_save_workspace_meta(username, ws_id, meta)
+
+        # Activer ce workspace
+        marex_set_active_workspace(username, ws_id)
+
+        log.info("upload workspace user=%s ws_id=%s files=%d bytes=%d", username, ws_id, len(resolved), total_bytes)
+        self._respond_json({"ok": True, "id": ws_id, "name": project_name, "files": len(resolved), "bytes": total_bytes})
 
 
 def _parse_multipart_files(body: bytes, boundary: bytes) -> list:

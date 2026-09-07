@@ -1,6 +1,6 @@
 export const MAREX_TOOLS = (typeof MAREXCODE_TOOLS !== 'undefined') ? MAREXCODE_TOOLS : [];
 
-import { listSkillsConfig } from './api.js';
+import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions } from './api.js';
 
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
@@ -334,7 +334,22 @@ export function createChat(deps) {
             }
         } catch (e) { /* ignore skills errors */ }
 
-        const sys = (skill ? skill + '\n\n' : '') + baseSys + skillsPrompt;
+        // Injecter les instructions (globales + workspace)
+        let instructionsBlock = '';
+        try {
+            const [globalInstr, workspaceInstr] = await Promise.all([
+                getGlobalInstructions().catch(() => ({ content: '' })),
+                window.activeWorkspaceId ? getWorkspaceInstructions(window.activeWorkspaceId).catch(() => ({ content: '' })) : Promise.resolve({ content: '' })
+            ]);
+            if (globalInstr.content && globalInstr.content.trim()) {
+                instructionsBlock += '\n\nINSTRUCTIONS GLOBALES DE L\'UTILISATEUR (à respecter en priorité) :\n' + globalInstr.content.trim();
+            }
+            if (workspaceInstr.content && workspaceInstr.content.trim()) {
+                instructionsBlock += '\n\nINSTRUCTIONS SPÉCIFIQUES À CE PROJET :\n' + workspaceInstr.content.trim();
+            }
+        } catch (e) { /* ignore instructions errors */ }
+
+        const sys = (skill ? skill + '\n\n' : '') + baseSys + instructionsBlock + skillsPrompt;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
         pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
         todoBlockEl = null; statusEl = null;

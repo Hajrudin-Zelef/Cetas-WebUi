@@ -1,4 +1,4 @@
-import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent } from './api.js';
+import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions } from './api.js';
 import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
@@ -32,6 +32,11 @@ const refs = {
     panelWorkspace: $('panel-workspace'),
     workspaceTree: $('workspace-tree'),
     workspaceEmpty: $('workspace-empty'),
+    toggleWorkspaces: $('toggle-workspaces'),
+    panelWorkspaces: $('panel-workspaces'),
+    workspacesList: $('workspaces-list'),
+    workspacesEmpty: $('workspaces-empty'),
+    btnNewWorkspace: $('btn-new-workspace'),
     toggleHistory: $('toggle-history'),
     panelHistory: $('panel-history'),
     sessionsList: $('sessions-list'),
@@ -201,8 +206,7 @@ function setupWorkspaceSelector() {
         refs.btnUploadFolder.disabled = true;
         try {
             await uploadProjectFolder(folderInput.files);
-            await refreshProjectState();
-            refs.menuWorkspace.classList.remove('open');
+            await refreshWorkspaces();
             await refreshTree();
         } catch (e) {
             alert("Erreur lors de l'import du dossier : " + (e.message || e));
@@ -211,6 +215,15 @@ function setupWorkspaceSelector() {
             refs.btnUploadFolder.disabled = false;
         }
     });
+
+    // Nouveau workspace button
+    if (refs.btnNewWorkspace) {
+        refs.btnNewWorkspace.addEventListener('click', (e) => {
+            e.stopPropagation();
+            folderInput.value = '';
+            folderInput.click();
+        });
+    }
 
     // Delete button handler
     if (refs.btnDeleteProject) {
@@ -467,13 +480,17 @@ function setupToggles() {
         });
     }
     makeToggle('toggle-workspace', 'panel-workspace');
+    makeToggle('toggle-workspaces', 'panel-workspaces');
     makeToggle('toggle-history', 'panel-history');
 
     refs.panelWorkspace.classList.remove('hidden');
+    refs.panelWorkspaces.classList.remove('hidden');
     refs.panelHistory.classList.remove('hidden');
     const wChevron = refs.toggleWorkspace.querySelector('svg');
+    const wsChevron = refs.toggleWorkspaces.querySelector('svg');
     const hChevron = refs.toggleHistory.querySelector('svg');
     if (wChevron) wChevron.classList.remove('collapsed');
+    if (wsChevron) wsChevron.classList.remove('collapsed');
     if (hChevron) hChevron.classList.remove('collapsed');
 }
 
@@ -600,6 +617,29 @@ async function loadSkillsPanel() {
     }
 }
 
+async function loadInstructionsPanel() {
+    const textarea = document.getElementById('global-instructions-textarea');
+    const saveBtn = document.getElementById('save-global-instructions');
+    if (!textarea) return;
+    try {
+        const data = await getGlobalInstructions();
+        textarea.value = data.content || '';
+    } catch (e) {
+        textarea.value = '';
+    }
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            try {
+                await saveGlobalInstructions(textarea.value);
+                saveBtn.textContent = '✓ Enregistré';
+                setTimeout(() => { saveBtn.textContent = 'Enregistrer'; }, 2000);
+            } catch (e) {
+                alert('Erreur sauvegarde: ' + (e.message || e));
+            }
+        });
+    }
+}
+
 function fillUserInfo() {
     let username = 'Utilisateur';
     try {
@@ -666,6 +706,62 @@ function buildSessionItem(s) {
         openSession(s.id);
     });
     return b;
+}
+
+window.window.activeWorkspaceId = null;
+
+async function refreshWorkspaces() {
+    try {
+        const workspaces = await listWorkspaces();
+        refs.workspacesList.innerHTML = '';
+        if (!workspaces || !workspaces.length) {
+            refs.workspacesEmpty.style.display = 'block';
+            return;
+        }
+        refs.workspacesEmpty.style.display = 'none';
+        for (const ws of workspaces) {
+            const b = document.createElement('button');
+            b.className = 'sb-hist-item' + (ws.active ? ' active' : '');
+            b.innerHTML = '<span class="sb-hist-label" title="' + esc(ws.name) + '">' + esc(ws.name) + '</span>' +
+                '<span class="sb-hist-rename" title="Instructions" role="button">' +
+                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>' +
+                '</span>' +
+                '<span class="sb-hist-del" title="Supprimer" role="button">' +
+                '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+                '</span>';
+            b.addEventListener('click', async (e) => {
+                if (e.target.closest('.sb-hist-rename')) {
+                    e.stopPropagation();
+                    try {
+                        const data = await getWorkspaceInstructions(ws.id);
+                        const newContent = prompt('Instructions du projet "' + ws.name + '" :', data.content || '');
+                        if (newContent !== null) {
+                            await saveWorkspaceInstructions(ws.id, newContent);
+                        }
+                    } catch (err) { console.error(err); }
+                    return;
+                }
+                if (e.target.closest('.sb-hist-del')) {
+                    e.stopPropagation();
+                    if (confirm('Supprimer le projet "' + ws.name + '" ?')) {
+                        await deleteWorkspace(ws.id);
+                        if (window.activeWorkspaceId === ws.id) window.activeWorkspaceId = null;
+                        refreshWorkspaces();
+                    }
+                    return;
+                }
+                // Activer ce workspace
+                await activateWorkspace(ws.id);
+                window.activeWorkspaceId = ws.id;
+                refreshWorkspaces();
+            });
+            refs.workspacesList.appendChild(b);
+            if (ws.active) window.activeWorkspaceId = ws.id;
+        }
+    } catch (e) {
+        refs.workspacesList.innerHTML = '';
+        refs.workspacesEmpty.style.display = 'block';
+    }
 }
 
 async function refreshSessions() {
@@ -785,6 +881,7 @@ function setupSettings(router) {
         refs.userBtn.classList.remove('open');
         router.showSettings();
         loadSkillsPanel();
+        loadInstructionsPanel();
     });
     refs.setClearAll.addEventListener('click', async () => {
         if (!confirm('Supprimer définitivement toutes vos sessions Marexcode ?')) return;
@@ -927,6 +1024,7 @@ function boot() {
     }
 
     refreshSessions();
+    refreshWorkspaces();
     refreshProjectState();
     refreshTree();
 }

@@ -132,3 +132,35 @@ export async function saveSkillsConfig(config) {
 export async function getSkillContent(id) {
     return apiFetch('/api/marexcode/skills/' + encodeURIComponent(id) + '/content');
 }
+
+// ── Workspaces multi-projets ────────────────────────────────────────
+
+export async function listWorkspaces() {
+    return apiFetch('/api/marexcode/workspaces');
+}
+
+export async function activateWorkspace(id) {
+    return apiFetch('/api/marexcode/workspaces/' + encodeURIComponent(id) + '/activate', { method: 'PUT' });
+}
+
+export async function deleteWorkspace(id) {
+    return apiFetch('/api/marexcode/workspaces/' + encodeURIComponent(id), { method: 'DELETE' });
+}
+
+export async function getWorkspaceInstructions(id) {
+    return apiFetch('/api/marexcode/workspaces/' + encodeURIComponent(id) + '/instructions');
+}
+
+export async function saveWorkspaceInstructions(id, content) {
+    return apiFetch('/api/marexcode/workspaces/' + encodeURIComponent(id) + '/instructions', {
+        method: 'PUT', body: JSON.stringify({ content })
+    });
+}
+
+export async function getGlobalInstructions() {
+    return apiFetch('/api/marexcode/global-instructions');
+}
+
+export async function saveGlobalInstructions(content) {
+    return apiFetch('/api/marexcode/global-instructions', { method: 'PUT', body: JSON.stringify({ content }) });
+}
