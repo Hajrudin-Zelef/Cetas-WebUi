@@ -1599,6 +1599,24 @@ html,body{
 .modal-instructions-save:hover{ opacity:0.9; }
 .modal-instructions-save:disabled{ opacity:0.5; }
 
+/* Settings toggle switch */
+.settings-toggle{ position:relative; display:inline-block; width:40px; height:22px; cursor:pointer; }
+.settings-toggle input{ opacity:0; width:0; height:0; }
+.settings-toggle-slider{ position:absolute; inset:0; background:#3a3a3e; border-radius:22px; transition:background 0.2s; }
+.settings-toggle-slider::before{ content:''; position:absolute; width:16px; height:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:transform 0.2s; }
+.settings-toggle input:checked + .settings-toggle-slider{ background:var(--accent); }
+.settings-toggle input:checked + .settings-toggle-slider::before{ transform:translateX(18px); }
+
+/* Settings select */
+.settings-select{ background:var(--bg-input,#1a1d23); color:var(--text-primary); border:1px solid rgba(255,255,255,.12); border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer; }
+
+/* Settings toast */
+.settings-toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 20px; border-radius:8px; font-size:13px; z-index:9999; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+.settings-toast.open{ opacity:1; }
+
+/* Reduce motion */
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after{ animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
+
 /* Landscape court : limiter la hauteur du chat */
 @media (max-height: 600px) and (orientation: landscape){
   .hero{ gap:10px; }

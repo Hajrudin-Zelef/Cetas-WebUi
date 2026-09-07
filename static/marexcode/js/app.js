@@ -3,7 +3,7 @@ import { initModelSelect, selectModel, getSelectedModelId } from './model-select
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
 import { COMPETENCES } from './skills.js';
-import { getPermission, setPermission, checkToolPermission, getRule, setRule } from './marex-permission.js';
+import { getPermission, setPermission, checkToolPermission, getRule, setRule, isAutoAllowWorkspace, setAutoAllowWorkspace } from './marex-permission.js';
 
 const $ = id => document.getElementById(id);
 
@@ -617,6 +617,93 @@ async function loadSkillsPanel() {
     }
 }
 
+function loadGeneralPanel() {
+    // Font size
+    const fontSelect = document.getElementById('gen-font-size');
+    const savedFont = localStorage.getItem('marex-font-size') || '14';
+    if (fontSelect) {
+        fontSelect.value = savedFont;
+        document.documentElement.style.setProperty('--chat-font-size', savedFont + 'px');
+        fontSelect.addEventListener('change', () => {
+            localStorage.setItem('marex-font-size', fontSelect.value);
+            document.documentElement.style.setProperty('--chat-font-size', fontSelect.value + 'px');
+        });
+    }
+
+    // Reduce motion
+    const motionToggle = document.getElementById('gen-reduce-motion');
+    const savedMotion = localStorage.getItem('marex-reduce-motion') === '1';
+    if (motionToggle) {
+        motionToggle.checked = savedMotion;
+        if (savedMotion) document.body.classList.add('reduce-motion');
+        motionToggle.addEventListener('change', () => {
+            localStorage.setItem('marex-reduce-motion', motionToggle.checked ? '1' : '0');
+            document.body.classList.toggle('reduce-motion', motionToggle.checked);
+        });
+    }
+
+    // Auto-allow workspace
+    const autoAllow = document.getElementById('gen-auto-allow');
+    if (autoAllow) {
+        autoAllow.checked = isAutoAllowWorkspace();
+        autoAllow.addEventListener('change', () => {
+            setAutoAllowWorkspace(autoAllow.checked);
+        });
+    }
+
+    // Global instructions
+    const textarea = document.getElementById('gen-global-instructions');
+    const saveBtn = document.getElementById('gen-save-instructions');
+    if (textarea) {
+        getGlobalInstructions().then(d => { textarea.value = d.content || ''; }).catch(() => {});
+    }
+    if (saveBtn && textarea) {
+        saveBtn.addEventListener('click', async () => {
+            try {
+                await saveGlobalInstructions(textarea.value);
+                saveBtn.textContent = 'Saved';
+                setTimeout(() => { saveBtn.textContent = 'Save'; }, 2000);
+            } catch (e) { console.error(e); }
+        });
+    }
+
+    // Licences modal
+    const licBtn = document.getElementById('gen-licenses');
+    if (licBtn) {
+        licBtn.addEventListener('click', () => {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `<div class="modal-instructions" style="max-width:480px;">
+                <div class="modal-instructions-header"><h2>Open Source Licences</h2></div>
+                <div style="padding:16px 24px;font-size:13px;color:var(--text-secondary);line-height:1.8;">
+                    <div><strong style="color:var(--text-primary)">marked</strong> — MIT licence</div>
+                    <div><strong style="color:var(--text-primary)">DOMPurify</strong> — Apache 2.0</div>
+                    <div><strong style="color:var(--text-primary)">PDF.js</strong> — Apache 2.0</div>
+                    <div><strong style="color:var(--text-primary)">JSZip</strong> — MIT licence</div>
+                    <div><strong style="color:var(--text-primary)">Mammoth.js</strong> — BSD-2-Clause</div>
+                    <div><strong style="color:var(--text-primary)">SheetJS</strong> — Apache 2.0</div>
+                </div>
+                <div class="modal-instructions-footer"><button class="modal-instructions-save" onclick="this.closest('.modal-overlay').remove()">OK</button></div>
+            </div>`;
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('open'));
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+        });
+    }
+
+    // Coming soon rows
+    const showToast = (msg) => {
+        const t = document.createElement('div');
+        t.className = 'settings-toast';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        requestAnimationFrame(() => t.classList.add('open'));
+        setTimeout(() => { t.classList.remove('open'); setTimeout(() => t.remove(), 300); }, 2000);
+    };
+    document.getElementById('gen-lang-row')?.addEventListener('click', () => showToast('Coming soon'));
+    document.getElementById('gen-expert-row')?.addEventListener('click', () => showToast('Coming soon'));
+}
+
 async function loadInstructionsPanel() {
     const textarea = document.getElementById('global-instructions-textarea');
     const saveBtn = document.getElementById('save-global-instructions');
@@ -1054,6 +1141,7 @@ function setupSettings(router) {
         router.showSettings();
         loadSkillsPanel();
         loadInstructionsPanel();
+        loadGeneralPanel();
     });
     refs.setClearAll.addEventListener('click', async () => {
         if (!confirm('Supprimer définitivement toutes vos sessions Marexcode ?')) return;

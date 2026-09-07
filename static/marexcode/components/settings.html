@@ -26,6 +26,10 @@
         </button>
 
         <div class="settings-cat-label">Agent</div>
+        <button class="settings-nav-item" data-panel="general">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Général
+        </button>
         <button class="settings-nav-item" data-panel="skills">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           Skills
@@ -119,6 +123,86 @@
                 <p>Vous reconnecter à Cetas sera nécessaire pour continuer.</p>
               </div>
               <button class="settings-btn danger" id="set-logout">Déconnexion</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- GÉNÉRAL -->
+        <div class="settings-panel" data-content="general">
+          <h1 class="settings-page-title">Général</h1>
+
+          <div class="settings-group-label">Préférences</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Police de discussion</h3>
+                <p>Taille du texte dans les messages du chat.</p>
+              </div>
+              <select id="gen-font-size" class="settings-select">
+                <option value="12">Petit (12px)</option>
+                <option value="14" selected>Moyen (14px)</option>
+                <option value="16">Grand (16px)</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Réduire les animations</h3>
+                <p>Désactive les animations de streaming, spinners et transitions.</p>
+              </div>
+              <label class="settings-toggle">
+                <input type="checkbox" id="gen-reduce-motion">
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Autorisations</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Auto-autoriser workspace actif</h3>
+                <p>L'agent peut lire/écrire dans le workspace actif sans demander confirmation. Bash reste en mode "Demander".</p>
+              </div>
+              <label class="settings-toggle">
+                <input type="checkbox" id="gen-auto-allow" checked>
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group-label">Instructions</div>
+          <div class="settings-card">
+            <div class="settings-row" style="flex-direction:column;gap:8px;">
+              <p style="font-size:12px;color:#8b949e;">
+                Instructions globales appliquées à toutes les conversations. L'agent les lit au début de chaque session.
+              </p>
+              <textarea id="gen-global-instructions" rows="8" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
+              <button class="settings-btn" id="gen-save-instructions">Enregistrer</button>
+            </div>
+          </div>
+
+          <div class="settings-group-label">À propos</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Licences open source</h3>
+                <p>Libraries tierces utilisées par Marexcode.</p>
+              </div>
+              <button class="settings-btn" id="gen-licenses">Voir les licences</button>
+            </div>
+            <div class="settings-row settings-row-clickable" id="gen-lang-row">
+              <div class="settings-row-text">
+                <h3>Langue interface</h3>
+                <p>Change la langue de l'interface Marexcode.</p>
+              </div>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+            <div class="settings-row settings-row-clickable" id="gen-expert-row">
+              <div class="settings-row-text">
+                <h3>Mode expert</h3>
+                <p>Accès complet aux commandes shell. Désactivé par défaut.</p>
+              </div>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </div>
           </div>
         </div>

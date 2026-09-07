@@ -57,6 +57,15 @@ export function setRule(tool, rule) {
     try { localStorage.setItem('marex-permission-rules', JSON.stringify(rules)); } catch (e) {}
 }
 
+export function isAutoAllowWorkspace() {
+    try { return localStorage.getItem('marex-auto-allow') === '1'; } catch (e) {}
+    return true; // default ON
+}
+
+export function setAutoAllowWorkspace(val) {
+    try { localStorage.setItem('marex-auto-allow', val ? '1' : '0'); } catch (e) {}
+}
+
 export function decidePermission(toolNameRaw, rule) {
     if (rule === 'deny')
         return { allowed: false, reason: "Action bloquée : l'outil « " + String(toolNameRaw) + " » n'est pas autorisé." };
@@ -66,6 +75,9 @@ export function decidePermission(toolNameRaw, rule) {
 
 export function checkToolPermission(toolNameRaw, args) {
     const toolName = String(toolNameRaw || '').toLowerCase();
+    if (isAutoAllowWorkspace() && ['read', 'write', 'edit'].includes(toolName)) {
+        return { allowed: true };
+    }
     const decision = decidePermission(toolName, getRule(toolName));
     if (decision) return decision;
     const ok = window.confirm('Marexcode veut effectuer cette action :\n\n' + describeAction(toolName, args) + '\n\nAutoriser ?');
