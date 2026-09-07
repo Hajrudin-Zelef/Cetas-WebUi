@@ -170,11 +170,23 @@ class LSPServer:
             },
             "rootUri": "file://%s" % self.workspace_root,
             "workspaceFolders": [{"uri": "file://%s" % self.workspace_root, "name": "workspace"}],
+            "initializationOptions": {
+                "tsserver": {
+                    "path": "/usr/local/lib/node_modules/typescript/lib/tsserver"
+                }
+            },
         }
         result = self._send_request("initialize", params, timeout=15)
         if "error" not in result:
             self._send_notification("initialized")
             self._initialized = True
+            self._send_notification("workspace/didChangeConfiguration", {
+                "settings": {
+                    "typescript": {
+                        "tsdk": "/usr/local/lib/node_modules/typescript/lib"
+                    }
+                }
+            })
         return result
 
     def _uri_for_file(self, file_path):
@@ -227,12 +239,22 @@ class LSPServer:
 
 
 class LSPManager:
-    """Manages LSP server instances per workspace."""
+    """Manages LSP server instances per workspace. Singleton per workspace root."""
+
+    _instances = {}
+
+    def __new__(cls, workspace_root, config=None):
+        key = os.path.realpath(workspace_root)
+        if key not in cls._instances:
+            inst = super().__new__(cls)
+            inst.workspace_root = workspace_root
+            inst.config = config or {}
+            inst._servers = {}
+            cls._instances[key] = inst
+        return cls._instances[key]
 
     def __init__(self, workspace_root, config=None):
-        self.workspace_root = workspace_root
-        self.config = config or {}
-        self._servers = {}
+        pass
 
     def _detect_language(self, file_path):
         ext = os.path.splitext(file_path)[1].lower()
@@ -250,7 +272,16 @@ class LSPManager:
                 self._servers[cmd_key] = server
             else:
                 return None
-        return self._servers[cmd_key]
+        server = self._servers[cmd_key]
+        abs_path = os.path.join(self.workspace_root, file_path)
+        if os.path.isfile(abs_path):
+            try:
+                with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                    content = f.read()
+                server.did_open(file_path, content, lang_config.get("language", "text"))
+            except Exception:
+                pass
+        return server
 
     def request(self, operation, file=None, line=None, character=None, query=None):
         if not file:

@@ -12,8 +12,8 @@ RUN npm install -g terser clean-css-cli
 
 # LSP servers for code intelligence (Marexcode Phase 2)
 RUN pip3 install --break-system-packages pyright
-RUN npm install -g typescript-language-server typescript
-RUN pyright --version && typescript-language-server --version
+RUN npm install -g typescript-language-server typescript@5
+RUN pyright --version && typescript-language-server --version && tsc --version
 
 # Proxy Python
 COPY server/server.py /app/server.py
@@ -91,7 +91,7 @@ RUN cat /usr/share/nginx/html/static/css/base/variables.css \
 RUN cleancss /usr/share/nginx/html/static/css/ocean.css -o /usr/share/nginx/html/static/css/ocean.css
 
 # Supprimer node_modules (plus nécessaire après minification)
-RUN npm uninstall -g terser clean-css-cli && rm -rf /root/.npm /usr/lib/node_modules
+RUN npm uninstall -g terser clean-css-cli && rm -rf /root/.npm
 
 # Supprimer le seed de clés en clair
 RUN rm -f /usr/share/nginx/html/core/api-keys-seed.json
