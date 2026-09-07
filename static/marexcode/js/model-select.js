@@ -2,7 +2,7 @@ const PROVIDER_GROUPS = [
     { label: 'OpenCode Go', editeurs: ['opencode-go'] },
     { label: 'OpenCode Zen', editeurs: ['opencode'] },
     { label: 'DeepSeek', editeurs: ['deepseek'] },
-    { label: 'OpenRouter', editeurs: ['openai', 'anthropic', 'google', 'mistral', 'grok', 'zai', 'groq', 'nvidia', 'openrouter'] },
+    { label: 'OpenRouter', editeurs: ['openrouter'] },
 ];
 
 export function getCatalog() {
