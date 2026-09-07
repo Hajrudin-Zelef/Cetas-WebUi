@@ -882,6 +882,7 @@ async function refreshTree() {
         refs.workspaceEmpty.textContent = files.length ? '' : 'Aucun fichier dans le workspace.';
         appendTreeLevel(refs.workspaceTree, groupByDir(files), 0);
     } catch (e) {
+        console.error('refreshTree error:', e);
         refs.workspaceEmpty.style.display = 'block';
         refs.workspaceEmpty.textContent = 'Erreur chargement du workspace.';
     }
