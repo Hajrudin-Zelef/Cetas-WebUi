@@ -10,6 +10,11 @@ RUN apk add --no-cache python3 py3-cryptography py3-pip curl nodejs npm bash png
 # Minifier JS/CSS pour réduire le poids (40-60% de gain)
 RUN npm install -g terser clean-css-cli
 
+# LSP servers for code intelligence (Marexcode Phase 2)
+RUN pip3 install --break-system-packages pyright
+RUN npm install -g typescript-language-server typescript
+RUN pyright --version && typescript-language-server --version
+
 # Proxy Python
 COPY server/server.py /app/server.py
 COPY server/marexcode.py /app/marexcode.py
