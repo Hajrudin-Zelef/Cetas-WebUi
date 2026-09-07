@@ -63,7 +63,7 @@ export function initModelSelect(menuEl, labelEl, onSelect) {
             b.addEventListener('click', () => {
                 menuEl.querySelectorAll('.cdrop-item').forEach(o => o.classList.remove('selected'));
                 b.classList.add('selected');
-                labelEl.textContent = m.label;
+                labelEl.textContent = '';
                 localStorage.setItem('marex-last-model', m.id);
                 if (onSelect) onSelect(m.id);
                 menuEl.classList.remove('open');
@@ -77,7 +77,7 @@ export function initModelSelect(menuEl, labelEl, onSelect) {
     if (target) {
         const item = menuEl.querySelector('.cdrop-item[data-model="' + CSS.escape(target) + '"]');
         if (item) item.classList.add('selected');
-        labelEl.textContent = modelLabel(target);
+        labelEl.textContent = '';
         if (onSelect) onSelect(target);
     }
     return target;
@@ -88,7 +88,7 @@ export function selectModel(menuEl, labelEl, id, onSelect) {
     menuEl.querySelectorAll('.cdrop-item').forEach(o => o.classList.remove('selected'));
     if (item) {
         item.classList.add('selected');
-        labelEl.textContent = modelLabel(id);
+        labelEl.textContent = '';
         localStorage.setItem('marex-last-model', id);
         if (onSelect) onSelect(id);
     }
