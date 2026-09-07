@@ -2198,35 +2198,42 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
     # ── Profile stats + activity ──────────────────────────────────────
 
     def _profile_stats_get(self):
-        """GET /api/marexcode/profile/stats — calcule les stats depuis les sessions."""
+        """GET /api/marexcode/profile/stats — calcule les stats depuis les sessions Marexcode."""
         username = self._get_authenticated_user()
         if not username:
             return
-        from marexcode import marex_workspace
-        # Sessions are stored in CONV_DIR/<username>/
-        safe = username.replace("/", "_").replace("\\", "_").strip() or "anon"
-        conv_dir = os.path.join(CONV_DIR, safe)
-        total_tokens_in = 0
-        total_tokens_out = 0
-        total_cost = 0.0
+        from marexcode import marex_workspace, marex_sessions_dir
+        sessions_dir = marex_sessions_dir(username)
+        total_tokens = 0
         total_chats = 0
         models_used = {}
         dates = []
         try:
-            for fn in os.listdir(conv_dir):
+            for fn in os.listdir(sessions_dir):
                 if not fn.endswith(".json"):
                     continue
                 try:
-                    with open(os.path.join(conv_dir, fn), "r", encoding="utf-8") as f:
+                    with open(os.path.join(sessions_dir, fn), "r", encoding="utf-8") as f:
                         s = json.load(f)
                     total_chats += 1
-                    total_tokens_in += s.get("tokens_entree", 0)
-                    total_tokens_out += s.get("tokens_sortie", 0)
-                    total_cost += s.get("cout_estime_usd", 0)
-                    model = s.get("modele", "")
+                    # Estimate tokens from messages (~4 chars per token)
+                    for msg in s.get("messages", []):
+                        content = msg.get("content", "")
+                        total_tokens += max(1, len(content) // 4)
+                    model = s.get("model", "")
                     if model:
                         models_used[model] = models_used.get(model, 0) + 1
-                    date_str = s.get("date", "")
+                    # Get date from session or extract from filename (timestamp ms)
+                    date_str = s.get("date") or s.get("lastActivity", "")
+                    if not date_str:
+                        # Extract timestamp from filename (s<TIMESTAMP>.json)
+                        try:
+                            ts_str = fn[1:].replace(".json", "")  # Remove 's' prefix and '.json'
+                            ts_ms = int(ts_str)
+                            from datetime import datetime as _dt
+                            date_str = _dt.fromtimestamp(ts_ms / 1000).strftime("%Y-%m-%dT%H:%M:%S")
+                        except Exception:
+                            pass
                     if date_str:
                         dates.append(date_str[:10])
                 except Exception:
@@ -2262,10 +2269,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         except Exception:
             pass
         self._respond_json({
-            "total_tokens_in": total_tokens_in,
-            "total_tokens_out": total_tokens_out,
-            "total_tokens": total_tokens_in + total_tokens_out,
-            "total_cost": round(total_cost, 4),
+            "total_tokens": total_tokens,
             "total_chats": total_chats,
             "top_model": top_model,
             "streak": streak,
