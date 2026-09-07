@@ -498,7 +498,7 @@ html,body{
   border-radius:10px;
   z-index:30;
 }
-.settings-view.open{ display:flex; }
+.settings-view.open{ display:flex; flex-direction:row; }
 
 .settings-nav{
   width:230px;
