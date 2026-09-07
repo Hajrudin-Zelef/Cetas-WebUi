@@ -121,18 +121,29 @@ async function loadMcpTools() {
     var servers = await resp.json().catch(function(){ return []; });
     for (var i = 0; i < servers.length; i++) {
       var srv = servers[i];
-      if (!srv.connected && srv.tools_count === 0) continue;
-      var tResp = await fetch("/api/mcp/" + encodeURIComponent(srv.name) + "/tools", { headers: headers, signal: AbortSignal.timeout(5000) });
+      var tResp = await fetch("/api/mcp/" + encodeURIComponent(srv.name) + "/tools", { headers: headers, signal: AbortSignal.timeout(15000) });
       if (!tResp.ok) continue;
       var tools = await tResp.json().catch(function(){ return []; });
       for (var j = 0; j < tools.length; j++) {
         var tool = tools[j];
         var fnName = "mcp_" + srv.name + "_" + tool.name;
+        var desc = (tool.description || tool.name);
+        if (srv.name === "context7" && tool.name === "resolve-library-id") {
+          desc = "Resolve a library name to a Context7 library ID. ALWAYS call this first before query-docs. Args: libraryName (string), query (string).";
+        } else if (srv.name === "context7" && tool.name === "query-docs") {
+          desc = "Query up-to-date documentation for a library. Requires libraryId from resolve-library-id. Args: libraryId (string like '/org/project'), query (string).";
+        } else if (srv.name === "fetch" && tool.name === "fetch") {
+          desc = "Fetch web page content and convert to markdown. Use for documentation, articles, URLs. Args: url (string).";
+        } else if (srv.name === "memory") {
+          desc = "[Memory:" + tool.name + "] " + desc;
+        } else if (srv.name === "filesystem") {
+          desc = "[FS:" + tool.name + "] " + desc;
+        }
         MAREXCODE_TOOLS.push({
           type: "function",
           function: {
             name: fnName,
-            description: "[MCP:" + srv.name + "] " + (tool.description || tool.name),
+            description: desc,
             parameters: tool.inputSchema || { type: "object", properties: {} }
           }
         });
