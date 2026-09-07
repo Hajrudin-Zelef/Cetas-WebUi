@@ -553,6 +553,77 @@ export function createChat(deps) {
         }
     });
 
+    // ── Undo/Redo ──────────────────────────────────────────────────
+
+    async function refreshUndoRedo() {
+        try {
+            var headers = {};
+            if (typeof Auth !== 'undefined' && Auth.getToken) { var tk = Auth.getToken(); if (tk) headers.Authorization = 'Bearer ' + tk; }
+            var resp = await fetch('/api/marexcode/undo-log', { headers: headers, signal: AbortSignal.timeout(3000) });
+            if (!resp.ok) return;
+            var data = await resp.json().catch(function(){ return {}; });
+            var undoBtn = document.getElementById('undo-btn');
+            var redoBtn = document.getElementById('redo-btn');
+            if (undoBtn) undoBtn.disabled = !data.undo_count;
+            if (redoBtn) redoBtn.disabled = !data.redo_count;
+        } catch (e) { /* ignore */ }
+    }
+
+    async function doUndo() {
+        try {
+            var headers = { 'Content-Type': 'application/json' };
+            if (typeof Auth !== 'undefined' && Auth.getToken) { var tk = Auth.getToken(); if (tk) headers.Authorization = 'Bearer ' + tk; }
+            var resp = await fetch('/api/marexcode/undo', { method: 'POST', headers: headers, signal: AbortSignal.timeout(5000) });
+            var data = await resp.json().catch(function(){ return {}; });
+            if (data.ok) {
+                addMsg('system', '↩ Annulé: ' + data.file);
+                refreshUndoRedo();
+            } else if (data.error) {
+                addMsg('error', data.error);
+            }
+        } catch (e) { addMsg('error', 'Erreur undo'); }
+    }
+
+    async function doRedo() {
+        try {
+            var headers = { 'Content-Type': 'application/json' };
+            if (typeof Auth !== 'undefined' && Auth.getToken) { var tk = Auth.getToken(); if (tk) headers.Authorization = 'Bearer ' + tk; }
+            var resp = await fetch('/api/marexcode/redo', { method: 'POST', headers: headers, signal: AbortSignal.timeout(5000) });
+            var data = await resp.json().catch(function(){ return {}; });
+            if (data.ok) {
+                addMsg('system', '↪ Rétabli: ' + data.file);
+                refreshUndoRedo();
+            } else if (data.error) {
+                addMsg('error', data.error);
+            }
+        } catch (e) { addMsg('error', 'Erreur redo'); }
+    }
+
+    function setupUndoRedo() {
+        var undoBtn = document.getElementById('undo-btn');
+        var redoBtn = document.getElementById('redo-btn');
+        if (undoBtn) undoBtn.addEventListener('click', doUndo);
+        if (redoBtn) redoBtn.addEventListener('click', doRedo);
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault(); doUndo();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+                e.preventDefault(); doRedo();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                e.preventDefault(); doRedo();
+            }
+        });
+        window.addEventListener('marexcode-tool', function(e) {
+            var d = e.detail;
+            if (d && d.phase === 'end' && (d.name === 'Write' || d.name === 'Edit') && d.result && d.result.ok) {
+                setTimeout(refreshUndoRedo, 200);
+            }
+        });
+        refreshUndoRedo();
+    }
+
     return {
         send,
         stop,
@@ -562,7 +633,9 @@ export function createChat(deps) {
         renderHistory,
         setRunning,
         isRunning: () => running,
-        preloadInstructions
+        preloadInstructions,
+        refreshUndoRedo,
+        setupUndoRedo
     };
 }
 

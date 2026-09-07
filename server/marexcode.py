@@ -420,17 +420,126 @@ class MarexcodeMixin:
         
         return {"content": content[:EXEC_MAX_OUTPUT], "lines_read": total_lines, "total_lines": total_lines}
 
+    # ── Undo/Redo journal ─────────────────────────────────────────────
+
+    def _undo_log_path(self) -> str | None:
+        root = self._exec_root()
+        return os.path.join(root, "undo_log.json") if root else None
+
+    def _undo_log_load(self) -> dict:
+        path = self._undo_log_path()
+        if path and os.path.isfile(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {"undo_stack": [], "redo_stack": []}
+
+    def _undo_log_save(self, data: dict):
+        path = self._undo_log_path()
+        if not path:
+            return
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False)
+        except Exception:
+            pass
+
+    def _undo_push(self, file: str, old_content, new_content: str):
+        data = self._undo_log_load()
+        data["undo_stack"].append({
+            "file": file,
+            "old": old_content,
+            "new": new_content,
+            "ts": __import__("time").time(),
+        })
+        if len(data["undo_stack"]) > 50:
+            data["undo_stack"] = data["undo_stack"][-50:]
+        data["redo_stack"] = []
+        self._undo_log_save(data)
+
+    def _exec_undo(self):
+        """POST /api/marexcode/undo — annule la dernière opération."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        data = self._undo_log_load()
+        if not data["undo_stack"]:
+            self._respond_json({"error": "Rien à annuler"}, 400)
+            return
+        entry = data["undo_stack"].pop()
+        path = self._resolve_safe_path(entry["file"])
+        if path:
+            try:
+                if entry["old"] is None:
+                    if os.path.isfile(path):
+                        os.remove(path)
+                else:
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(entry["old"])
+            except Exception as e:
+                self._respond_json({"error": "Erreur undo: %s" % e}, 500)
+                return
+        data["redo_stack"].append(entry)
+        self._undo_log_save(data)
+        self._respond_json({"ok": True, "file": entry["file"]})
+
+    def _exec_redo(self):
+        """POST /api/marexcode/redo — rétablit la dernière opération annulée."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        data = self._undo_log_load()
+        if not data["redo_stack"]:
+            self._respond_json({"error": "Rien à rétablir"}, 400)
+            return
+        entry = data["redo_stack"].pop()
+        path = self._resolve_safe_path(entry["file"])
+        if path:
+            try:
+                parent = os.path.dirname(path)
+                if parent and not os.path.exists(parent):
+                    os.makedirs(parent, exist_ok=True)
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write(entry["new"])
+            except Exception as e:
+                self._respond_json({"error": "Erreur redo: %s" % e}, 500)
+                return
+        data["undo_stack"].append(entry)
+        self._undo_log_save(data)
+        self._respond_json({"ok": True, "file": entry["file"]})
+
+    def _undo_log_get(self):
+        """GET /api/marexcode/undo-log — état du journal."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        data = self._undo_log_load()
+        self._respond_json({
+            "undo_count": len(data["undo_stack"]),
+            "redo_count": len(data["redo_stack"]),
+        })
+
     def _exec_write(self, rel_path: str, content: str) -> dict:
         path = self._resolve_safe_path(rel_path)
         if not path:
             return {"error": "Chemin hors sandbox", "code": 403}
         try:
             existed = os.path.exists(path)
+            old_content = None
+            if existed:
+                with open(path, "r", encoding="utf-8", errors="replace") as f:
+                    old_content = f.read()
             parent = os.path.dirname(path)
             if parent and not os.path.exists(parent):
                 os.makedirs(parent, exist_ok=True)
             with open(path, "w", encoding="utf-8") as f:
                 f.write(content[:EXEC_MAX_OUTPUT])
+            self._undo_push(rel_path, old_content, content[:EXEC_MAX_OUTPUT])
         except Exception as e:
             return {"error": f"Erreur écriture: {e}", "code": -1}
         return {"ok": True, "path": rel_path, "existed": existed}
@@ -446,22 +555,21 @@ class MarexcodeMixin:
             if old not in content:
                 return {"error": "Texte à remplacer introuvable", "code": 400}
             
-            # Compter les remplacements
+            old_content = content
             replacements = content.count(old)
             updated = content.replace(old, new, 1)
             
-            # Calculer diff
             old_lines = content.splitlines(keepends=True)
             new_lines = updated.splitlines(keepends=True)
             diff = list(difflib.unified_diff(old_lines, new_lines, fromfile=rel_path, tofile=rel_path, lineterm=''))
             patch = ''.join(diff)
             
-            # Compter additions/deletions
             additions = sum(1 for line in diff if line.startswith('+') and not line.startswith('+++'))
             deletions = sum(1 for line in diff if line.startswith('-') and not line.startswith('---'))
             
             with open(path, "w", encoding="utf-8") as f:
                 f.write(updated)
+            self._undo_push(rel_path, old_content, updated)
         except FileNotFoundError:
             return {"error": f"Fichier introuvable: {rel_path}", "code": 404}
         except Exception as e:

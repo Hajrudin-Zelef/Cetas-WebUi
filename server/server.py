@@ -1496,6 +1496,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             elif self.command == "PUT":
                 self._custom_tools_put()
             return
+        # Undo/Redo
+        if path == "/api/marexcode/undo-log":
+            self._undo_log_get()
+            return
         # Setup vault (M3)
         if path == "/setup" or path == "/setup/":
             self._serve_setup()
@@ -1544,6 +1548,12 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path.startswith("/api/marexcode/custom-tools/"):
             tool_name = self.path[len("/api/marexcode/custom-tools/"):]
             self._exec_custom_tool(tool_name)
+            return
+        if self.path == "/api/marexcode/undo":
+            self._exec_undo()
+            return
+        if self.path == "/api/marexcode/redo":
+            self._exec_redo()
             return
         if self.path == "/api/marexcode/upload":
             self._marex_upload_project()

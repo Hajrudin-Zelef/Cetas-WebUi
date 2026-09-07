@@ -1609,6 +1609,7 @@ function boot() {
     setupPlusMenu();
     fillUserInfo();
     setupChat();
+    if (chat.setupUndoRedo) chat.setupUndoRedo();
 
     chat.newSession();
     initModelSelect(refs.menuModel, refs.labelModel, (m) => {
