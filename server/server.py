@@ -1470,6 +1470,13 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if path == "/api/marexcode/global-instructions":
             self._global_instructions_get()
             return
+        # Profile
+        if path == "/api/marexcode/profile/stats":
+            self._profile_stats_get()
+            return
+        if path == "/api/marexcode/profile/activity":
+            self._profile_activity_get()
+            return
         # Setup vault (M3)
         if path == "/setup" or path == "/setup/":
             self._serve_setup()
@@ -1507,6 +1514,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             return
         if self.path == "/api/marexcode/upload":
             self._marex_upload_project()
+            return
+        if self.path == "/api/marexcode/profile/activity":
+            self._profile_activity_post()
             return
         if self.path == "/setup/save":
             self._setup_save_handler()
@@ -2182,6 +2192,119 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             with open(path, "w", encoding="utf-8") as f:
                 f.write(content)
             self._respond_json({"ok": True})
+        except Exception as e:
+            self._error(500, f"Erreur écriture: {e}")
+
+    # ── Profile stats + activity ──────────────────────────────────────
+
+    def _profile_stats_get(self):
+        """GET /api/marexcode/profile/stats — calcule les stats depuis les sessions."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        from marexcode import marex_workspace
+        # Sessions are stored in CONV_DIR/<username>/
+        safe = username.replace("/", "_").replace("\\", "_").strip() or "anon"
+        conv_dir = os.path.join(CONV_DIR, safe)
+        total_tokens_in = 0
+        total_tokens_out = 0
+        total_cost = 0.0
+        total_chats = 0
+        models_used = {}
+        dates = []
+        try:
+            for fn in os.listdir(conv_dir):
+                if not fn.endswith(".json"):
+                    continue
+                try:
+                    with open(os.path.join(conv_dir, fn), "r", encoding="utf-8") as f:
+                        s = json.load(f)
+                    total_chats += 1
+                    total_tokens_in += s.get("tokens_entree", 0)
+                    total_tokens_out += s.get("tokens_sortie", 0)
+                    total_cost += s.get("cout_estime_usd", 0)
+                    model = s.get("modele", "")
+                    if model:
+                        models_used[model] = models_used.get(model, 0) + 1
+                    date_str = s.get("date", "")
+                    if date_str:
+                        dates.append(date_str[:10])
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        # Streak
+        from datetime import datetime, timedelta
+        unique_dates = sorted(set(dates), reverse=True)
+        streak = 0
+        if unique_dates:
+            today = datetime.utcnow().strftime("%Y-%m-%d")
+            check = datetime.utcnow()
+            for i in range(len(unique_dates)):
+                expected = (check - timedelta(days=i)).strftime("%Y-%m-%d")
+                if unique_dates[i] == expected:
+                    streak += 1
+                else:
+                    break
+        # Top model
+        top_model = max(models_used, key=models_used.get) if models_used else None
+        # Skills enabled
+        skills_count = {"auto": 0, "manual": 0, "on_demand": 0}
+        try:
+            sc_path = os.path.join(marex_workspace(username), "skills_config.json")
+            with open(sc_path, "r", encoding="utf-8") as f:
+                sc = json.load(f)
+            for k, v in sc.items():
+                if v.get("enabled"):
+                    mode = v.get("mode", "manual")
+                    if mode in skills_count:
+                        skills_count[mode] += 1
+        except Exception:
+            pass
+        self._respond_json({
+            "total_tokens_in": total_tokens_in,
+            "total_tokens_out": total_tokens_out,
+            "total_tokens": total_tokens_in + total_tokens_out,
+            "total_cost": round(total_cost, 4),
+            "total_chats": total_chats,
+            "top_model": top_model,
+            "streak": streak,
+            "skills": skills_count,
+        })
+
+    def _profile_activity_get(self):
+        """GET /api/marexcode/profile/activity — heatmap data."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        from marexcode import marex_workspace
+        path = os.path.join(marex_workspace(username), "activity.json")
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                self._respond_json(json.load(f))
+        except Exception:
+            self._respond_json({})
+
+    def _profile_activity_post(self):
+        """POST /api/marexcode/profile/activity — track activity."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        from datetime import datetime
+        from marexcode import marex_workspace
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        path = os.path.join(marex_workspace(username), "activity.json")
+        activity = {}
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                activity = json.load(f)
+        except Exception:
+            pass
+        activity[today] = activity.get(today, 0) + 1
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(activity, f)
+            self._respond_json({"ok": True, "date": today, "count": activity[today]})
         except Exception as e:
             self._error(500, f"Erreur écriture: {e}")
 

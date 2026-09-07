@@ -168,3 +168,17 @@ export async function getGlobalInstructions() {
 export async function saveGlobalInstructions(content) {
     return apiFetch('/api/marexcode/global-instructions', { method: 'PUT', body: JSON.stringify({ content }) });
 }
+
+// ── Profile ─────────────────────────────────────────────────────────
+
+export async function getProfileStats() {
+    return apiFetch('/api/marexcode/profile/stats');
+}
+
+export async function getProfileActivity() {
+    return apiFetch('/api/marexcode/profile/activity');
+}
+
+export async function trackActivity() {
+    return apiFetch('/api/marexcode/profile/activity', { method: 'POST' });
+}

@@ -1,7 +1,8 @@
-import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions } from './api.js';
+import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions, trackActivity } from './api.js';
 import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
+import { loadProfilePage } from './profile.js';
 import { COMPETENCES } from './skills.js';
 import { getPermission, setPermission, checkToolPermission, getRule, setRule, isAutoAllowWorkspace, setAutoAllowWorkspace } from './marex-permission.js';
 
@@ -20,6 +21,8 @@ const refs = {
     authGate: $('auth-gate'),
     mainFrame: $('main-frame'),
     settingsFrame: $('settings-frame'),
+    profileFrame: $('profile-frame'),
+    profileBackBtn: $('profile-back-btn'),
     settingsBackBtn: $('settings-back-btn'),
     settingsContent: document.querySelector('.settings-content'),
     sidebar: document.querySelector('.sidebar'),
@@ -1162,6 +1165,11 @@ function setupSettings(router) {
         router.showMain();
         refs.settingsContent.scrollTop = 0;
     });
+    if (refs.profileBackBtn) {
+        refs.profileBackBtn.addEventListener('click', () => {
+            router.showMain();
+        });
+    }
     document.querySelectorAll('.settings-nav-item[data-panel]').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.settings-nav-item[data-panel]').forEach(o => o.classList.remove('active'));
@@ -1181,6 +1189,16 @@ function setupSettings(router) {
         loadInstructionsPanel();
         loadGeneralPanel();
     });
+    // Profile button (user avatar or dedicated button)
+    const profileBtn = document.getElementById('btn-profile') || refs.userAvatar;
+    if (profileBtn) {
+        profileBtn.addEventListener('click', () => {
+            refs.userMenu.classList.remove('open');
+            refs.userBtn.classList.remove('open');
+            router.showProfile();
+            loadProfilePage();
+        });
+    }
     refs.setClearAll.addEventListener('click', async () => {
         if (!confirm('Supprimer définitivement toutes vos sessions Marexcode ?')) return;
         try {
@@ -1290,7 +1308,8 @@ function boot() {
     router = initRouter({
         authGate: refs.authGate,
         mainFrame: refs.mainFrame,
-        settingsFrame: refs.settingsFrame
+        settingsFrame: refs.settingsFrame,
+        profileFrame: refs.profileFrame
     });
 
     if (!router.checkAuth()) return;

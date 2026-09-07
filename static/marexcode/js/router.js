@@ -1,7 +1,7 @@
 import { getToken } from './api.js';
 
 export function initRouter(deps) {
-    const { authGate, mainFrame, settingsFrame } = deps;
+    const { authGate, mainFrame, settingsFrame, profileFrame } = deps;
 
     function checkAuth() {
         if (getToken()) {
@@ -14,13 +14,21 @@ export function initRouter(deps) {
 
     function showMain() {
         settingsFrame.style.display = 'none';
+        if (profileFrame) profileFrame.style.display = 'none';
         mainFrame.style.display = '';
     }
 
     function showSettings() {
         mainFrame.style.display = 'none';
+        if (profileFrame) profileFrame.style.display = 'none';
         settingsFrame.style.display = 'flex';
     }
 
-    return { checkAuth, showMain, showSettings };
+    function showProfile() {
+        mainFrame.style.display = 'none';
+        settingsFrame.style.display = 'none';
+        if (profileFrame) profileFrame.style.display = 'flex';
+    }
+
+    return { checkAuth, showMain, showSettings, showProfile };
 }
