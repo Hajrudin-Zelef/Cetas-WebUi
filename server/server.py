@@ -1838,12 +1838,35 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
                     return json.load(f)
             except Exception:
                 pass
-        # Créer config par défaut (tous disabled, mode manual)
+        # Défauts pour Marexcode
+        MANUAL_SKILLS = {
+            "code-review", "code-reviewer", "code-review-change-size", "code-review-context",
+            "code-review-testing", "code-breaking-changes", "codebase-design", "diagnosing-bugs",
+            "investigate-first", "safe-refactor", "resolving-merge-conflicts", "setup-pre-commit",
+            "test-driven-development", "verification-before-completion", "verify-and-stop",
+            "migration", "dev", "research", "writing-plans", "python-sdk", "javascript-sdk",
+            "webapp-testing", "remote-tests", "frontend-design", "design-system", "ui-styling",
+            "minimalist-ui", "svg-animations", "pdf", "xlsx",
+            "caveman", "caveman-commit", "caveman-compress", "caveman-discover",
+            "caveman-evidence-review", "caveman-explore", "caveman-help", "caveman-learn",
+            "caveman-manage", "caveman-optimize", "caveman-review", "caveman-setup",
+        }
+        ON_DEMAND_SKILLS = {
+            "deploy-to-vercel", "vercel-cli-with-tokens", "vercel-optimize", "vercel-react-best-practices",
+            "supabase", "supabase-postgres-best-practices", "mcp-builder", "mcp-integration",
+            "web-search", "web-artifacts-builder", "copywriting", "social", "pricing",
+        }
         config = {}
         skills_dir = self._skills_dir()
         if os.path.isdir(skills_dir):
             for name in os.listdir(skills_dir):
-                if os.path.isdir(os.path.join(skills_dir, name)):
+                if not os.path.isdir(os.path.join(skills_dir, name)):
+                    continue
+                if name in MANUAL_SKILLS:
+                    config[name] = {"enabled": True, "mode": "manual"}
+                elif name in ON_DEMAND_SKILLS:
+                    config[name] = {"enabled": True, "mode": "on_demand"}
+                else:
                     config[name] = {"enabled": False, "mode": "manual"}
         self._save_skills_config(username, config)
         return config
