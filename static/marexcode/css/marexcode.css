@@ -1128,6 +1128,9 @@ html,body{
 .chat-tool-group-toggle:hover{ color:var(--accent-hover); }
 .chat-tool-group-body{ margin-top:8px; }
 .chat-tool-group-body .chat-tool-block{ margin-bottom:8px; border:1px solid var(--border); border-radius:8px; background:#1a1b1f; padding:6px 10px; }
+.diff-add{ background:rgba(46,160,67,0.15); color:#3fb950; border-left:3px solid #3fb950; padding:2px 6px; white-space:pre-wrap; word-wrap:break-word; }
+.diff-del{ background:rgba(248,81,73,0.15); color:#f85149; border-left:3px solid #f85149; padding:2px 6px; white-space:pre-wrap; word-wrap:break-word; }
+.diff-same{ color:var(--text-secondary); padding:2px 6px; white-space:pre-wrap; word-wrap:break-word; }
 .chat-status-line{ display:flex; align-items:center; gap:6px; padding:6px 0; font-size:11px; color:var(--text-secondary); }
 .status-dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; }
 .status-action{ color:var(--accent); font-weight:600; }

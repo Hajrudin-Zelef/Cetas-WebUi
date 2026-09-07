@@ -446,7 +446,15 @@ export function createChat(deps) {
         if (!d || !d.phase) return;
         if (d.phase === 'start') {
             addChatToolBlock(d.name, d.args, { pending: true });
-            const actionMap = { Bash: 'Exécution commande…', Read: 'Lecture fichier…', Write: 'Écriture fichier…', Edit: 'Modification fichier…', Grep: 'Recherche…', TodoWrite: 'Mise à jour todos…' };
+            const path = d.args && (d.args.path || d.args.file_path || d.args.filePath);
+            const actionMap = {
+                Bash: 'Exécution commande' + (d.args && d.args.command ? ': ' + d.args.command.substring(0, 40) : '') + '…',
+                Read: 'Lecture ' + (path || 'fichier') + '…',
+                Write: 'Écriture ' + (path || 'fichier') + '…',
+                Edit: 'Modification ' + (path || 'fichier') + '…',
+                Grep: 'Recherche' + (d.args && d.args.pattern ? ' «' + d.args.pattern.substring(0, 30) + '»' : '') + '…',
+                TodoWrite: 'Mise à jour todos…'
+            };
             updateStatus(actionMap[d.name] || 'Traitement…');
         } else if (d.phase === 'end') {
             const blocks = toolGroupBodyEl ? toolGroupBodyEl.querySelectorAll('.chat-tool-block') : chatLog.querySelectorAll('.chat-tool-block');
