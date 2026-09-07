@@ -1,6 +1,6 @@
 /* Marexcode — © Marexsoft Corporation. Fondateur Kouassi Marius. */
 :root{
-  --bg-app: #0d0e12;
+  --bg-app: #000000;
   --bg-sidebar: #15161b;
   --bg-elevated: #1a1b20;
   --bg-input-btn: #1f2024;
@@ -21,7 +21,7 @@ html,body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;
-  background:#0a0a0c;
+  background:#000000;
   overflow:hidden;
 }
 
