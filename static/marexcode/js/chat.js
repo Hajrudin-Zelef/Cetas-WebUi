@@ -16,6 +16,24 @@ export function createChat(deps) {
     let statusEl = null;
     let currentToolGroupEl = null;
     let thinkStepEl = null;
+    let thoughtStartTime = null;
+    let thoughtTimerInterval = null;
+
+    function startThoughtTimer(el) {
+        thoughtStartTime = Date.now();
+        thoughtTimerInterval = setInterval(() => {
+            const elapsed = Date.now() - thoughtStartTime;
+            el.textContent = 'Thought: ' + elapsed + 'ms';
+        }, 50);
+    }
+
+    function stopThoughtTimer(el) {
+        if (thoughtTimerInterval) clearInterval(thoughtTimerInterval);
+        const elapsed = Date.now() - thoughtStartTime;
+        el.textContent = 'Thought: ' + elapsed + 'ms';
+        thoughtTimerInterval = null;
+        thoughtStartTime = null;
+    }
 
     function openSidePanel() {
         if (!sidePanel || userClosedPanel) return;
@@ -135,11 +153,18 @@ export function createChat(deps) {
             const count = result && result.matches ? (typeof result.matches === 'string' ? (result.matches.match(/\n/g) || []).length : result.matches.length) : '?';
             return 'Grep "' + (args.pattern || '') + '" in ' + path + ' (' + count + ' matches)';
         }
-        if (n === 'read') return 'Read ' + path;
+        if (n === 'read') return 'Read ' + path + (args.offset != null || args.limit != null ? ' [limit=' + (args.limit || '') + ', offset=' + (args.offset || '') + ']' : '');
         if (n === 'bash') return 'Bash: ' + (args.command || '');
         if (n === 'write') return 'Write ' + path;
         if (n === 'edit') return 'Edit ' + path;
         return name;
+    }
+
+    function formatBashOutput(stdout) {
+        if (!stdout) return '';
+        const lines = stdout.split('\n');
+        if (lines.length <= 6) return stdout;
+        return lines.slice(-6).join('\n');
     }
 
     function addChatToolBlock(name, args, result) {
@@ -222,13 +247,7 @@ export function createChat(deps) {
             thinkStepEl.innerHTML = '<span class="step-icon">✦</span><span class="step-label">Thought…</span>';
             group.appendChild(thinkStepEl);
             chatLog.scrollTop = chatLog.scrollHeight;
-        }
-        if (!thinkStepEl._timerStart) {
-            thinkStepEl._timerStart = Date.now();
-            thinkStepEl._timerInterval = setInterval(() => {
-                const el = thinkStepEl.querySelector('.step-label');
-                if (el) el.textContent = 'Thought: ' + (Date.now() - thinkStepEl._timerStart) + 'ms';
-            }, 50);
+            startThoughtTimer(thinkStepEl.querySelector('.step-label'));
         }
         const txt = thinkBlockEl.querySelector('.sp-think-text');
         if (txt) txt.textContent += t;
@@ -238,10 +257,8 @@ export function createChat(deps) {
     function finishThinking() {
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
-        if (thinkStepEl && thinkStepEl._timerInterval) {
-            clearInterval(thinkStepEl._timerInterval);
-            const el = thinkStepEl.querySelector('.step-label');
-            if (el) el.textContent = 'Thought: ' + (Date.now() - thinkStepEl._timerStart) + 'ms';
+        if (thinkStepEl) {
+            stopThoughtTimer(thinkStepEl.querySelector('.step-label'));
         }
         thinkBlockEl = null;
         thinkStepEl = null;
@@ -325,7 +342,7 @@ export function createChat(deps) {
         session.messages.push({ role: 'user', content: text });
         addMsg('user', text);
 
-        const baseSys = 'Tu es Marexcode, un assistant de codage IA professionnel intégré à Cetas. RÈGLE PRIORITAIRE : si la question de l\'utilisateur est générale, conceptuelle, ou ne nécessite pas d\'action sur le workspace (ex: "c\'est quoi JSON", "explique-moi X", question de culture générale ou de discussion) — réponds directement en texte, SANS utiliser aucun outil. N\'utilise Ls/Read/Write/Edit/Grep/Bash/TodoWrite QUE si la tâche demande explicitement de lire, créer, modifier ou analyser des fichiers du workspace. Tu aides l utilisateur à lire, écrire, éditer et analyser du code dans son workspace quand c\'est pertinent. RÈGLES POUR LES TÂCHES DE CODE : 1) Utilise les outils (Ls, Read, Write, Edit, Grep, Bash, TodoWrite) pour accomplir la tâche concrètement, PAS juste expliquer. 2) Utilise Ls pour découvrir la structure du workspace avant de lire des fichiers. 3) Lis ensuite les fichiers concernés avant de proposer des modifications. 4) Après chaque modification, indique le fichier et la ligne. 5) Si une commande échoue, lis l erreur et corrige. 6) Sois concis et cite les chemins exacts. 7) Ne modifie jamais hors sandbox, ne demande jamais sudo. 8) Pour toute tâche à plusieurs étapes : utilise TodoWrite AU DÉBUT pour lister le plan, puis rappelle-le après chaque étape complétée pour mettre à jour les statuts (pending → in_progress → completed). 9) Pour une tâche complexe : analyse → plan (TodoWrite) → exécution → vérification. 10) Quand tu dois planifier ou implémenter une tâche complexe, utilise AU MINIMUM un skill pertinent parmi les SKILLS DISPONIBLES ci-dessous pour guider ton approche.';
+        const baseSys = 'Tu es Marexcode, un assistant de codage IA professionnel intégré à Cetas. RÈGLE PRIORITAIRE : si la question de l\'utilisateur est générale, conceptuelle, ou ne nécessite pas d\'action sur le workspace (ex: "c\'est quoi JSON", "explique-moi X", question de culture générale ou de discussion) — réponds directement en texte, SANS utiliser aucun outil. N\'utilise Ls/Read/Write/Edit/Grep/Bash/TodoWrite QUE si la tâche demande explicitement de lire, créer, modifier ou analyser des fichiers du workspace. Tu aides l utilisateur à lire, écrire, éditer et analyser du code dans son workspace quand c\'est pertinent. RÈGLES POUR LES TÂCHES DE CODE : 1) Utilise les outils (Ls, Read, Write, Edit, Grep, Bash, TodoWrite) pour accomplir la tâche concrètement, PAS juste expliquer. 2) Utilise Ls pour découvrir la structure du workspace avant de lire des fichiers. 3) Lis ensuite les fichiers concernés avant de proposer des modifications. 4) Après chaque modification, indique le fichier et la ligne. 5) Si une commande échoue, lis l erreur et corrige. 6) Sois concis et cite les chemins exacts. 7) Ne modifie jamais hors sandbox, ne demande jamais sudo. 8) Pour toute tâche à plusieurs étapes : utilise TodoWrite AU DÉBUT pour lister le plan, puis rappelle-le après chaque étape complétée pour mettre à jour les statuts (pending → in_progress → completed). 9) Pour une tâche complexe : analyse → plan (TodoWrite) → exécution → vérification. 10) Quand tu dois planifier ou implémenter une tâche complexe, utilise AU MINIMUM un skill pertinent parmi les SKILLS DISPONIBLES ci-dessous pour guider ton approche. 11) RÈGLE DE LECTURE : n\'utilise JAMAIS Read sans limit/offset sur un fichier de plus de 50 lignes. Lis d\'abord par tranches de 30-50 lignes (offset=0, limit=50). Si la demande cible une info précise (fonction, variable, bug), utilise Grep d\'abord pour localiser la zone exacte, puis Read seulement cette zone avec offset/limit ciblés. N\'affiche jamais tout le contenu d\'un fichier dans ta réponse texte sauf demande explicite — résume ou cite seulement les passages pertinents.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
 
         // Injecter les skills activés
