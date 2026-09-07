@@ -888,6 +888,24 @@ async function refreshTree() {
     }
 }
 
+function getFileIconSvg(filename) {
+    const ext = filename.includes('.') ? filename.split('.').pop().toLowerCase() : '';
+    const base = filename.toLowerCase();
+    const colors = {
+        py: '#3776ab', js: '#f0db4f', ts: '#3178c6', jsx: '#61dafb', tsx: '#61dafb',
+        json: '#f0c040', yml: '#cb171e', yaml: '#cb171e', md: '#8b949e',
+        env: '#8b949e', sh: '#4eaa25', html: '#e34c26', css: '#563d7c',
+        log: '#6a737d', service: '#6a737d', txt: '#8b949e', git: '#f05033',
+        dockerfile: '#2496ed', gitignore: '#f05033', example: '#8b949e',
+    };
+    let key = ext;
+    if (base === 'dockerfile') key = 'dockerfile';
+    if (base.startsWith('.env')) key = 'env';
+    if (base === '.gitignore') key = 'gitignore';
+    const color = colors[key] || '#8b949e';
+    return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>';
+}
+
 function groupByDir(files) {
     const dirs = new Map();
     const roots = [];
@@ -937,7 +955,7 @@ function appendTreeLevel(container, nodes, depth) {
             b.className = 'sb-tree-item';
             b.style.paddingLeft = (8 + depth * 12) + 'px';
             b.innerHTML = '<span class="sb-tree-leaf-spacer"></span>' +
-                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>' +
+                getFileIconSvg(n.name) +
                 '<span>' + esc(n.name) + '</span>';
             b.title = n.path;
             b.addEventListener('click', () => openFileViewer(n.path));
