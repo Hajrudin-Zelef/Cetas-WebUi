@@ -845,6 +845,7 @@ async function refreshWorkspaces() {
                 await activateWorkspace(ws.id);
                 window.activeWorkspaceId = ws.id;
                 applyProjectUI(ws.name);
+                await chat.preloadInstructions();
                 await refreshWorkspaces();
                 await refreshTree();
             });
@@ -1106,6 +1107,9 @@ function setupChat() {
         sidePanelSpinner: refs.sidePanelSpinner,
         sidePanelClose: refs.sidePanelClose
     });
+
+    // Preload instructions at boot
+    chat.preloadInstructions();
 
     refs.sendBtn.addEventListener('click', () => chat.send());
     refs.stopBtn.addEventListener('click', () => chat.stop());

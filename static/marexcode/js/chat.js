@@ -16,6 +16,18 @@ export function createChat(deps) {
     let statusEl = null;
     let currentToolGroupEl = null;
     let thinkStepEl = null;
+    let cachedInstructions = { global: '', workspace: '' };
+
+    async function preloadInstructions() {
+        try {
+            const [globalInstr, workspaceInstr] = await Promise.all([
+                getGlobalInstructions().catch(() => ({ content: '' })),
+                window.activeWorkspaceId ? getWorkspaceInstructions(window.activeWorkspaceId).catch(() => ({ content: '' })) : Promise.resolve({ content: '' })
+            ]);
+            cachedInstructions.global = (globalInstr.content || '').trim();
+            cachedInstructions.workspace = (workspaceInstr.content || '').trim();
+        } catch (e) { /* ignore */ }
+    }
 
     function openSidePanel() {
         if (!sidePanel || userClosedPanel) return;
@@ -353,20 +365,14 @@ export function createChat(deps) {
             }
         } catch (e) { /* ignore skills errors */ }
 
-        // Injecter les instructions (globales + workspace)
+        // Inject instructions (from cache, preloaded at boot)
         let instructionsBlock = '';
-        try {
-            const [globalInstr, workspaceInstr] = await Promise.all([
-                getGlobalInstructions().catch(() => ({ content: '' })),
-                window.activeWorkspaceId ? getWorkspaceInstructions(window.activeWorkspaceId).catch(() => ({ content: '' })) : Promise.resolve({ content: '' })
-            ]);
-            if (globalInstr.content && globalInstr.content.trim()) {
-                instructionsBlock += '\n\nUSER GLOBAL INSTRUCTIONS (highest priority):\n' + globalInstr.content.trim();
-            }
-            if (workspaceInstr.content && workspaceInstr.content.trim()) {
-                instructionsBlock += '\n\nPROJECT-SPECIFIC INSTRUCTIONS:\n' + workspaceInstr.content.trim();
-            }
-        } catch (e) { /* ignore instructions errors */ }
+        if (cachedInstructions.global) {
+            instructionsBlock += '\n\nUSER GLOBAL INSTRUCTIONS (highest priority):\n' + cachedInstructions.global;
+        }
+        if (cachedInstructions.workspace) {
+            instructionsBlock += '\n\nPROJECT-SPECIFIC INSTRUCTIONS:\n' + cachedInstructions.workspace;
+        }
 
         const sys = (skill ? skill + '\n\n' : '') + baseSys + instructionsBlock + skillsPrompt;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
@@ -476,7 +482,8 @@ export function createChat(deps) {
         newSession,
         renderHistory,
         setRunning,
-        isRunning: () => running
+        isRunning: () => running,
+        preloadInstructions
     };
 }
 
