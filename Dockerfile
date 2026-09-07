@@ -15,11 +15,15 @@ RUN pip3 install --break-system-packages pyright
 RUN npm install -g typescript-language-server typescript@5 bash-language-server vscode-langservers-extracted
 RUN pyright --version && typescript-language-server --version && bash-language-server --help | head -1
 
+# MCP client for external tool servers (Marexcode Phase 3)
+RUN pip3 install --break-system-packages mcp
+
 # Proxy Python
 COPY server/server.py /app/server.py
 COPY server/marexcode.py /app/marexcode.py
 COPY server/observability.py /app/observability.py
 COPY server/lsp.py /app/lsp.py
+COPY server/mcp.py /app/mcp.py
 COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
 COPY core/users-seed.json /usr/share/nginx/html/core/users-seed.json
 

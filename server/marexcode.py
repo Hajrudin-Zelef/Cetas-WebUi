@@ -37,6 +37,11 @@ try:
 except ImportError:
     from lsp import LSPManager
 
+try:
+    from .mcp import MCPManager
+except ImportError:
+    from mcp import MCPManager
+
 log = logging.getLogger(__name__)
 
 DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
@@ -620,7 +625,53 @@ class MarexcodeMixin:
             return
         self._respond_json(result)
 
-    # ── Arborescence du workspace ──────────────────────────────────────
+    # ── MCP (Model Context Protocol) ──────────────────────────────────
+
+    def _mcp_servers_get(self):
+        """GET /api/mcp/servers — liste les serveurs MCP configurés."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        root = marex_project_root(username)
+        manager = MCPManager(root)
+        self._respond_json(manager.list_servers())
+
+    def _mcp_tools_get(self, server_name: str):
+        """GET /api/mcp/{server}/tools — liste les tools d'un serveur."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        root = marex_project_root(username)
+        manager = MCPManager(root)
+        self._respond_json(manager.list_tools(server_name))
+
+    def _mcp_tool_call(self, server_name: str, tool_name: str):
+        """POST /api/mcp/{server}/{tool} — exécute un tool MCP.
+        Body: {"args": {...}}
+        """
+        from server import _rate_check
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if not _rate_check("mcp:" + username, 30, 60):
+            self._respond_json({"error": "Trop de requêtes MCP. Réessayez dans une minute."}, 429)
+            return
+        root = marex_project_root(username)
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        args = data.get("args") or {}
+        log.info("mcp call server=%s tool=%s user=%s", server_name, tool_name, username)
+        manager = MCPManager(root)
+        result = manager.call_tool(server_name, tool_name, args)
+        if "error" in result:
+            self._respond_json({"error": result["error"]}, 400)
+            return
+        self._respond_json(result)
 
     def _marex_tree(self) -> list:
         """Listing récursif du workspace, exclut .git/node_modules/fichiers cachés."""

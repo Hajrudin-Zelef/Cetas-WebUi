@@ -1592,6 +1592,9 @@ function boot() {
     if (typeof loadModels === 'function') {
         try { loadModels(); } catch (e) {}
     }
+    if (typeof loadMcpTools === 'function') {
+        try { loadMcpTools(); } catch (e) {}
+    }
 
     setupCdrops();
     setupPermissionSelector();

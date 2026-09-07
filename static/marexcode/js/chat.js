@@ -142,6 +142,7 @@ export function createChat(deps) {
         if (n === 'write' || n === 'edit') return '✎';
         if (n === 'glob') return '◎';
         if (n === 'lsp') return '⟡';
+        if (n.startsWith('mcp_')) return '⬡';
         return '•';
     }
 
@@ -158,6 +159,10 @@ export function createChat(deps) {
         if (n === 'edit') return 'Edit ' + path;
         if (n === 'glob') return 'Glob "' + (args.pattern || '') + '" (' + (result && result.count != null ? result.count : '?') + ' files)';
         if (n === 'lsp') return 'LSP ' + (args.operation || '') + ' ' + (args.file || '') + ':' + (args.line || 0);
+        if (n.startsWith('mcp_')) {
+            var mcpParts = n.split('_');
+            return 'MCP ' + (mcpParts[1] || '') + '.' + mcpParts.slice(2).join('_') + '…';
+        }
         return name;
     }
 
@@ -530,7 +535,12 @@ export function createChat(deps) {
                 LSP: 'LSP ' + (d.args && d.args.operation || 'definition') + '…',
                 TodoWrite: 'Updating todos…'
             };
-            updateStatus(actionMap[d.name] || 'Processing…');
+            var statusAction = actionMap[d.name];
+            if (!statusAction && d.name && d.name.indexOf('mcp_') === 0) {
+                var mcpP = d.name.split('_');
+                statusAction = 'MCP ' + (mcpP[1] || '') + '…';
+            }
+            updateStatus(statusAction || 'Processing…');
         } else if (d.phase === 'end') {
             const lines = currentToolGroupEl ? currentToolGroupEl.querySelectorAll('.chat-step-line') : [];
             const last = lines[lines.length - 1];

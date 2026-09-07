@@ -1481,6 +1481,14 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if path == "/api/marexcode/memory":
             self._memory_get()
             return
+        # MCP servers
+        if path == "/api/mcp/servers":
+            self._mcp_servers_get()
+            return
+        if path.startswith("/api/mcp/") and path.endswith("/tools"):
+            server_name = path[len("/api/mcp/"):-len("/tools")]
+            self._mcp_tools_get(server_name)
+            return
         # Setup vault (M3)
         if path == "/setup" or path == "/setup/":
             self._serve_setup()
@@ -1520,6 +1528,12 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             operation = self.path[len("/api/lsp/"):]
             self._lsp_operation(operation)
             return
+        if self.path.startswith("/api/mcp/") and self.path.count("/") >= 4:
+            parts = self.path[len("/api/mcp/"):].split("/", 2)
+            if len(parts) == 3:
+                server_name, tool_name = parts[1], parts[2]
+                self._mcp_tool_call(server_name, tool_name)
+                return
         if self.path == "/api/marexcode/upload":
             self._marex_upload_project()
             return
