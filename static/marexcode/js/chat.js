@@ -13,8 +13,7 @@ export function createChat(deps) {
     let todoBlockEl = null;
     let statusEl = null;
     let currentToolGroupEl = null;
-    let toolGroupCount = 0;
-    let toolGroupBodyEl = null;
+    let thinkStepEl = null;
 
     function openSidePanel() {
         if (!sidePanel || userClosedPanel) return;
@@ -111,106 +110,46 @@ export function createChat(deps) {
 
     function ensureToolGroup() {
         if (currentToolGroupEl) return currentToolGroupEl;
-        toolGroupCount = 0;
         const group = document.createElement('div');
-        group.className = 'chat-tool-group';
-        const header = document.createElement('div');
-        header.className = 'chat-tool-group-header';
-        header.innerHTML = '<span class="chat-tool-group-icon">⚙</span><span class="chat-tool-group-label">Étapes (<span class="chat-tool-group-count">0</span>)</span><button class="chat-tool-group-toggle" type="button">Développer</button>';
-        const body = document.createElement('div');
-        body.className = 'chat-tool-group-body';
-        body.style.display = 'none';
-        group.appendChild(header);
-        group.appendChild(body);
+        group.className = 'chat-steps';
         chatLog.appendChild(group);
-        const toggleBtn = header.querySelector('.chat-tool-group-toggle');
-        toggleBtn.addEventListener('click', () => {
-            const isExpanded = body.style.display !== 'none';
-            body.style.display = isExpanded ? 'none' : 'block';
-            toggleBtn.textContent = isExpanded ? 'Développer' : 'Réduire';
-            if (!isExpanded) chatLog.scrollTop = chatLog.scrollHeight;
-        });
         currentToolGroupEl = group;
-        toolGroupBodyEl = body;
         return group;
     }
 
+    function getStepIcon(name) {
+        const n = name.toLowerCase();
+        if (n === 'grep') return '∗';
+        if (n === 'read') return '→';
+        if (n === 'bash' || n === 'build') return '▪';
+        if (n === 'write' || n === 'edit') return '✎';
+        return '•';
+    }
+
+    function getStepLabel(name, args, result) {
+        const n = name.toLowerCase();
+        const path = args && (args.path || args.file_path || args.filePath) || '';
+        if (n === 'grep') {
+            const count = result && result.matches ? (typeof result.matches === 'string' ? (result.matches.match(/\n/g) || []).length : result.matches.length) : '?';
+            return 'Grep "' + (args.pattern || '') + '" in ' + path + ' (' + count + ' matches)';
+        }
+        if (n === 'read') return 'Read ' + path;
+        if (n === 'bash') return 'Bash: ' + (args.command || '');
+        if (n === 'write') return 'Write ' + path;
+        if (n === 'edit') return 'Edit ' + path;
+        return name;
+    }
+
     function addChatToolBlock(name, args, result) {
-        const block = document.createElement('div');
-        block.className = 'chat-tool-block';
-        const path = args && (args.path || args.file_path || args.filePath);
-        const isBash = name.toLowerCase() === 'bash';
-        const isWrite = name.toLowerCase() === 'write';
-        const isEdit = name.toLowerCase() === 'edit';
-        const isRead = name.toLowerCase() === 'read';
-        const isGrep = name.toLowerCase() === 'grep';
-
-        let badgeClass = 'tool-badge-neutral';
-        if (isBash) badgeClass = 'tool-badge-bash';
-
-        let contentHtml = '';
-        let previewHtml = '';
-
-        if (isWrite || isEdit) {
-            const newContent = args && args.content || '';
-            const oldContent = isEdit ? (args && args.old || '') : (fileContents[path] || '');
-            contentHtml = renderDiffContent(oldContent, newContent);
-            previewHtml = contentHtml.split('\n').slice(0, 4).join('\n');
-            if (path) fileContents[path] = newContent;
-        } else if (isRead) {
-            const content = result && result.content || '';
-            contentHtml = esc(content);
-            previewHtml = content.split('\n').slice(0, 4).join('\n');
-        } else if (isGrep) {
-            const content = result && result.matches || JSON.stringify(result, null, 2);
-            contentHtml = esc(content);
-            previewHtml = content.split('\n').slice(0, 4).join('\n');
-        } else if (isBash) {
-            const content = result && result.output || JSON.stringify(result, null, 2);
-            contentHtml = esc(content);
-            previewHtml = content.split('\n').slice(0, 4).join('\n');
-        } else {
-            contentHtml = esc(JSON.stringify(args, null, 2));
-            previewHtml = contentHtml.split('\n').slice(0, 4).join('\n');
-        }
-
-        const previewLines = previewHtml.split('\n').slice(0, 4).join('\n');
-
-        block.innerHTML =
-            '<div class="chat-tool-block-header">' +
-                '<span class="tool-badge ' + badgeClass + '">' + esc(name) + '</span>' +
-                (path ? '<span class="chat-tool-block-path">' + esc(path) + '</span>' : '') +
-                '<button class="chat-tool-toggle" type="button">Développer</button>' +
-            '</div>' +
-            '<div class="chat-tool-block-preview"><pre>' + esc(previewLines) + '</pre></div>' +
-            '<div class="chat-tool-block-full" style="display:none"><pre>' + (isWrite || isEdit ? contentHtml : esc(contentHtml)) + '</pre></div>';
-
-        const toggleBtn = block.querySelector('.chat-tool-toggle');
-        const previewEl = block.querySelector('.chat-tool-block-preview');
-        const fullEl = block.querySelector('.chat-tool-block-full');
-
-        toggleBtn.addEventListener('click', () => {
-            const isExpanded = fullEl.style.display !== 'none';
-            if (isExpanded) {
-                fullEl.style.display = 'none';
-                previewEl.style.display = 'block';
-                toggleBtn.textContent = 'Développer';
-            } else {
-                fullEl.style.display = 'block';
-                previewEl.style.display = 'none';
-                toggleBtn.textContent = 'Réduire';
-            }
-        });
-
-        ensureToolGroup();
-        toolGroupBodyEl.appendChild(block);
-        toolGroupCount++;
-        const countEl = currentToolGroupEl.querySelector('.chat-tool-group-count');
-        if (countEl) countEl.textContent = toolGroupCount;
-        if (toolGroupBodyEl.style.display !== 'none') {
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
-        return block;
+        const group = ensureToolGroup();
+        const line = document.createElement('div');
+        line.className = 'chat-step-line';
+        const icon = getStepIcon(name);
+        const label = getStepLabel(name, args, result);
+        line.innerHTML = '<span class="step-icon">' + icon + '</span><span class="step-label">' + esc(label) + '</span>';
+        group.appendChild(line);
+        chatLog.scrollTop = chatLog.scrollHeight;
+        return line;
     }
 
     function ensureStatusLine() {
@@ -275,6 +214,12 @@ export function createChat(deps) {
             thinkBlockEl.className = 'sp-think-block';
             thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Raisonnement</div><div class="sp-think-text"></div>';
             if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
+            const group = ensureToolGroup();
+            thinkStepEl = document.createElement('div');
+            thinkStepEl.className = 'chat-step-line';
+            thinkStepEl.innerHTML = '<span class="step-icon">✦</span><span class="step-label">Thought…</span>';
+            group.appendChild(thinkStepEl);
+            chatLog.scrollTop = chatLog.scrollHeight;
         }
         const txt = thinkBlockEl.querySelector('.sp-think-text');
         if (txt) txt.textContent += t;
@@ -285,6 +230,7 @@ export function createChat(deps) {
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
         thinkBlockEl = null;
+        thinkStepEl = null;
     }
 
     function setChatVisible(visible) {
@@ -326,7 +272,7 @@ export function createChat(deps) {
 
     function setSession(s) {
         session = s;
-        thinkBadgeEl = null; thinkBlockEl = null;
+        thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null;
         resetSidePanel();
         renderHistory();
         setChatVisible((session.messages || []).length > 0);
@@ -341,7 +287,7 @@ export function createChat(deps) {
         chatLog.innerHTML = '';
         fileContents = {};
         setChatVisible(false);
-        pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkText = '';
+        pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = '';
         todoBlockEl = null; statusEl = null;
         resetSidePanel();
         return session;
@@ -369,9 +315,9 @@ export function createChat(deps) {
         const skill = getSystemPrompt ? getSystemPrompt() : '';
         const sys = (skill ? skill + '\n\n' : '') + baseSys;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
-        pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkText = ''; rawAcc = '';
+        pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
         todoBlockEl = null; statusEl = null;
-        currentToolGroupEl = null; toolGroupCount = 0; toolGroupBodyEl = null;
+        currentToolGroupEl = null;
         pendingEl = addMsg('assistant', '', false);
         ensureStatusLine();
         updateStatus('Génération…');
@@ -457,58 +403,12 @@ export function createChat(deps) {
             };
             updateStatus(actionMap[d.name] || 'Traitement…');
         } else if (d.phase === 'end') {
-            const blocks = toolGroupBodyEl ? toolGroupBodyEl.querySelectorAll('.chat-tool-block') : chatLog.querySelectorAll('.chat-tool-block');
-            const last = blocks[blocks.length - 1];
+            const lines = currentToolGroupEl ? currentToolGroupEl.querySelectorAll('.chat-step-line') : [];
+            const last = lines[lines.length - 1];
             if (last) {
-                const name = d.name;
-                const args = d.args;
-                const result = d.result;
-                const path = args && (args.path || args.file_path || args.filePath);
-                const isBash = name.toLowerCase() === 'bash';
-                const isWrite = name.toLowerCase() === 'write';
-                const isEdit = name.toLowerCase() === 'edit';
-                const isRead = name.toLowerCase() === 'read';
-                const isGrep = name.toLowerCase() === 'grep';
-
-                let badgeClass = 'tool-badge-neutral';
-                if (isBash) badgeClass = 'tool-badge-bash';
-
-                let contentHtml = '';
-                if (isWrite || isEdit) {
-                    const newContent = args && args.content || '';
-                    const oldContent = isEdit ? (args && args.old || '') : (fileContents[path] || '');
-                    contentHtml = renderDiffContent(oldContent, newContent);
-                    if (path) fileContents[path] = newContent;
-                } else if (isRead) {
-                    contentHtml = esc(result && result.content || '');
-                } else if (isGrep) {
-                    contentHtml = esc(result && result.matches || JSON.stringify(result, null, 2));
-                } else if (isBash) {
-                    contentHtml = esc(result && result.output || JSON.stringify(result, null, 2));
-                } else {
-                    contentHtml = esc(JSON.stringify(result, null, 2));
-                }
-
-                const previewLines = contentHtml.split('\n').slice(0, 4).join('\n');
-
-                last.querySelector('.chat-tool-block-header .chat-tool-block-path')?.remove();
-                if (path) {
-                    const pathSpan = document.createElement('span');
-                    pathSpan.className = 'chat-tool-block-path';
-                    pathSpan.textContent = path;
-                    last.querySelector('.chat-tool-block-header').insertBefore(pathSpan, last.querySelector('.chat-tool-toggle'));
-                }
-
-                const previewEl = last.querySelector('.chat-tool-block-preview pre');
-                const fullEl = last.querySelector('.chat-tool-block-full pre');
-                if (previewEl) previewEl.textContent = previewLines;
-                if (fullEl) {
-                    if (isWrite || isEdit) {
-                        fullEl.innerHTML = contentHtml;
-                    } else {
-                        fullEl.textContent = contentHtml;
-                    }
-                }
+                const label = getStepLabel(d.name, d.args, d.result);
+                const labelEl = last.querySelector('.step-label');
+                if (labelEl) labelEl.textContent = label;
             }
         }
     });
