@@ -361,10 +361,10 @@ export function createChat(deps) {
                 window.activeWorkspaceId ? getWorkspaceInstructions(window.activeWorkspaceId).catch(() => ({ content: '' })) : Promise.resolve({ content: '' })
             ]);
             if (globalInstr.content && globalInstr.content.trim()) {
-                instructionsBlock += '\n\nINSTRUCTIONS GLOBALES DE L\'UTILISATEUR (à respecter en priorité) :\n' + globalInstr.content.trim();
+                instructionsBlock += '\n\nUSER GLOBAL INSTRUCTIONS (highest priority):\n' + globalInstr.content.trim();
             }
             if (workspaceInstr.content && workspaceInstr.content.trim()) {
-                instructionsBlock += '\n\nINSTRUCTIONS SPÉCIFIQUES À CE PROJET :\n' + workspaceInstr.content.trim();
+                instructionsBlock += '\n\nPROJECT-SPECIFIC INSTRUCTIONS:\n' + workspaceInstr.content.trim();
             }
         } catch (e) { /* ignore instructions errors */ }
 
