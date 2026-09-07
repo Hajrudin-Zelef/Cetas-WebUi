@@ -629,6 +629,10 @@ html,body{
 .settings-btn:hover{ background:#26272c; }
 .settings-btn.danger{ color:#ff9d9d; }
 .settings-btn.danger:hover{ background:#3a2222; border-color:#5a3030; }
+#skills-list input[type="checkbox"] + span,
+#skills-list label,
+#skills-list select,
+#skills-list option{ color:#ffffff !important; }
 
 /* ---------- MAIN ---------- */
 .main{
