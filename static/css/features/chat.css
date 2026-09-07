@@ -970,7 +970,7 @@ body.dark .model-alert {
 /* Sélecteur de modèle personnalisé */
 .custom-select {
     position: relative;
-    display: inline-block;
+    display: none;
 }
 
 .custom-select-trigger {
