@@ -182,3 +182,17 @@ export async function getProfileActivity() {
 export async function trackActivity() {
     return apiFetch('/api/marexcode/profile/activity', { method: 'POST' });
 }
+
+// ── Local memory ───────────────────────────────────────────────────
+
+export async function getMemory() {
+    return apiFetch('/api/marexcode/memory');
+}
+
+export async function saveMemory(content) {
+    return apiFetch('/api/marexcode/memory', { method: 'PUT', body: JSON.stringify({ content }) });
+}
+
+export async function deleteMemory() {
+    return apiFetch('/api/marexcode/memory', { method: 'DELETE' });
+}

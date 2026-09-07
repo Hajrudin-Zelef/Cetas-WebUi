@@ -1477,6 +1477,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if path == "/api/marexcode/profile/activity":
             self._profile_activity_get()
             return
+        # Memory
+        if path == "/api/marexcode/memory":
+            self._memory_get()
+            return
         # Setup vault (M3)
         if path == "/setup" or path == "/setup/":
             self._serve_setup()
@@ -1547,6 +1551,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path == "/api/marexcode/skills/config":
             self._skills_config_put()
             return
+        if self.path == "/api/marexcode/memory":
+            self._memory_put()
+            return
         if self.path.startswith("/api/marexcode/workspaces/") and self.path.endswith("/activate"):
             ws_id = self.path[len("/api/marexcode/workspaces/"):-len("/activate")]
             self._workspace_activate_put(ws_id)
@@ -1583,6 +1590,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path.startswith("/api/marexcode/workspaces/"):
             ws_id = self.path[len("/api/marexcode/workspaces/"):]
             self._workspace_delete(ws_id)
+            return
+        if self.path == "/api/marexcode/memory":
+            self._memory_delete()
             return
         self.send_response(404)
         self.end_headers()
@@ -2311,6 +2321,58 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             self._respond_json({"ok": True, "date": today, "count": activity[today]})
         except Exception as e:
             self._error(500, f"Erreur écriture: {e}")
+
+    # ── Local memory ──────────────────────────────────────────────────
+
+    def _memory_get(self):
+        """GET /api/marexcode/memory — retourne la mémoire locale."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        from marexcode import marex_workspace
+        path = os.path.join(marex_workspace(username), "memory.md")
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+            self._respond_json({"content": content})
+        except FileNotFoundError:
+            self._respond_json({"content": ""})
+
+    def _memory_put(self):
+        """PUT /api/marexcode/memory — sauvegarde la mémoire locale."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        from marexcode import marex_workspace
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_length) if content_length > 0 else b""
+        try:
+            data = json.loads(body)
+            content = data.get("content", "")
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        path = os.path.join(marex_workspace(username), "memory.md")
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+            self._respond_json({"ok": True})
+        except Exception as e:
+            self._error(500, f"Erreur écriture: {e}")
+
+    def _memory_delete(self):
+        """DELETE /api/marexcode/memory — supprime la mémoire locale."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        from marexcode import marex_workspace
+        path = os.path.join(marex_workspace(username), "memory.md")
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+            self._respond_json({"ok": True})
+        except Exception as e:
+            self._error(500, f"Erreur suppression: {e}")
 
     def _error(self, code: int, msg: str):
         body = json.dumps({"error": msg}).encode()

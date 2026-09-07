@@ -1,4 +1,4 @@
-import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions, trackActivity, getProfileStats, getProfileActivity } from './api.js';
+import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions, trackActivity, getProfileStats, getProfileActivity, getMemory, saveMemory, deleteMemory } from './api.js';
 import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
@@ -936,6 +936,49 @@ async function loadInstructionsPanel() {
     }
 }
 
+async function loadMemoryPanel() {
+    const textarea = document.getElementById('memory-textarea');
+    const saveBtn = document.getElementById('save-memory');
+    const clearBtn = document.getElementById('clear-memory');
+    const captureToggle = document.getElementById('gen-memory-capture');
+
+    if (textarea) {
+        try {
+            const data = await getMemory();
+            textarea.value = data.content || '';
+        } catch (e) { textarea.value = ''; }
+    }
+
+    if (saveBtn && textarea) {
+        saveBtn.addEventListener('click', async () => {
+            try {
+                await saveMemory(textarea.value);
+                saveBtn.textContent = '✓ Enregistré';
+                setTimeout(() => { saveBtn.textContent = 'Enregistrer'; }, 2000);
+            } catch (e) { alert('Erreur: ' + (e.message || e)); }
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', async () => {
+            if (!confirm('Supprimer la mémoire locale ? Cette action est irréversible.')) return;
+            try {
+                await deleteMemory();
+                if (textarea) textarea.value = '';
+                clearBtn.textContent = '✓ Supprimé';
+                setTimeout(() => { clearBtn.textContent = 'Supprimer la mémoire'; }, 2000);
+            } catch (e) { alert('Erreur: ' + (e.message || e)); }
+        });
+    }
+
+    if (captureToggle) {
+        captureToggle.checked = localStorage.getItem('marex-memory-capture') !== '0';
+        captureToggle.addEventListener('change', () => {
+            localStorage.setItem('marex-memory-capture', captureToggle.checked ? '1' : '0');
+        });
+    }
+}
+
 function fillUserInfo() {
     let username = 'Utilisateur';
     try {
@@ -1355,6 +1398,7 @@ function setupSettings(router) {
         router.showSettings();
         loadSkillsPanel();
         loadInstructionsPanel();
+        loadMemoryPanel();
         loadGeneralPanel();
         // Delay profile load to ensure DOM is ready
         setTimeout(() => loadProfilePanel(), 50);

@@ -1,6 +1,6 @@
 export const MAREX_TOOLS = (typeof MAREXCODE_TOOLS !== 'undefined') ? MAREXCODE_TOOLS : [];
 
-import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions, trackActivity } from './api.js';
+import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions, trackActivity, getMemory } from './api.js';
 
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
@@ -16,17 +16,19 @@ export function createChat(deps) {
     let statusEl = null;
     let currentToolGroupEl = null;
     let thinkStepEl = null;
-    let cachedInstructions = { global: '', workspace: '' };
+    let cachedInstructions = { global: '', workspace: '', memory: '' };
     let messageQueue = [];
 
     async function preloadInstructions() {
         try {
-            const [globalInstr, workspaceInstr] = await Promise.all([
+            const [globalInstr, workspaceInstr, memoryInstr] = await Promise.all([
                 getGlobalInstructions().catch(() => ({ content: '' })),
-                window.activeWorkspaceId ? getWorkspaceInstructions(window.activeWorkspaceId).catch(() => ({ content: '' })) : Promise.resolve({ content: '' })
+                window.activeWorkspaceId ? getWorkspaceInstructions(window.activeWorkspaceId).catch(() => ({ content: '' })) : Promise.resolve({ content: '' }),
+                getMemory().catch(() => ({ content: '' }))
             ]);
             cachedInstructions.global = (globalInstr.content || '').trim();
             cachedInstructions.workspace = (workspaceInstr.content || '').trim();
+            cachedInstructions.memory = (memoryInstr.content || '').trim();
         } catch (e) { /* ignore */ }
     }
 
@@ -414,6 +416,9 @@ export function createChat(deps) {
         }
         if (cachedInstructions.workspace) {
             instructionsBlock += '\n\nPROJECT-SPECIFIC INSTRUCTIONS:\n' + cachedInstructions.workspace;
+        }
+        if (cachedInstructions.memory) {
+            instructionsBlock += '\n\nLOCAL MEMORY (facts learned from previous sessions):\n' + cachedInstructions.memory;
         }
 
         // Output mode
