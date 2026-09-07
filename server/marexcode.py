@@ -252,7 +252,14 @@ def marex_server_project_root(username: str) -> str:
 
 
 def marex_project_root(username: str, project_name: str | None = None) -> str:
-    """Racine sandbox effective selon le projet actif de l'utilisateur."""
+    """Racine sandbox effective selon le workspace actif de l'utilisateur.
+    Priorité au multi-workspace (workspaces/<id>/) si un workspace actif existe,
+    sinon fallback sur l'ancien modèle (serveur / importé)."""
+    ws_id = marex_get_active_workspace(username)
+    if ws_id:
+        d = marex_workspace_dir(username, ws_id)
+        os.makedirs(d, exist_ok=True)
+        return d
     if project_name is None:
         project_name = marex_get_active_project(username)
     if project_name == PROJECT_UPLOADED:
