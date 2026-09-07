@@ -14,6 +14,7 @@ RUN npm install -g terser clean-css-cli
 COPY server/server.py /app/server.py
 COPY server/marexcode.py /app/marexcode.py
 COPY server/observability.py /app/observability.py
+COPY server/lsp.py /app/lsp.py
 COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
 COPY core/users-seed.json /usr/share/nginx/html/core/users-seed.json
 
