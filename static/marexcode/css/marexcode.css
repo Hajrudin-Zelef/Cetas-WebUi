@@ -1120,6 +1120,14 @@ html,body{
 .chat-tool-block-full pre{ max-height:200px; overflow:auto; }
 .chat-tool-toggle{ margin-left:auto; background:none; border:none; color:var(--accent); cursor:pointer; font-size:11px; padding:2px 6px; }
 .chat-tool-toggle:hover{ color:var(--accent-hover); }
+.chat-tool-group{ margin-bottom:10px; border:1px solid var(--border); border-radius:10px; background:#17181c; padding:8px 12px; font-size:12px; max-width:100%; }
+.chat-tool-group-header{ display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.chat-tool-group-icon{ font-size:14px; }
+.chat-tool-group-label{ font-weight:600; color:var(--accent); }
+.chat-tool-group-toggle{ margin-left:auto; background:none; border:none; color:var(--accent); cursor:pointer; font-size:11px; padding:2px 6px; }
+.chat-tool-group-toggle:hover{ color:var(--accent-hover); }
+.chat-tool-group-body{ margin-top:8px; }
+.chat-tool-group-body .chat-tool-block{ margin-bottom:8px; border:1px solid var(--border); border-radius:8px; background:#1a1b1f; padding:6px 10px; }
 .chat-status-line{ display:flex; align-items:center; gap:6px; padding:6px 0; font-size:11px; color:var(--text-secondary); }
 .status-dot{ width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; }
 .status-action{ color:var(--accent); font-weight:600; }

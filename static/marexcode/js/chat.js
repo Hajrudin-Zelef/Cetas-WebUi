@@ -12,6 +12,9 @@ export function createChat(deps) {
     let fileContents = {};
     let todoBlockEl = null;
     let statusEl = null;
+    let currentToolGroupEl = null;
+    let toolGroupCount = 0;
+    let toolGroupBodyEl = null;
 
     function openSidePanel() {
         if (!sidePanel || userClosedPanel) return;
@@ -106,6 +109,32 @@ export function createChat(deps) {
         return html;
     }
 
+    function ensureToolGroup() {
+        if (currentToolGroupEl) return currentToolGroupEl;
+        toolGroupCount = 0;
+        const group = document.createElement('div');
+        group.className = 'chat-tool-group';
+        const header = document.createElement('div');
+        header.className = 'chat-tool-group-header';
+        header.innerHTML = '<span class="chat-tool-group-icon">⚙</span><span class="chat-tool-group-label">Étapes (<span class="chat-tool-group-count">0</span>)</span><button class="chat-tool-group-toggle" type="button">Développer</button>';
+        const body = document.createElement('div');
+        body.className = 'chat-tool-group-body';
+        body.style.display = 'none';
+        group.appendChild(header);
+        group.appendChild(body);
+        chatLog.appendChild(group);
+        const toggleBtn = header.querySelector('.chat-tool-group-toggle');
+        toggleBtn.addEventListener('click', () => {
+            const isExpanded = body.style.display !== 'none';
+            body.style.display = isExpanded ? 'none' : 'block';
+            toggleBtn.textContent = isExpanded ? 'Développer' : 'Réduire';
+            if (!isExpanded) chatLog.scrollTop = chatLog.scrollHeight;
+        });
+        currentToolGroupEl = group;
+        toolGroupBodyEl = body;
+        return group;
+    }
+
     function addChatToolBlock(name, args, result) {
         const block = document.createElement('div');
         block.className = 'chat-tool-block';
@@ -173,8 +202,14 @@ export function createChat(deps) {
             }
         });
 
-        chatLog.appendChild(block);
-        chatLog.scrollTop = chatLog.scrollHeight;
+        ensureToolGroup();
+        toolGroupBodyEl.appendChild(block);
+        toolGroupCount++;
+        const countEl = currentToolGroupEl.querySelector('.chat-tool-group-count');
+        if (countEl) countEl.textContent = toolGroupCount;
+        if (toolGroupBodyEl.style.display !== 'none') {
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
         return block;
     }
 
@@ -336,6 +371,7 @@ export function createChat(deps) {
         const history = [{ role: 'system', content: sys }].concat(session.messages);
         pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkText = ''; rawAcc = '';
         todoBlockEl = null; statusEl = null;
+        currentToolGroupEl = null; toolGroupCount = 0; toolGroupBodyEl = null;
         pendingEl = addMsg('assistant', '', false);
         ensureStatusLine();
         updateStatus('Génération…');
@@ -413,7 +449,7 @@ export function createChat(deps) {
             const actionMap = { Bash: 'Exécution commande…', Read: 'Lecture fichier…', Write: 'Écriture fichier…', Edit: 'Modification fichier…', Grep: 'Recherche…', TodoWrite: 'Mise à jour todos…' };
             updateStatus(actionMap[d.name] || 'Traitement…');
         } else if (d.phase === 'end') {
-            const blocks = chatLog.querySelectorAll('.chat-tool-block');
+            const blocks = toolGroupBodyEl ? toolGroupBodyEl.querySelectorAll('.chat-tool-block') : chatLog.querySelectorAll('.chat-tool-block');
             const last = blocks[blocks.length - 1];
             if (last) {
                 const name = d.name;
