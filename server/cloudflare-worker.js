@@ -104,6 +104,14 @@ export default {
         base: 'https://opencode.ai',
         auth: { type: 'header', header: 'Authorization', prefix: 'Bearer ' },
       },
+      'opencode-go': {
+        base: 'https://opencode.ai',
+        auth: { type: 'header', header: 'Authorization', prefix: 'Bearer ' },
+      },
+      cabreras: {
+        base: 'https://api.cabreras.ai',
+        auth: { type: 'header', header: 'Authorization', prefix: 'Bearer ' },
+      },
       perplexity: {
         base: 'https://api.perplexity.ai',
         auth: { type: 'header', header: 'Authorization', prefix: 'Bearer ' },
@@ -120,8 +128,11 @@ export default {
 
     // Récupère la clé API depuis les Secrets Cloudflare
     // Les secrets sont stockés dans l'onglet Settings → Variables → Secrets
-    // Nom du secret : DEEPSEEK_API_KEY, OPENROUTER_API_KEY, etc.
-    const secretName = provider.toUpperCase() + '_API_KEY';
+    // Nom du secret : DEEPSEEK_API_KEY, OPENROUTER_API_KEY, OPENCODE_API_KEY, etc.
+    const SECRET_MAP = {
+      'opencode-go': 'OPENCODE_GO_API_KEY',
+    };
+    const secretName = SECRET_MAP[provider] || provider.toUpperCase().replace(/-/g, '_') + '_API_KEY';
     const apiKey = env[secretName];
     if (!apiKey) {
       return new Response(JSON.stringify({ error: `Pas de clé API pour ${provider} (secret: ${secretName})` }), {
