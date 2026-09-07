@@ -570,8 +570,7 @@ function esc2(s) { return esc(s); }
 function buildSessionItem(s) {
     const b = document.createElement('button');
     b.className = 'sb-hist-item' + (s.id === currentSessionId ? ' active' : '');
-    b.title = s.title || '';
-    b.innerHTML = '<span class="sb-hist-label">' + esc2(s.title || 'Sans titre') + '</span>' +
+    b.innerHTML = '<span class="sb-hist-label" title="' + esc2(s.title || '') + '">' + esc2(s.title || 'Sans titre') + '</span>' +
         '<span class="sb-hist-favorite' + (s.favorite ? ' active' : '') + '" title="' + (s.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris') + '" role="button">' +
         '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + (s.favorite ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
         '</span>' +
