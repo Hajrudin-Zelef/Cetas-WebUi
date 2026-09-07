@@ -349,6 +349,17 @@ html,body{
 }
 .sb-hist-item:hover .sb-hist-rename{ opacity:0.6; }
 .sb-hist-rename:hover{ opacity:1; }
+.sb-hist-chev{
+  flex-shrink:0;
+  display:inline-flex;
+  align-items:center;
+  color:var(--text-tertiary);
+  transition:transform 0.15s;
+  transform:rotate(-90deg);
+}
+.sb-hist-chev.open{ transform:rotate(0deg); }
+.sb-ws-tree{ margin-left:14px; }
+.sb-ws-tree .sb-tree-item{ width:100%; }
 .sb-hist-item:hover{ background:#1c1c1f; }
 .sb-hist-item.active{ background:#2a2a2e; color:var(--text-primary); }
 

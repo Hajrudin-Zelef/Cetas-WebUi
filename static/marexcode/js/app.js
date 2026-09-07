@@ -1,4 +1,4 @@
-import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions } from './api.js';
+import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions } from './api.js';
 import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
@@ -708,7 +708,7 @@ function buildSessionItem(s) {
     return b;
 }
 
-window.window.activeWorkspaceId = null;
+window.activeWorkspaceId = null;
 
 async function refreshWorkspaces() {
     try {
@@ -722,14 +722,60 @@ async function refreshWorkspaces() {
         for (const ws of workspaces) {
             const b = document.createElement('button');
             b.className = 'sb-hist-item' + (ws.active ? ' active' : '');
-            b.innerHTML = '<span class="sb-hist-label" title="' + esc(ws.name) + '">' + esc(ws.name) + '</span>' +
+            b.innerHTML = '<span class="sb-hist-chev" title="Afficher les fichiers" role="button">' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>' +
+                '</span>' +
+                '<span class="sb-hist-label" title="' + esc(ws.name) + '">' + esc(ws.name) + '</span>' +
                 '<span class="sb-hist-rename" title="Instructions" role="button">' +
                 '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>' +
                 '</span>' +
                 '<span class="sb-hist-del" title="Supprimer" role="button">' +
                 '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
                 '</span>';
+            const treeBox = document.createElement('div');
+            treeBox.className = 'sb-ws-tree';
+            treeBox.style.display = 'none';
+
+            const toggleTree = async () => {
+                if (treeBox.style.display !== 'none') {
+                    treeBox.style.display = 'none';
+                    b.querySelector('.sb-hist-chev').classList.remove('open');
+                    return;
+                }
+                if (!treeBox.dataset.loaded) {
+                    treeBox.innerHTML = '<div class="sb-tree-empty">Chargement…</div>';
+                    treeBox.style.display = 'block';
+                    try {
+                        const files = await listWorkspaceTree(ws.id);
+                        treeBox.innerHTML = '';
+                        if (!files.length) {
+                            treeBox.innerHTML = '<div class="sb-tree-empty">Vide.</div>';
+                        }
+                        for (const f of files) {
+                            const fb = document.createElement('button');
+                            fb.className = 'sb-tree-item';
+                            fb.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>' +
+                                '<span>' + esc(f.path) + '</span>';
+                            fb.title = f.path;
+                            fb.addEventListener('click', (e) => { e.stopPropagation(); openFileViewer(f.path); });
+                            treeBox.appendChild(fb);
+                        }
+                        treeBox.dataset.loaded = '1';
+                    } catch (e) {
+                        treeBox.innerHTML = '<div class="sb-tree-empty">Erreur.</div>';
+                    }
+                } else {
+                    treeBox.style.display = 'block';
+                }
+                b.querySelector('.sb-hist-chev').classList.add('open');
+            };
+
             b.addEventListener('click', async (e) => {
+                if (e.target.closest('.sb-hist-chev')) {
+                    e.stopPropagation();
+                    await toggleTree();
+                    return;
+                }
                 if (e.target.closest('.sb-hist-rename')) {
                     e.stopPropagation();
                     try {
@@ -746,7 +792,8 @@ async function refreshWorkspaces() {
                     if (confirm('Supprimer le projet "' + ws.name + '" ?')) {
                         await deleteWorkspace(ws.id);
                         if (window.activeWorkspaceId === ws.id) window.activeWorkspaceId = null;
-                        refreshWorkspaces();
+                        await refreshWorkspaces();
+                        await refreshTree();
                     }
                     return;
                 }
@@ -754,9 +801,11 @@ async function refreshWorkspaces() {
                 await activateWorkspace(ws.id);
                 window.activeWorkspaceId = ws.id;
                 applyProjectUI(ws.name);
-                refreshWorkspaces();
+                await refreshWorkspaces();
+                await refreshTree();
             });
             refs.workspacesList.appendChild(b);
+            refs.workspacesList.appendChild(treeBox);
             if (ws.active) { window.activeWorkspaceId = ws.id; applyProjectUI(ws.name); }
         }
     } catch (e) {

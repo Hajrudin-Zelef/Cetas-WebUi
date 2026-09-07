@@ -139,6 +139,10 @@ export async function listWorkspaces() {
     return apiFetch('/api/marexcode/workspaces');
 }
 
+export async function listWorkspaceTree(id) {
+    return apiFetch('/api/marexcode/workspaces/' + encodeURIComponent(id) + '/tree');
+}
+
 export async function activateWorkspace(id) {
     return apiFetch('/api/marexcode/workspaces/' + encodeURIComponent(id) + '/activate', { method: 'PUT' });
 }

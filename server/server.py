@@ -1463,6 +1463,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             ws_id = path[len("/api/marexcode/workspaces/"):-len("/instructions")]
             self._workspace_instructions_get(ws_id)
             return
+        if path.startswith("/api/marexcode/workspaces/") and path.endswith("/tree"):
+            ws_id = path[len("/api/marexcode/workspaces/"):-len("/tree")]
+            self._workspace_tree_get(ws_id)
+            return
         if path == "/api/marexcode/global-instructions":
             self._global_instructions_get()
             return
@@ -2078,6 +2082,22 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if marex_get_active_workspace(username) == ws_id:
             marex_set_active_workspace(username, None)
         self._respond_json({"ok": True})
+
+    def _workspace_tree_get(self, ws_id: str):
+        """GET /api/marexcode/workspaces/:id/tree — arborescence d'un workspace donné."""
+        from marexcode import marex_workspace_dir
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if ".." in ws_id or "/" in ws_id:
+            self._error(400, "ID invalide")
+            return
+        root = marex_workspace_dir(username, ws_id)
+        if not os.path.isdir(root):
+            self._error(404, "Workspace non trouvé")
+            return
+        self._marex_root = root
+        self._respond_json(self._marex_tree())
 
     def _workspace_instructions_get(self, ws_id: str):
         """GET /api/marexcode/workspaces/:id/instructions — lit MAREXCODE.md."""
