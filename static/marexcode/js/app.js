@@ -1595,6 +1595,9 @@ function boot() {
     if (typeof loadMcpTools === 'function') {
         try { loadMcpTools(); } catch (e) {}
     }
+    if (typeof loadCustomTools === 'function') {
+        try { loadCustomTools(); } catch (e) {}
+    }
 
     setupCdrops();
     setupPermissionSelector();

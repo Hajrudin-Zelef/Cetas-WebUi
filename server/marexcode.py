@@ -698,6 +698,110 @@ class MarexcodeMixin:
         self._marex_root = marex_project_root(username)
         self._respond_json(self._marex_tree())
 
+    # ── Custom Tools (user-defined) ────────────────────────────────────
+
+    def _custom_tools_path(self, username: str) -> str:
+        return os.path.join(marex_project_root(username), "tools.json")
+
+    def _custom_tools_load(self, username: str) -> dict:
+        path = self._custom_tools_path(username)
+        if os.path.isfile(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {"tools": {}}
+
+    def _custom_tools_save(self, username: str, data: dict):
+        path = self._custom_tools_path(username)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            log.error("Failed to save custom tools: %s", e)
+
+    def _custom_tools_get(self):
+        """GET /api/marexcode/custom-tools — liste les outils custom."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        data = self._custom_tools_load(username)
+        self._respond_json(data.get("tools", {}))
+
+    def _custom_tools_put(self):
+        """PUT /api/marexcode/custom-tools — sauvegarde les outils custom.
+        Body: {"tools": {"name": {"description": "...", "command": "...", "timeout": 30}}}
+        """
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        tools = data.get("tools", data)
+        for name, cfg in tools.items():
+            if not isinstance(cfg, dict) or "command" not in cfg:
+                self._respond_json({"error": "Outil '%s' invalide: 'command' requis" % name}, 400)
+                return
+        self._custom_tools_save(username, {"tools": tools})
+        self._respond_json({"ok": True, "count": len(tools)})
+
+    def _exec_custom_tool(self, tool_name: str):
+        """POST /api/marexcode/custom-tools/{name} — exécute un outil custom.
+        Body: {"args": {...}}
+        """
+        from server import _rate_check
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if not _rate_check("custom:" + username, 30, 60):
+            self._respond_json({"error": "Trop de requêtes. Réessayez dans une minute."}, 429)
+            return
+        data = self._custom_tools_load(username)
+        tools = data.get("tools", {})
+        cfg = tools.get(tool_name)
+        if not cfg:
+            self._respond_json({"error": "Outil inconnu: %s" % tool_name}, 404)
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            req_data = json.loads(body)
+        except json.JSONDecodeError:
+            req_data = {}
+        args = req_data.get("args", {})
+        command = cfg["command"]
+        for k, v in args.items():
+            command = command.replace("{%s}" % k, str(v))
+        timeout = min(cfg.get("timeout", 30), 120)
+        log.info("custom tool=%s user=%s cmd=%s", tool_name, username, command[:80])
+        root = marex_project_root(username)
+        try:
+            import shlex
+            tokens = shlex.split(command)
+            proc = subprocess.run(
+                tokens, cwd=root, capture_output=True, text=True, timeout=timeout
+            )
+            result = {
+                "stdout": proc.stdout[:EXEC_MAX_OUTPUT],
+                "stderr": proc.stderr[:EXEC_MAX_OUTPUT],
+                "code": proc.returncode,
+            }
+            result["text"] = "Command exited with code %s\n%s" % (
+                proc.returncode,
+                proc.stdout[:500] if proc.stdout else "",
+            )
+            self._respond_json(result)
+        except subprocess.TimeoutExpired:
+            self._respond_json({"error": "Timeout (%ds)" % timeout, "code": 124}, 408)
+        except Exception as e:
+            self._respond_json({"error": "Erreur: %s" % e}, 500)
+
     # ── Sessions persistantes ──────────────────────────────────────────
 
     def _marex_session_path(self, sid: str) -> str | None:

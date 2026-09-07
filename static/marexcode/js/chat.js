@@ -143,6 +143,7 @@ export function createChat(deps) {
         if (n === 'glob') return '◎';
         if (n === 'lsp') return '⟡';
         if (n.startsWith('mcp_')) return '⬡';
+        if (n.startsWith('custom_')) return '⚙';
         return '•';
     }
 

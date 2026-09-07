@@ -1489,6 +1489,13 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             server_name = path[len("/api/mcp/"):-len("/tools")]
             self._mcp_tools_get(server_name)
             return
+        # Custom tools
+        if path == "/api/marexcode/custom-tools":
+            if self.command == "GET":
+                self._custom_tools_get()
+            elif self.command == "PUT":
+                self._custom_tools_put()
+            return
         # Setup vault (M3)
         if path == "/setup" or path == "/setup/":
             self._serve_setup()
@@ -1534,6 +1541,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
                 server_name, tool_name = parts[1], parts[2]
                 self._mcp_tool_call(server_name, tool_name)
                 return
+        if self.path.startswith("/api/marexcode/custom-tools/"):
+            tool_name = self.path[len("/api/marexcode/custom-tools/"):]
+            self._exec_custom_tool(tool_name)
+            return
         if self.path == "/api/marexcode/upload":
             self._marex_upload_project()
             return
