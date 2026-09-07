@@ -13,6 +13,7 @@ services:
     volumes:
       - ./.vault:/usr/share/nginx/html/.vault
       - ./.env:/usr/share/nginx/html/.env
+      - ./.opencode/skills:/usr/share/nginx/html/.opencode/skills:ro
       - cetas-data:/usr/share/nginx/html/conversations
       - cetas-data:/app/data
     networks:
