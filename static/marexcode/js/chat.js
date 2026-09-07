@@ -223,6 +223,13 @@ export function createChat(deps) {
             group.appendChild(thinkStepEl);
             chatLog.scrollTop = chatLog.scrollHeight;
         }
+        if (!thinkStepEl._timerStart) {
+            thinkStepEl._timerStart = Date.now();
+            thinkStepEl._timerInterval = setInterval(() => {
+                const el = thinkStepEl.querySelector('.step-label');
+                if (el) el.textContent = 'Thought: ' + (Date.now() - thinkStepEl._timerStart) + 'ms';
+            }, 50);
+        }
         const txt = thinkBlockEl.querySelector('.sp-think-text');
         if (txt) txt.textContent += t;
         if (sidePanelBody) sidePanelBody.scrollTop = sidePanelBody.scrollHeight;
@@ -231,6 +238,11 @@ export function createChat(deps) {
     function finishThinking() {
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
+        if (thinkStepEl && thinkStepEl._timerInterval) {
+            clearInterval(thinkStepEl._timerInterval);
+            const el = thinkStepEl.querySelector('.step-label');
+            if (el) el.textContent = 'Thought: ' + (Date.now() - thinkStepEl._timerStart) + 'ms';
+        }
         thinkBlockEl = null;
         thinkStepEl = null;
     }
