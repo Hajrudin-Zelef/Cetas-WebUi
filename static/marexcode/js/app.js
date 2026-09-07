@@ -753,10 +753,11 @@ async function refreshWorkspaces() {
                 // Activer ce workspace
                 await activateWorkspace(ws.id);
                 window.activeWorkspaceId = ws.id;
+                applyProjectUI(ws.name);
                 refreshWorkspaces();
             });
             refs.workspacesList.appendChild(b);
-            if (ws.active) window.activeWorkspaceId = ws.id;
+            if (ws.active) { window.activeWorkspaceId = ws.id; applyProjectUI(ws.name); }
         }
     } catch (e) {
         refs.workspacesList.innerHTML = '';
@@ -1024,8 +1025,7 @@ function boot() {
     }
 
     refreshSessions();
-    refreshWorkspaces();
-    refreshProjectState();
+    refreshProjectState().then(() => refreshWorkspaces());
     refreshTree();
 }
 
