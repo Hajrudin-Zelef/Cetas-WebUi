@@ -891,9 +891,10 @@ async function refreshTree() {
 function groupByDir(files) {
     const dirs = new Map();
     const roots = [];
+    let nodes = roots;
     for (const f of files) {
         const parts = String(f.path).split('/');
-        let nodes = roots;
+        nodes = roots;
         let acc = '';
         for (let i = 0; i < parts.length - 1; i++) {
             const name = parts[i];
