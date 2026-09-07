@@ -468,6 +468,39 @@ class MarexcodeMixin:
             return {"error": f"Erreur édition: {e}", "code": -1}
         return {"ok": True, "path": rel_path, "replacements": replacements, "additions": additions, "deletions": deletions, "patch": patch}
 
+    # ── Formatters (auto-format après write/edit) ──────────────────────
+
+    _FORMATTERS = {
+        ".py": ["ruff", "format", "--quiet"],
+        ".js": ["prettier", "--write", "--no-error-on-unmatched-pattern"],
+        ".mjs": ["prettier", "--write", "--no-error-on-unmatched-pattern"],
+        ".ts": ["prettier", "--write"],
+        ".jsx": ["prettier", "--write"],
+        ".tsx": ["prettier", "--write"],
+        ".json": ["prettier", "--write"],
+        ".css": ["prettier", "--write"],
+        ".html": ["prettier", "--write"],
+        ".md": ["prettier", "--write"],
+    }
+
+    def _apply_formatter(self, rel_path: str):
+        """Exécute le formatter correspondant à l'extension. Silencieux, non-bloquant."""
+        ext = os.path.splitext(rel_path)[1].lower()
+        cmd = self._FORMATTERS.get(ext)
+        if not cmd:
+            return
+        path = self._resolve_safe_path(rel_path)
+        if not path or not os.path.isfile(path):
+            return
+        try:
+            subprocess.run(
+                cmd + [path],
+                capture_output=True, text=True, timeout=10,
+                cwd=self._exec_root() or ".",
+            )
+        except Exception:
+            pass
+
     def _exec_grep(self, pattern: str, rel_path: str, limit: int = None) -> dict:
         root = self._exec_root()
         if not root:
@@ -583,6 +616,8 @@ class MarexcodeMixin:
             return
         result["tool"] = tool
         result["text"] = format_tool_output(tool, args, result)
+        if tool in ("write", "edit") and result.get("ok"):
+            self._apply_formatter(str(args.get("file_path", "")))
         if "error" in result:
             status = result.get("code", 500) if result.get("code", 500) >= 400 else 500
             self._respond_json({"error": result["error"], "tool": tool}, status)

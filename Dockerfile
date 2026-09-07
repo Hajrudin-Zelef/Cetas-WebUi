@@ -18,6 +18,10 @@ RUN pyright --version && typescript-language-server --version && bash-language-s
 # MCP client for external tool servers (Marexcode Phase 3)
 RUN pip3 install --break-system-packages mcp mcp-server-fetch httpx2
 
+# Formatters for Marexcode Phase 5
+RUN pip3 install --break-system-packages ruff
+RUN npm install -g prettier
+
 # Proxy Python
 COPY server/server.py /app/server.py
 COPY server/marexcode.py /app/marexcode.py
