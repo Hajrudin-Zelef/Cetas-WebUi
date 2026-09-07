@@ -1,4 +1,4 @@
-import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject } from './api.js';
+import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent } from './api.js';
 import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
@@ -552,6 +552,54 @@ function setupUserMenu() {
     });
 }
 
+async function loadSkillsPanel() {
+    const container = document.getElementById('skills-list');
+    if (!container) return;
+    try {
+        const skills = await listSkillsConfig();
+        if (!skills || !skills.length) {
+            container.innerHTML = '<div class="settings-row" style="justify-content:center;color:var(--text-secondary);">Aucun skill trouvé</div>';
+            return;
+        }
+        container.innerHTML = '';
+        for (const skill of skills) {
+            const row = document.createElement('div');
+            row.className = 'settings-row';
+            row.style.cssText = 'flex-wrap:wrap;gap:8px;';
+            row.innerHTML =
+                '<div class="settings-row-text" style="flex:1;min-width:200px;">' +
+                    '<h3>' + esc(skill.name) + '</h3>' +
+                    '<p style="font-size:12px;color:var(--text-secondary);">' + esc(skill.description || '') + '</p>' +
+                '</div>' +
+                '<label style="display:flex;align-items:center;gap:6px;font-size:13px;">' +
+                    '<input type="checkbox" data-skill="' + esc(skill.id) + '" ' + (skill.enabled ? 'checked' : '') + ' style="cursor:pointer;">' +
+                    'Activé' +
+                '</label>' +
+                '<select data-skill-mode="' + esc(skill.id) + '" style="background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;">' +
+                    '<option value="manual"' + (skill.mode === 'manual' ? ' selected' : '') + '>Manuel</option>' +
+                    '<option value="auto"' + (skill.mode === 'auto' ? ' selected' : '') + '>Auto</option>' +
+                    '<option value="on_demand"' + (skill.mode === 'on_demand' ? ' selected' : '') + '>À la demande</option>' +
+                '</select>';
+            container.appendChild(row);
+        }
+        // Save on change
+        container.addEventListener('change', async () => {
+            const config = {};
+            container.querySelectorAll('[data-skill]').forEach(cb => {
+                const id = cb.getAttribute('data-skill');
+                const modeSelect = container.querySelector('[data-skill-mode="' + id + '"]');
+                config[id] = {
+                    enabled: cb.checked,
+                    mode: modeSelect ? modeSelect.value : 'manual'
+                };
+            });
+            try { await saveSkillsConfig(config); } catch (e) { console.error('Erreur sauvegarde skills:', e); }
+        });
+    } catch (e) {
+        container.innerHTML = '<div class="settings-row" style="justify-content:center;color:var(--text-secondary);">Erreur de chargement</div>';
+    }
+}
+
 function fillUserInfo() {
     let username = 'Utilisateur';
     try {
@@ -736,6 +784,7 @@ function setupSettings(router) {
         refs.userMenu.classList.remove('open');
         refs.userBtn.classList.remove('open');
         router.showSettings();
+        loadSkillsPanel();
     });
     refs.setClearAll.addEventListener('click', async () => {
         if (!confirm('Supprimer définitivement toutes vos sessions Marexcode ?')) return;

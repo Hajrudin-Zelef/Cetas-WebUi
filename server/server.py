@@ -1447,6 +1447,14 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             sid = path[len("/api/marexcode/sessions/"):]
             self._marex_sessions_item_get(sid)
             return
+        # Marexcode skills
+        if path == "/api/marexcode/skills":
+            self._skills_list_get()
+            return
+        if path.startswith("/api/marexcode/skills/") and path.endswith("/content"):
+            skill_id = path[len("/api/marexcode/skills/"):-len("/content")]
+            self._skills_content_get(skill_id)
+            return
         # Setup vault (M3)
         if path == "/setup" or path == "/setup/":
             self._serve_setup()
@@ -1510,6 +1518,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             return
         if self.path == "/api/marexcode/project":
             self._marex_project_put()
+            return
+        if self.path == "/api/marexcode/skills/config":
+            self._skills_config_put()
             return
         self.send_response(404)
         self.end_headers()
@@ -1805,6 +1816,125 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             "window_hours": window_hours,
             "events_count": len(events),
         })
+
+    # ── Skills (.opencode/skills/) ──────────────────────────────────────
+
+    def _skills_dir(self):
+        """Retourne le chemin vers .opencode/skills/."""
+        return os.path.join(BASE_DIR, ".opencode", "skills")
+
+    def _skills_config_path(self, username: str):
+        """Chemin du fichier de config skills pour un utilisateur."""
+        user_dir = os.path.join(DATA_DIR, "marexcode", username)
+        os.makedirs(user_dir, exist_ok=True)
+        return os.path.join(user_dir, "skills_config.json")
+
+    def _load_skills_config(self, username: str) -> dict:
+        """Charge la config skills de l'utilisateur, crée si nécessaire."""
+        path = self._skills_config_path(username)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        # Créer config par défaut (tous disabled, mode manual)
+        config = {}
+        skills_dir = self._skills_dir()
+        if os.path.isdir(skills_dir):
+            for name in os.listdir(skills_dir):
+                if os.path.isdir(os.path.join(skills_dir, name)):
+                    config[name] = {"enabled": False, "mode": "manual"}
+        self._save_skills_config(username, config)
+        return config
+
+    def _save_skills_config(self, username: str, config: dict):
+        """Sauvegarde la config skills de l'utilisateur."""
+        path = self._skills_config_path(username)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+
+    def _skills_list_get(self):
+        """GET /api/marexcode/skills — liste les skills disponibles."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        config = self._load_skills_config(username)
+        skills_dir = self._skills_dir()
+        result = []
+        if os.path.isdir(skills_dir):
+            for name in sorted(os.listdir(skills_dir)):
+                skill_dir = os.path.join(skills_dir, name)
+                if not os.path.isdir(skill_dir):
+                    continue
+                # Lire SKILL.md ou premier .md
+                description = ""
+                for fname in os.listdir(skill_dir):
+                    if fname.endswith(".md"):
+                        try:
+                            with open(os.path.join(skill_dir, fname), "r", encoding="utf-8") as f:
+                                content = f.read(1000)
+                            # Extraire description (première ligne non vide après #)
+                            for line in content.split("\n"):
+                                line = line.strip()
+                                if line.startswith("#"):
+                                    continue
+                                if line:
+                                    description = line[:200]
+                                    break
+                        except Exception:
+                            pass
+                        break
+                user_cfg = config.get(name, {"enabled": False, "mode": "manual"})
+                result.append({
+                    "id": name,
+                    "name": name,
+                    "description": description,
+                    "mode": user_cfg.get("mode", "manual"),
+                    "enabled": user_cfg.get("enabled", False),
+                })
+        self._respond_json(result)
+
+    def _skills_config_put(self):
+        """PUT /api/marexcode/skills/config — sauvegarde la config."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_length) if content_length > 0 else b""
+        try:
+            config = json.loads(body)
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        self._save_skills_config(username, config)
+        self._respond_json({"ok": True})
+
+    def _skills_content_get(self, skill_id: str):
+        """GET /api/marexcode/skills/:id/content — contenu du SKILL.md."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        # Sécurité : pas de path traversal
+        if ".." in skill_id or "/" in skill_id:
+            self._error(400, "ID invalide")
+            return
+        skill_dir = os.path.join(self._skills_dir(), skill_id)
+        if not os.path.isdir(skill_dir):
+            self._error(404, "Skill non trouvé")
+            return
+        # Lire SKILL.md ou premier .md
+        for fname in os.listdir(skill_dir):
+            if fname.endswith(".md"):
+                try:
+                    with open(os.path.join(skill_dir, fname), "r", encoding="utf-8") as f:
+                        content = f.read()
+                    self._respond_json({"id": skill_id, "content": content})
+                    return
+                except Exception as e:
+                    self._error(500, f"Erreur lecture: {e}")
+                    return
+        self._error(404, "Pas de fichier .md trouvé")
 
     def _error(self, code: int, msg: str):
         body = json.dumps({"error": msg}).encode()

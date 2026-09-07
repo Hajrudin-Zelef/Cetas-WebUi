@@ -1,5 +1,7 @@
 export const MAREX_TOOLS = (typeof MAREXCODE_TOOLS !== 'undefined') ? MAREXCODE_TOOLS : [];
 
+import { listSkillsConfig } from './api.js';
+
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
         sidePanel, sidePanelBody, sidePanelEmpty, sidePanelSpinner, sidePanelClose } = deps;
@@ -313,7 +315,26 @@ export function createChat(deps) {
 
         const baseSys = 'Tu es Marexcode, un assistant de codage IA professionnel intégré à Cetas. RÈGLE PRIORITAIRE : si la question de l\'utilisateur est générale, conceptuelle, ou ne nécessite pas d\'action sur le workspace (ex: "c\'est quoi JSON", "explique-moi X", question de culture générale ou de discussion) — réponds directement en texte, SANS utiliser aucun outil. N\'utilise Ls/Read/Write/Edit/Grep/Bash/TodoWrite QUE si la tâche demande explicitement de lire, créer, modifier ou analyser des fichiers du workspace. Tu aides l utilisateur à lire, écrire, éditer et analyser du code dans son workspace quand c\'est pertinent. RÈGLES POUR LES TÂCHES DE CODE : 1) Utilise les outils (Ls, Read, Write, Edit, Grep, Bash, TodoWrite) pour accomplir la tâche concrètement, PAS juste expliquer. 2) Utilise Ls pour découvrir la structure du workspace avant de lire des fichiers. 3) Lis ensuite les fichiers concernés avant de proposer des modifications. 4) Après chaque modification, indique le fichier et la ligne. 5) Si une commande échoue, lis l erreur et corrige. 6) Sois concis et cite les chemins exacts. 7) Ne modifie jamais hors sandbox, ne demande jamais sudo. 8) Pour toute tâche à plusieurs étapes : utilise TodoWrite AU DÉBUT pour lister le plan, puis rappelle-le après chaque étape complétée pour mettre à jour les statuts (pending → in_progress → completed). 9) Pour une tâche complexe : analyse → plan (TodoWrite) → exécution → vérification.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
-        const sys = (skill ? skill + '\n\n' : '') + baseSys;
+
+        // Injecter les skills activés
+        let skillsPrompt = '';
+        try {
+            const skillsConfig = await listSkillsConfig();
+            if (skillsConfig && skillsConfig.length) {
+                const autoSkills = skillsConfig.filter(s => s.enabled && s.mode === 'auto');
+                const manualSkills = skillsConfig.filter(s => s.enabled && s.mode === 'manual');
+                if (autoSkills.length) {
+                    skillsPrompt += '\n\nSKILLS DISPONIBLES (utilise automatiquement celui/ceux pertinent(s) pour la requête, sans demander confirmation) :\n' +
+                        autoSkills.map(s => '- ' + s.id + ': ' + s.description).join('\n');
+                }
+                if (manualSkills.length) {
+                    skillsPrompt += '\n\nSKILLS DISPONIBLES SUR DEMANDE (n\'utilise que si l\'utilisateur le mentionne explicitement par son nom) :\n' +
+                        manualSkills.map(s => '- ' + s.id + ': ' + s.description).join('\n');
+                }
+            }
+        } catch (e) { /* ignore skills errors */ }
+
+        const sys = (skill ? skill + '\n\n' : '') + baseSys + skillsPrompt;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
         pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
         todoBlockEl = null; statusEl = null;

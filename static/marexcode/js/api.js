@@ -118,3 +118,17 @@ export async function uploadProjectFolder(fileList) {
     }
     return data;
 }
+
+// ── Skills (.opencode/skills/) ──────────────────────────────────────
+
+export async function listSkillsConfig() {
+    return apiFetch('/api/marexcode/skills');
+}
+
+export async function saveSkillsConfig(config) {
+    return apiFetch('/api/marexcode/skills/config', { method: 'PUT', body: JSON.stringify(config) });
+}
+
+export async function getSkillContent(id) {
+    return apiFetch('/api/marexcode/skills/' + encodeURIComponent(id) + '/content');
+}
