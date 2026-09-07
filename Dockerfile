@@ -12,8 +12,8 @@ RUN npm install -g terser clean-css-cli
 
 # LSP servers for code intelligence (Marexcode Phase 2)
 RUN pip3 install --break-system-packages pyright
-RUN npm install -g typescript-language-server typescript@5
-RUN pyright --version && typescript-language-server --version && tsc --version
+RUN npm install -g typescript-language-server typescript@5 bash-language-server vscode-langservers-extracted
+RUN pyright --version && typescript-language-server --version && bash-language-server --help | head -1
 
 # Proxy Python
 COPY server/server.py /app/server.py
