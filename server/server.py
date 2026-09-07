@@ -18,6 +18,7 @@ import logging
 import importlib.util
 import datetime
 import time
+import uuid
 import threading
 import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -831,6 +832,10 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
         headers[auth["header"]] = f"{prefix}{api_key}"
     for h, v in config.get("extra_headers", {}).items():
         headers[h] = v
+
+    # OpenCode Go requires x-opencode-session header
+    if provider == "opencode-go":
+        headers["x-opencode-session"] = str(uuid.uuid4())
 
     if parsed.scheme == "https":
         conn = http.client.HTTPSConnection(host, port, timeout=300)
