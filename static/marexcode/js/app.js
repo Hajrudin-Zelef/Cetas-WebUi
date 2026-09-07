@@ -937,37 +937,14 @@ async function loadInstructionsPanel() {
 }
 
 async function loadMemoryPanel() {
-    const textarea = document.getElementById('memory-textarea');
-    const saveBtn = document.getElementById('save-memory');
-    const clearBtn = document.getElementById('clear-memory');
+    const enabledToggle = document.getElementById('gen-memory-enabled');
     const captureToggle = document.getElementById('gen-memory-capture');
+    const clearBtn = document.getElementById('clear-memory');
 
-    if (textarea) {
-        try {
-            const data = await getMemory();
-            textarea.value = data.content || '';
-        } catch (e) { textarea.value = ''; }
-    }
-
-    if (saveBtn && textarea) {
-        saveBtn.addEventListener('click', async () => {
-            try {
-                await saveMemory(textarea.value);
-                saveBtn.textContent = '✓ Enregistré';
-                setTimeout(() => { saveBtn.textContent = 'Enregistrer'; }, 2000);
-            } catch (e) { alert('Erreur: ' + (e.message || e)); }
-        });
-    }
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', async () => {
-            if (!confirm('Supprimer la mémoire locale ? Cette action est irréversible.')) return;
-            try {
-                await deleteMemory();
-                if (textarea) textarea.value = '';
-                clearBtn.textContent = '✓ Supprimé';
-                setTimeout(() => { clearBtn.textContent = 'Supprimer la mémoire'; }, 2000);
-            } catch (e) { alert('Erreur: ' + (e.message || e)); }
+    if (enabledToggle) {
+        enabledToggle.checked = localStorage.getItem('marex-memory-enabled') !== '0';
+        enabledToggle.addEventListener('change', () => {
+            localStorage.setItem('marex-memory-enabled', enabledToggle.checked ? '1' : '0');
         });
     }
 
@@ -975,6 +952,17 @@ async function loadMemoryPanel() {
         captureToggle.checked = localStorage.getItem('marex-memory-capture') !== '0';
         captureToggle.addEventListener('change', () => {
             localStorage.setItem('marex-memory-capture', captureToggle.checked ? '1' : '0');
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', async () => {
+            if (!confirm('Supprimer tous les éléments de mémoire stockés ?')) return;
+            try {
+                await deleteMemory();
+                clearBtn.textContent = '✓ Supprimé';
+                setTimeout(() => { clearBtn.textContent = 'Supprimer'; }, 2000);
+            } catch (e) { alert('Erreur: ' + (e.message || e)); }
         });
     }
 }

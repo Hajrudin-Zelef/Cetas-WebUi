@@ -200,29 +200,34 @@
             </div>
           </div>
 
-          <div class="settings-group-label">Mémoire locale</div>
-          <div class="settings-card">
-            <div class="settings-row" style="flex-direction:column;gap:8px;">
-              <p style="font-size:12px;color:#8b949e;">Mémoire dynamique générée par l'agent. Stocke des faits, conventions et patterns entre sessions pour un même workspace.</p>
-              <textarea id="memory-textarea" rows="8" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <button class="settings-btn" id="save-memory">Enregistrer</button>
-                <button class="settings-btn danger" id="clear-memory">Supprimer la mémoire</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-group-label">Mémoire depuis outils</div>
+          <div class="settings-group-label">Mémoire</div>
           <div class="settings-card">
             <div class="settings-row">
               <div class="settings-row-text">
-                <h3>Capturer les patterns</h3>
-                <p>L'agent peut ajouter des entrées à la mémoire locale quand il détecte des patterns récurrents (Bash, Read, Edit).</p>
+                <h3>Activer la mémoire locale</h3>
+                <p>Générer une mémoire à partir des chats lancés sur cet ordinateur et l'utiliser pour personnaliser les conversations que vous aurez ici ultérieurement.</p>
+              </div>
+              <label class="settings-toggle">
+                <input type="checkbox" id="gen-memory-enabled" checked>
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Autoriser la génération locale de mémoire à partir des chats assistés par des outils</h3>
+                <p>Générer des éléments de mémoire à partir des chats ayant utilisé des outils MCP ou la Recherche sur le Web.</p>
               </div>
               <label class="settings-toggle">
                 <input type="checkbox" id="gen-memory-capture" checked>
                 <span class="settings-toggle-slider"></span>
               </label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text">
+                <h3>Supprimer la mémoire locale</h3>
+                <p>Supprimer tous les éléments de mémoire stockés sur cet ordinateur.</p>
+              </div>
+              <button class="settings-btn danger" id="clear-memory">Supprimer</button>
             </div>
           </div>
         </div>
