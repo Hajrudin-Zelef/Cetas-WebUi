@@ -569,7 +569,7 @@ async function loadSkillsPanel() {
             row.innerHTML =
                 '<div class="settings-row-text" style="flex:1;min-width:200px;">' +
                     '<h3>' + esc(skill.name) + '</h3>' +
-                    '<p style="font-size:12px;color:var(--text-secondary);">' + esc(skill.description || '') + '</p>' +
+                    '<p style="font-size:12px;color:#8b949e;">' + esc(skill.description || '') + '</p>' +
                 '</div>' +
                 '<label style="display:flex;align-items:center;gap:6px;font-size:13px;">' +
                     '<input type="checkbox" data-skill="' + esc(skill.id) + '" ' + (skill.enabled ? 'checked' : '') + ' style="cursor:pointer;">' +

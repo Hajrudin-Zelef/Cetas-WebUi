@@ -1884,20 +1884,35 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             return
         config = self._load_skills_config(username)
         skills_dir = self._skills_dir()
+        ALLOWED_SKILLS = {
+            "code-review", "code-reviewer", "code-review-change-size", "code-review-context",
+            "code-review-testing", "code-breaking-changes", "codebase-design", "diagnosing-bugs",
+            "investigate-first", "safe-refactor", "resolving-merge-conflicts", "setup-pre-commit",
+            "test-driven-development", "verification-before-completion", "verify-and-stop",
+            "migration", "dev", "research", "writing-plans", "python-sdk", "javascript-sdk",
+            "webapp-testing", "remote-tests", "frontend-design", "design-system", "ui-styling",
+            "minimalist-ui", "svg-animations", "pdf", "xlsx",
+            "deploy-to-vercel", "vercel-cli-with-tokens", "vercel-optimize", "vercel-react-best-practices",
+            "supabase", "supabase-postgres-best-practices", "mcp-builder", "mcp-integration",
+            "web-search", "web-artifacts-builder", "copywriting", "social", "pricing",
+            "caveman", "caveman-commit", "caveman-compress", "caveman-discover",
+            "caveman-evidence-review", "caveman-explore", "caveman-help", "caveman-learn",
+            "caveman-manage", "caveman-optimize", "caveman-review", "caveman-setup",
+        }
         result = []
         if os.path.isdir(skills_dir):
             for name in sorted(os.listdir(skills_dir)):
+                if name not in ALLOWED_SKILLS:
+                    continue
                 skill_dir = os.path.join(skills_dir, name)
                 if not os.path.isdir(skill_dir):
                     continue
-                # Lire SKILL.md ou premier .md
                 description = ""
                 for fname in os.listdir(skill_dir):
                     if fname.endswith(".md"):
                         try:
                             with open(os.path.join(skill_dir, fname), "r", encoding="utf-8") as f:
                                 content = f.read(1000)
-                            # Extraire description (première ligne non vide après #)
                             for line in content.split("\n"):
                                 line = line.strip()
                                 if line.startswith("#"):
