@@ -1839,14 +1839,17 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             except Exception:
                 pass
         # Défauts pour Marexcode
+        AUTO_SKILLS = {
+            "code-review", "code-reviewer", "diagnosing-bugs", "safe-refactor",
+            "investigate-first", "verification-before-completion", "test-driven-development",
+            "codebase-design", "resolving-merge-conflicts", "setup-pre-commit",
+        }
         MANUAL_SKILLS = {
-            "code-review", "code-reviewer", "code-review-change-size", "code-review-context",
-            "code-review-testing", "code-breaking-changes", "codebase-design", "diagnosing-bugs",
-            "investigate-first", "safe-refactor", "resolving-merge-conflicts", "setup-pre-commit",
-            "test-driven-development", "verification-before-completion", "verify-and-stop",
-            "migration", "dev", "research", "writing-plans", "python-sdk", "javascript-sdk",
-            "webapp-testing", "remote-tests", "frontend-design", "design-system", "ui-styling",
-            "minimalist-ui", "svg-animations", "pdf", "xlsx",
+            "code-review-change-size", "code-review-context", "code-review-testing",
+            "code-breaking-changes", "migration", "dev", "research", "writing-plans",
+            "python-sdk", "javascript-sdk", "webapp-testing", "remote-tests",
+            "frontend-design", "design-system", "ui-styling", "minimalist-ui",
+            "svg-animations", "pdf", "xlsx",
             "caveman", "caveman-commit", "caveman-compress", "caveman-discover",
             "caveman-evidence-review", "caveman-explore", "caveman-help", "caveman-learn",
             "caveman-manage", "caveman-optimize", "caveman-review", "caveman-setup",
@@ -1862,7 +1865,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             for name in os.listdir(skills_dir):
                 if not os.path.isdir(os.path.join(skills_dir, name)):
                     continue
-                if name in MANUAL_SKILLS:
+                if name in AUTO_SKILLS:
+                    config[name] = {"enabled": True, "mode": "auto"}
+                elif name in MANUAL_SKILLS:
                     config[name] = {"enabled": True, "mode": "manual"}
                 elif name in ON_DEMAND_SKILLS:
                     config[name] = {"enabled": True, "mode": "on_demand"}
