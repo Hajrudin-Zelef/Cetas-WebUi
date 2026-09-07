@@ -94,3 +94,80 @@ Example:
 > Caveman resumes. Verify backup first.
 
 **Boundaries:** anything persisted outside chat (code, comments, commits, docs, issues/PRs/tickets/bug reports, memory files, third-party messages) = normal prose, always. "stop caveman"/"normal mode" reverts. Level persists until changed or session ends.
+
+## 7. Project Context
+
+### Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | Vanilla JS (ES modules), no framework, SSI partials |
+| Backend | Python stdlib HTTP server (`server/server.py` + `server/marexcode.py`) |
+| Reverse proxy | Nginx (SSI on, gzip, rate-limit) |
+| Containerization | Docker Compose (`cetas` + `searxng`) |
+| Crypto | AES-256-GCM + Scrypt KDF (`core/linux/crypto_linux.py`) |
+| Auth | JWT HS256 (24h), scrypt password hashing |
+
+### Testing Commands
+
+```bash
+# Frontend (node --test)
+node --test static/js/tests/router.test.mjs
+node --test static/js/tests/static-paths.test.mjs
+node --test static/js/tests/marexcode-structure.test.mjs
+node --test static/js/tests/marex-permission.test.mjs
+node --test static/js/tests/chat-structure.test.mjs
+node --test static/js/tests/canvas-structure.test.mjs
+node --test static/js/tests/model-select-structure.test.mjs
+node --test static/js/tests/prompt-toolbar-structure.test.mjs
+node --test static/js/tests/logs-events.test.mjs
+
+# Validate pools ↔ catalog
+node static/js/tests/validate-pools.mjs
+
+# Backend (pytest)
+pytest server/tests/
+```
+
+### Build & Deploy
+
+```bash
+# Docker
+docker compose build cetas
+docker compose up -d
+docker compose restart cetas
+docker compose logs --tail=20 cetas
+
+# Health check
+curl -s http://localhost:8901/api/health
+
+# CSS build (concatenation)
+# variables.css + layout.css + chat.css + marexcode.css + components.css + canvas.css + catalog.css + storage.css + menu.css → style.css
+```
+
+### Key File Locations
+
+| What | Where |
+|------|-------|
+| Backend entry | `server/server.py` |
+| Backend Marexcode | `server/marexcode.py` |
+| Frontend entry | `static/index.html` |
+| SPA core | `static/js/core/app.js` |
+| Model catalog | `static/js/data/models.js` |
+| Marexcode page | `static/marexcode/` |
+| Tests frontend | `static/js/tests/` |
+| Tests backend | `server/tests/` |
+| CSS concat source | `static/css/base/`, `static/css/features/`, `static/css/components/` |
+| Docker config | `docker-compose.yml`, `Dockerfile` |
+| Nginx config | `nginx.conf` |
+| Env vars | `.env.docker` (Docker), `.env` (encrypted keys) |
+
+### Conventions
+
+- **No comments** in code unless explicitly requested.
+- **ES modules** — all frontend JS uses `import`/`export`.
+- **Factory pattern** for UI: `createChat`, `createCanvas`, `createModelSelect`, `createPromptToolbar`.
+- **SSI** — HTML split into `partials/` and `components/`, assembled by nginx.
+- **Tests**: structural tests (`*-structure.test.mjs`) validate module exports/API without rendering. Run with `node --test`.
+- **CSS**: source files in `static/css/`, concatenated to `style.css` at build. Don't edit `style.css` directly.
+- **Marexcode standalone**: `static/marexcode/` is a separate page (not SPA). Loads CETAS globals from `static/js/`.

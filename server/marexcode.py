@@ -30,6 +30,7 @@ import os
 import json
 import logging
 import subprocess
+import fnmatch
 
 log = logging.getLogger(__name__)
 
@@ -87,6 +88,12 @@ def format_tool_output(tool: str, args: dict, result: dict) -> str:
     if tool == "ls":
         files = result.get("files", [])
         lines = ["Found %s files" % len(files)] + [e.get("path", "") for e in files]
+        return "\n".join(lines)
+    if tool == "glob":
+        files = result.get("files", [])
+        if not files:
+            return "No files matching pattern: %s" % result.get("pattern", "?")
+        lines = ["Found %s files matching '%s'" % (len(files), result.get("pattern", "?"))] + [e.get("path", "") for e in files]
         return "\n".join(lines)
     return ""
 
@@ -368,7 +375,7 @@ class MarexcodeMixin:
             with open(path, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read()
         except FileNotFoundError:
-            return {"error": f"Fichier introuvable: {rel_path}", "code": 404}
+            return {"error": f"Fichier introuvable: {rel_path}. Utilise Glob pour trouver le bon chemin.", "code": 404}
         except IsADirectoryError:
             return {"error": f"Est un dossier: {rel_path}", "code": 400}
         except Exception as e:
@@ -452,16 +459,37 @@ class MarexcodeMixin:
         return {"ok": True, "path": rel_path, "replacements": replacements, "additions": additions, "deletions": deletions, "patch": patch}
 
     def _exec_grep(self, pattern: str, rel_path: str, limit: int = None) -> dict:
-        path = self._resolve_safe_path(rel_path or ".")
-        if not path:
-            return {"error": "Chemin hors sandbox", "code": 403}
         root = self._exec_root()
         if not root:
             return {"error": "Sandbox non initialisée", "code": 500}
+        has_glob = bool(rel_path) and any(c in rel_path for c in "*?[")
+        if has_glob:
+            resolved_paths = []
+            for dirpath, dirnames, filenames in os.walk(root):
+                dirnames[:] = [d for d in dirnames if not d.startswith(".")
+                               and d not in ("node_modules", ".git")]
+                for fn in filenames:
+                    if fn.startswith("."):
+                        continue
+                    full = os.path.join(dirpath, fn)
+                    rel = os.path.relpath(full, root)
+                    if fnmatch.fnmatch(rel, rel_path):
+                        resolved_paths.append(full)
+            if not resolved_paths:
+                return {"stdout": "", "code": 1, "matches": 0, "limit_applied": limit}
+            search_paths = resolved_paths
+        else:
+            path = self._resolve_safe_path(rel_path or ".")
+            if not path:
+                return {"error": "Chemin hors sandbox", "code": 403}
+            search_paths = [path]
         try:
-            cmd = ["grep", "-rn", "--color=never", "--binary-files=without-match", "--exclude-dir=__pycache__", "--exclude-dir=.git", pattern, path]
+            cmd = ["grep", "-rn", "--color=never", "--binary-files=without-match",
+                   "--exclude-dir=__pycache__", "--exclude-dir=.git", pattern] + search_paths
             if limit:
-                cmd = ["grep", "-rn", "-m", str(limit), "--color=never", "--binary-files=without-match", "--exclude-dir=__pycache__", "--exclude-dir=.git", pattern, path]
+                cmd = ["grep", "-rn", "-m", str(limit), "--color=never",
+                       "--binary-files=without-match", "--exclude-dir=__pycache__",
+                       "--exclude-dir=.git", pattern] + search_paths
             proc = subprocess.run(
                 cmd,
                 capture_output=True,
@@ -474,10 +502,29 @@ class MarexcodeMixin:
             return {"error": f"Erreur grep: {e}", "code": -1}
         
         stdout = proc.stdout[:EXEC_MAX_OUTPUT]
-        # Compter les matches
         matches = len([line for line in stdout.split('\n') if line.strip()])
         
         return {"stdout": stdout, "code": proc.returncode, "matches": matches, "limit_applied": limit}
+
+    def _exec_glob(self, pattern: str) -> dict:
+        root = self._exec_root()
+        if not root:
+            return {"error": "Sandbox non initialisée", "code": 500}
+        if not pattern:
+            return {"error": "Pattern vide", "code": 400}
+        matches = []
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")
+                           and d not in ("node_modules", ".git")]
+            for fn in filenames:
+                if fn.startswith("."):
+                    continue
+                full = os.path.join(dirpath, fn)
+                rel = os.path.relpath(full, root)
+                if fnmatch.fnmatch(rel, pattern) or fnmatch.fnmatch(fn, pattern):
+                    matches.append({"path": rel, "size": os.path.getsize(full)})
+        matches.sort(key=lambda e: e["path"])
+        return {"files": matches, "count": len(matches), "pattern": pattern}
 
     # ── Endpoint POST /api/exec ────────────────────────────────────────
 
@@ -516,6 +563,8 @@ class MarexcodeMixin:
                 result = self._exec_grep(str(args.get("pattern", "")), str(args.get("path", "")), args.get("limit"))
             elif tool == "ls":
                 result = {"files": self._marex_tree()}
+            elif tool == "glob":
+                result = self._exec_glob(str(args.get("pattern", "")))
             else:
                 self._respond_json({"error": f"Outil inconnu: {tool}"}, 400)
                 return
