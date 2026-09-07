@@ -15,13 +15,13 @@ import os
 import json
 import logging
 import asyncio
+import threading
 from contextlib import AsyncExitStack
 
 log = logging.getLogger(__name__)
 
 
 def _load_mcp_config(workspace_root: str) -> dict:
-    """Charge mcp.json depuis le workspace."""
     path = os.path.join(workspace_root, "mcp.json")
     if os.path.isfile(path):
         try:
@@ -30,6 +30,41 @@ def _load_mcp_config(workspace_root: str) -> dict:
         except Exception as e:
             log.warning("Failed to load mcp.json: %s", e)
     return {"mcp": {}}
+
+
+class _AsyncLoop:
+    """Persistent event loop running in a background thread."""
+
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        with cls._lock:
+            if cls._instance is None:
+                inst = super().__new__(cls)
+                inst._loop = asyncio.new_event_loop()
+                inst._thread = threading.Thread(target=inst._run, daemon=True)
+                inst._thread.start()
+                cls._instance = inst
+            return cls._instance
+
+    def _run(self):
+        asyncio.set_event_loop(self._loop)
+        self._loop.run_forever()
+
+    def run(self, coro):
+        future = asyncio.run_coroutine_threadsafe(coro, self._loop)
+        return future.result(timeout=30)
+
+
+_loop = None
+
+
+def _get_loop():
+    global _loop
+    if _loop is None:
+        _loop = _AsyncLoop()
+    return _loop
 
 
 class MCPServerConnection:
@@ -51,7 +86,7 @@ class MCPServerConnection:
             return "sse"
         return "http"
 
-    async def connect(self):
+    async def _connect(self):
         if self.connected:
             return True
         try:
@@ -74,10 +109,19 @@ class MCPServerConnection:
                 headers = self.config.get("headers", {})
                 result = await self._stack.enter_async_context(sse_client(url=url, headers=headers))
             else:
-                from mcp.client.streamable_http import streamablehttp_client
+                from mcp.client.streamable_http import streamable_http_client
+                import httpx2
                 url = self.config.get("url", "")
                 headers = self.config.get("headers", {})
-                result = await self._stack.enter_async_context(streamablehttp_client(url=url, headers=headers))
+                http_client = httpx2.AsyncClient(headers=headers) if headers else None
+                try:
+                    result = await self._stack.enter_async_context(
+                        streamable_http_client(url=url, http_client=http_client)
+                    )
+                except Exception:
+                    if http_client:
+                        await http_client.aclose()
+                    raise
 
             if len(result) == 2:
                 read, write = result
@@ -105,10 +149,10 @@ class MCPServerConnection:
             return True
         except Exception as e:
             log.error("MCP connect failed for %s: %s", self.name, e)
-            await self.disconnect()
+            await self._disconnect()
             return False
 
-    async def disconnect(self):
+    async def _disconnect(self):
         if self._stack:
             try:
                 await self._stack.__aexit__(None, None, None)
@@ -119,14 +163,14 @@ class MCPServerConnection:
         self._tools = []
         self.connected = False
 
-    async def list_tools(self) -> list:
+    async def _list_tools(self) -> list:
         if not self.connected:
-            await self.connect()
+            await self._connect()
         return self._tools
 
-    async def call_tool(self, tool_name: str, arguments: dict) -> dict:
+    async def _call_tool(self, tool_name: str, arguments: dict) -> dict:
         if not self.connected:
-            ok = await self.connect()
+            ok = await self._connect()
             if not ok:
                 return {"error": "Failed to connect to MCP server: %s" % self.name}
         try:
@@ -141,7 +185,23 @@ class MCPServerConnection:
                     contents.append({"type": "text", "text": str(item)})
             return {"content": contents, "isError": getattr(result, 'isError', False)}
         except Exception as e:
+            self.connected = False
             return {"error": "MCP tool call failed: %s" % e}
+
+    def list_tools(self) -> list:
+        loop = _get_loop()
+        return loop.run(self._list_tools())
+
+    def call_tool(self, tool_name: str, arguments: dict) -> dict:
+        loop = _get_loop()
+        return loop.run(self._call_tool(tool_name, arguments))
+
+    def disconnect(self):
+        loop = _get_loop()
+        try:
+            loop.run(self._disconnect())
+        except Exception:
+            pass
 
 
 class MCPManager:
@@ -171,14 +231,14 @@ class MCPManager:
         self._ensure_config()
         servers = []
         for name, cfg in self._config.get("mcp", {}).items():
-            conn = self._connections.get(name)
+            conn = self._get_connection(name, cfg)
             servers.append({
                 "name": name,
                 "type": cfg.get("type", "http" if "url" in cfg else "stdio"),
                 "command": cfg.get("command"),
                 "url": cfg.get("url"),
-                "connected": conn.connected if conn else False,
-                "tools_count": len(conn._tools) if conn else 0,
+                "connected": conn.connected,
+                "tools_count": len(conn._tools),
             })
         return servers
 
@@ -189,8 +249,7 @@ class MCPManager:
             return []
         conn = self._get_connection(server_name, cfg)
         try:
-            tools = asyncio.run(conn.list_tools())
-            return tools
+            return conn.list_tools()
         except Exception as e:
             log.error("MCP list_tools failed for %s: %s", server_name, e)
             return []
@@ -202,18 +261,17 @@ class MCPManager:
             return {"error": "Server not found: %s" % server_name}
         conn = self._get_connection(server_name, cfg)
         try:
-            return asyncio.run(conn.call_tool(tool_name, arguments))
+            return conn.call_tool(tool_name, arguments)
         except Exception as e:
             return {"error": "MCP call failed: %s" % e}
 
     def get_all_tools(self) -> list:
-        """Returns all tools from all connected MCP servers (for agent injection)."""
         self._ensure_config()
         all_tools = []
         for name, cfg in self._config.get("mcp", {}).items():
             conn = self._get_connection(name, cfg)
             try:
-                tools = asyncio.run(conn.list_tools())
+                tools = conn.list_tools()
                 for tool in tools:
                     all_tools.append({
                         "server": name,
@@ -232,8 +290,5 @@ class MCPManager:
 
     def shutdown(self):
         for conn in self._connections.values():
-            try:
-                asyncio.run(conn.disconnect())
-            except Exception:
-                pass
+            conn.disconnect()
         self._connections.clear()
