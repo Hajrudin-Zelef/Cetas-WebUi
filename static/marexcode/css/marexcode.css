@@ -320,6 +320,17 @@ html,body{
 }
 .sb-hist-item:hover .sb-hist-del{ display:block; }
 .sb-hist-item .sb-hist-del:hover{ color:var(--danger); background:#2a2a2e; }
+.sb-hist-item .sb-hist-archive{
+  flex-shrink:0;
+  display:none;
+  color:var(--text-tertiary);
+  padding:2px;
+  border-radius:4px;
+  opacity:0.6;
+  cursor:pointer;
+}
+.sb-hist-item:hover .sb-hist-archive{ display:block; }
+.sb-hist-item .sb-hist-archive:hover{ opacity:1; background:#2a2a2e; }
 .sb-hist-item:hover{ background:#1c1c1f; }
 .sb-hist-item.active{ background:#2a2a2e; color:var(--text-primary); }
 

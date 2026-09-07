@@ -83,10 +83,13 @@ const refs = {
     sidePanelBody: $('side-panel-body'),
     sidePanelEmpty: $('side-panel-empty'),
     sidePanelSpinner: $('side-panel-spinner'),
-    sidePanelClose: $('side-panel-close')
+    sidePanelClose: $('side-panel-close'),
+    btnArchivedChats: $('btn-archived-chats'),
+    btnSuggestions: $('btn-suggestions')
 };
 
 let currentSessionId = null;
+let showingArchived = false;
 let activeProjectName = 'Marexcode (serveur)';
 
 function esc(s) {
@@ -496,6 +499,27 @@ function setupUserMenu() {
             refs.userBtn.classList.remove('open');
         }
     });
+    refs.btnArchivedChats?.addEventListener('click', () => {
+        showingArchived = !showingArchived;
+        refs.userMenu.classList.remove('open');
+        refs.userBtn.classList.remove('open');
+        refreshSessions();
+    });
+    const SUGGESTED_PROMPTS = [
+        "Liste les fichiers du workspace",
+        "Explique-moi la structure de ce projet",
+        "Crée un fichier README.md pour ce projet",
+        "Trouve les bugs potentiels dans mon code",
+        "Ajoute des commentaires à mon code"
+    ];
+    refs.btnSuggestions?.addEventListener('click', () => {
+        refs.userMenu.classList.remove('open');
+        refs.userBtn.classList.remove('open');
+        const idx = Math.floor(Math.random() * SUGGESTED_PROMPTS.length);
+        refs.ta.value = SUGGESTED_PROMPTS[idx];
+        refs.ta.dispatchEvent(new Event('input'));
+        refs.ta.focus();
+    });
 }
 
 function fillUserInfo() {
@@ -516,7 +540,9 @@ function esc2(s) { return esc(s); }
 async function refreshSessions() {
     try {
         const list = await listSessions();
-        const sorted = list.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        const sorted = list.slice()
+            .filter(s => showingArchived ? s.archived : !s.archived)
+            .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         refs.sessionsList.innerHTML = '';
         refs.sessionsEmpty.style.display = sorted.length ? 'none' : 'block';
 
@@ -538,10 +564,19 @@ async function refreshSessions() {
                 b.className = 'sb-hist-item' + (s.id === currentSessionId ? ' active' : '');
                 b.title = s.title || '';
                 b.innerHTML = '<span class="sb-hist-label">' + esc2(s.title || 'Sans titre') + '</span>' +
+                    '<span class="sb-hist-archive" title="' + (showingArchived ? 'Désarchiver' : 'Archiver') + '" role="button">' +
+                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg>' +
+                    '</span>' +
                     '<span class="sb-hist-del" title="Supprimer" role="button">' +
                     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
                     '</span>';
                 b.addEventListener('click', (e) => {
+                    if (e.target.closest('.sb-hist-archive')) {
+                        e.stopPropagation();
+                        s.archived = !s.archived;
+                        apiSaveSession(s).then(() => refreshSessions()).catch(() => refreshSessions());
+                        return;
+                    }
                     if (e.target.closest('.sb-hist-del')) {
                         e.stopPropagation();
                         if (confirm('Supprimer cette session ?')) {
