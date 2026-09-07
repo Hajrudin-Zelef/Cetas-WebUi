@@ -880,18 +880,67 @@ async function refreshTree() {
         refs.workspaceTree.innerHTML = '';
         refs.workspaceEmpty.style.display = files.length ? 'none' : 'block';
         refs.workspaceEmpty.textContent = files.length ? '' : 'Aucun fichier dans le workspace.';
-        for (const f of files) {
-            const b = document.createElement('button');
-            b.className = 'sb-tree-item';
-            b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>' +
-                '<span>' + esc(f.path) + '</span>';
-            b.title = f.path;
-            b.addEventListener('click', () => openFileViewer(f.path));
-            refs.workspaceTree.appendChild(b);
-        }
+        appendTreeLevel(refs.workspaceTree, groupByDir(files), 0);
     } catch (e) {
         refs.workspaceEmpty.style.display = 'block';
         refs.workspaceEmpty.textContent = 'Erreur chargement du workspace.';
+    }
+}
+
+function groupByDir(files) {
+    const dirs = new Map();
+    const roots = [];
+    for (const f of files) {
+        const parts = String(f.path).split('/');
+        let nodes = roots;
+        let acc = '';
+        for (let i = 0; i < parts.length - 1; i++) {
+            const name = parts[i];
+            acc = acc ? acc + '/' + name : name;
+            if (!dirs.has(acc)) {
+                const node = { type: 'dir', name, path: acc, children: [] };
+                dirs.set(acc, node);
+                nodes.push(node);
+            }
+            nodes = dirs.get(acc).children;
+        }
+        nodes.push({ type: 'file', name: parts[parts.length - 1], path: f.path, size: f.size });
+    }
+    return nodes;
+}
+
+function appendTreeLevel(container, nodes, depth) {
+    nodes.sort((a, b) => (a.type === b.type) ? a.name.localeCompare(b.name) : (a.type === 'dir' ? -1 : 1));
+    for (const n of nodes) {
+        if (n.type === 'dir') {
+            const row = document.createElement('button');
+            row.className = 'sb-tree-item sb-tree-dir';
+            row.style.paddingLeft = (8 + depth * 12) + 'px';
+            row.innerHTML = '<span class="sb-hist-chev open"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>' +
+                '<span>' + esc(n.name) + '</span>';
+            const sub = document.createElement('div');
+            sub.className = 'sb-tree-sub';
+            row.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const chev = row.querySelector('.sb-hist-chev');
+                const collapsed = sub.classList.toggle('collapsed');
+                chev.classList.toggle('open', !collapsed);
+            });
+            container.appendChild(row);
+            container.appendChild(sub);
+            appendTreeLevel(sub, n.children, depth + 1);
+        } else {
+            const b = document.createElement('button');
+            b.className = 'sb-tree-item';
+            b.style.paddingLeft = (8 + depth * 12) + 'px';
+            b.innerHTML = '<span class="sb-tree-leaf-spacer"></span>' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>' +
+                '<span>' + esc(n.name) + '</span>';
+            b.title = n.path;
+            b.addEventListener('click', () => openFileViewer(n.path));
+            container.appendChild(b);
+        }
     }
 }
 

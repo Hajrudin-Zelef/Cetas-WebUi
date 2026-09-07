@@ -360,6 +360,10 @@ html,body{
 .sb-hist-chev.open{ transform:rotate(0deg); }
 .sb-ws-tree{ margin-left:14px; }
 .sb-ws-tree .sb-tree-item{ width:100%; }
+.sb-tree-sub.collapsed{ display:none; }
+.sb-tree-dir{ cursor:pointer; }
+.sb-tree-leaf-spacer{ width:12px; display:inline-block; flex-shrink:0; }
+.sb-tree-item svg{ flex-shrink:0; }
 .sb-hist-item:hover{ background:#1c1c1f; }
 .sb-hist-item.active{ background:#2a2a2e; color:var(--text-primary); }
 
