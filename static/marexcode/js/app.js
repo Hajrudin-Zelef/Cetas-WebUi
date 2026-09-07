@@ -458,7 +458,7 @@ function setupCdrops() {
         });
     }
     document.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.tool-perm-select') || e.target.closest('.tool-perm-row') || e.target.closest('#menu-model') || e.target.closest('#menu-plus')) return;
+        if (e.target.closest('.tool-perm-select') || e.target.closest('.tool-perm-row') || e.target.closest('#menu-model') || e.target.closest('#menu-plus') || e.target.closest('#menu-workspace')) return;
         const inside = allCdrops.some(c => {
             const wrap = $(c.wrap);
             return wrap && wrap.contains(e.target);
