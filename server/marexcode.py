@@ -360,7 +360,7 @@ class MarexcodeMixin:
 
     # ── Outils fichiers ────────────────────────────────────────────────
 
-    def _exec_read(self, rel_path: str, offset: int = None, limit: int = None) -> dict:
+    def _exec_read(self, rel_path: str, offset=None, limit=None) -> dict:
         path = self._resolve_safe_path(rel_path)
         if not path:
             return {"error": "Chemin hors sandbox", "code": 403}
@@ -378,8 +378,18 @@ class MarexcodeMixin:
         lines = content.split('\n')
         total_lines = len(lines)
         
+        # Convertir offset/limit en int (peuvent arriver comme strings du JSON)
+        try:
+            offset = int(offset) if offset is not None else None
+        except (TypeError, ValueError):
+            offset = None
+        try:
+            limit = int(limit) if limit is not None else None
+        except (TypeError, ValueError):
+            limit = None
+
         if offset is not None or limit is not None:
-            start = (offset - 1) if offset and offset > 0 else 0
+            start = max(0, (offset - 1)) if offset and offset > 0 else 0
             end = (start + limit) if limit else total_lines
             lines_read = lines[start:end]
             content = '\n'.join(lines_read)
