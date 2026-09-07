@@ -888,22 +888,29 @@ async function refreshTree() {
     }
 }
 
-function getFileIconSvg(filename) {
+function getFileIcon(filename) {
     const ext = filename.includes('.') ? filename.split('.').pop().toLowerCase() : '';
     const base = filename.toLowerCase();
-    const colors = {
-        py: '#3776ab', js: '#f0db4f', ts: '#3178c6', jsx: '#61dafb', tsx: '#61dafb',
-        json: '#f0c040', yml: '#cb171e', yaml: '#cb171e', md: '#8b949e',
-        env: '#8b949e', sh: '#4eaa25', html: '#e34c26', css: '#563d7c',
-        log: '#6a737d', service: '#6a737d', txt: '#8b949e', git: '#f05033',
-        dockerfile: '#2496ed', gitignore: '#f05033', example: '#8b949e',
+    const map = {
+        py: { icon: '🐍', color: '#3776ab' },
+        js: { icon: 'JS', color: '#f7df1e' },
+        ts: { icon: 'TS', color: '#3178c6' },
+        json: { icon: '{}', color: '#f0c040' },
+        yml: { icon: '⚙', color: '#cb171e' },
+        yaml: { icon: '⚙', color: '#cb171e' },
+        md: { icon: '📄', color: '#8b949e' },
+        env: { icon: '⚙', color: '#8b949e' },
+        sh: { icon: '$', color: '#4eaa25' },
+        html: { icon: '</>', color: '#e34c26' },
+        css: { icon: '#', color: '#563d7c' },
+        log: { icon: '≡', color: '#6a737d' },
+        service: { icon: '≡', color: '#6a737d' },
+        dockerfile: { icon: '🐳', color: '#2496ed' },
     };
-    let key = ext;
-    if (base === 'dockerfile') key = 'dockerfile';
-    if (base.startsWith('.env')) key = 'env';
-    if (base === '.gitignore') key = 'gitignore';
-    const color = colors[key] || '#8b949e';
-    return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg>';
+    if (base === 'dockerfile') return map.dockerfile;
+    if (base.startsWith('.env')) return map.env;
+    if (base === '.gitignore') return { icon: '≡', color: '#f05033' };
+    return map[ext] || { icon: '📄', color: '#8b949e' };
 }
 
 function groupByDir(files) {
@@ -954,8 +961,9 @@ function appendTreeLevel(container, nodes, depth) {
             const b = document.createElement('button');
             b.className = 'sb-tree-item';
             b.style.paddingLeft = (8 + depth * 12) + 'px';
+            const fi = getFileIcon(n.name);
             b.innerHTML = '<span class="sb-tree-leaf-spacer"></span>' +
-                getFileIconSvg(n.name) +
+                '<span class="sb-tree-file-icon" style="color:' + fi.color + '">' + esc(fi.icon) + '</span>' +
                 '<span>' + esc(n.name) + '</span>';
             b.title = n.path;
             b.addEventListener('click', () => openFileViewer(n.path));

@@ -363,6 +363,7 @@ html,body{
 .sb-tree-sub.collapsed{ display:none; }
 .sb-tree-dir{ cursor:pointer; }
 .sb-tree-leaf-spacer{ width:12px; display:inline-block; flex-shrink:0; }
+.sb-tree-file-icon{ font-size:12px; width:16px; text-align:center; flex-shrink:0; font-weight:600; }
 .sb-tree-item svg{ flex-shrink:0; }
 .sb-hist-item:hover{ background:#1c1c1f; }
 .sb-hist-item.active{ background:#2a2a2e; color:var(--text-primary); }
