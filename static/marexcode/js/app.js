@@ -567,6 +567,60 @@ function fillUserInfo() {
 // ── Sessions (groupées par projet, façon "Projets" de Codex) ──
 function esc2(s) { return esc(s); }
 
+function buildSessionItem(s) {
+    const b = document.createElement('button');
+    b.className = 'sb-hist-item' + (s.id === currentSessionId ? ' active' : '');
+    b.title = s.title || '';
+    b.innerHTML = '<span class="sb-hist-label">' + esc2(s.title || 'Sans titre') + '</span>' +
+        '<span class="sb-hist-favorite' + (s.favorite ? ' active' : '') + '" title="' + (s.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris') + '" role="button">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="' + (s.favorite ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
+        '</span>' +
+        '<span class="sb-hist-rename" title="Renommer" role="button">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+        '</span>' +
+        '<span class="sb-hist-archive" title="' + (showingArchived ? 'Désarchiver' : 'Archiver') + '" role="button">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg>' +
+        '</span>' +
+        '<span class="sb-hist-del" title="Supprimer" role="button">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
+        '</span>';
+    b.addEventListener('click', (e) => {
+        if (e.target.closest('.sb-hist-favorite')) {
+            e.stopPropagation();
+            s.favorite = !s.favorite;
+            apiSaveSession(s).then(() => refreshSessions()).catch(() => refreshSessions());
+            return;
+        }
+        if (e.target.closest('.sb-hist-rename')) {
+            e.stopPropagation();
+            const newTitle = prompt('Renommer la discussion :', s.title || '');
+            if (newTitle && newTitle.trim()) {
+                s.title = newTitle.trim();
+                apiSaveSession(s).then(() => refreshSessions()).catch(() => refreshSessions());
+            }
+            return;
+        }
+        if (e.target.closest('.sb-hist-archive')) {
+            e.stopPropagation();
+            s.archived = !s.archived;
+            apiSaveSession(s).then(() => refreshSessions()).catch(() => refreshSessions());
+            return;
+        }
+        if (e.target.closest('.sb-hist-del')) {
+            e.stopPropagation();
+            if (confirm('Supprimer cette session ?')) {
+                apiDeleteSession(s.id).then(() => {
+                    if (currentSessionId === s.id) { currentSessionId = null; chat.newSession(); }
+                    refreshSessions();
+                }).catch(() => refreshSessions());
+            }
+            return;
+        }
+        openSession(s.id);
+    });
+    return b;
+}
+
 async function refreshSessions() {
     try {
         const list = await listSessions();
@@ -575,6 +629,17 @@ async function refreshSessions() {
             .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         refs.sessionsList.innerHTML = '';
         refs.sessionsEmpty.style.display = sorted.length ? 'none' : 'block';
+
+        const favorites = sorted.filter(s => s.favorite);
+        if (favorites.length) {
+            const favLabel = document.createElement('div');
+            favLabel.className = 'sb-history-group-label';
+            favLabel.textContent = '⭐ Favoris';
+            refs.sessionsList.appendChild(favLabel);
+            for (const s of favorites) {
+                refs.sessionsList.appendChild(buildSessionItem(s));
+            }
+        }
 
         const groups = new Map();
         for (const s of sorted) {
@@ -590,36 +655,7 @@ async function refreshSessions() {
             refs.sessionsList.appendChild(label);
 
             for (const s of items) {
-                const b = document.createElement('button');
-                b.className = 'sb-hist-item' + (s.id === currentSessionId ? ' active' : '');
-                b.title = s.title || '';
-                b.innerHTML = '<span class="sb-hist-label">' + esc2(s.title || 'Sans titre') + '</span>' +
-                    '<span class="sb-hist-archive" title="' + (showingArchived ? 'Désarchiver' : 'Archiver') + '" role="button">' +
-                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 13h4"/></svg>' +
-                    '</span>' +
-                    '<span class="sb-hist-del" title="Supprimer" role="button">' +
-                    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>' +
-                    '</span>';
-                b.addEventListener('click', (e) => {
-                    if (e.target.closest('.sb-hist-archive')) {
-                        e.stopPropagation();
-                        s.archived = !s.archived;
-                        apiSaveSession(s).then(() => refreshSessions()).catch(() => refreshSessions());
-                        return;
-                    }
-                    if (e.target.closest('.sb-hist-del')) {
-                        e.stopPropagation();
-                        if (confirm('Supprimer cette session ?')) {
-                            apiDeleteSession(s.id).then(() => {
-                                if (currentSessionId === s.id) { currentSessionId = null; chat.newSession(); }
-                                refreshSessions();
-                            }).catch(() => refreshSessions());
-                        }
-                        return;
-                    }
-                    openSession(s.id);
-                });
-                refs.sessionsList.appendChild(b);
+                refs.sessionsList.appendChild(buildSessionItem(s));
             }
         }
         refs.setSessionsCount.textContent = String(sorted.length);

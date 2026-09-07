@@ -331,6 +331,24 @@ html,body{
 }
 .sb-hist-item:hover .sb-hist-archive{ display:block; }
 .sb-hist-item .sb-hist-archive:hover{ opacity:1; background:#2a2a2e; }
+.sb-hist-favorite{
+  opacity:0;
+  cursor:pointer;
+  margin-right:4px;
+  color:var(--text-secondary);
+  transition:opacity 0.15s;
+}
+.sb-hist-item:hover .sb-hist-favorite{ opacity:0.6; }
+.sb-hist-favorite:hover{ opacity:1 !important; }
+.sb-hist-favorite.active{ opacity:1; color:#f0c040; }
+.sb-hist-rename{
+  opacity:0;
+  cursor:pointer;
+  margin-right:4px;
+  transition:opacity 0.15s;
+}
+.sb-hist-item:hover .sb-hist-rename{ opacity:0.6; }
+.sb-hist-rename:hover{ opacity:1; }
 .sb-hist-item:hover{ background:#1c1c1f; }
 .sb-hist-item.active{ background:#2a2a2e; color:var(--text-primary); }
 
