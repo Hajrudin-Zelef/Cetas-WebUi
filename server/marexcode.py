@@ -91,8 +91,8 @@ def format_tool_output(tool: str, args: dict, result: dict) -> str:
     return ""
 
 # ── Upload de projet (dossier importé depuis le navigateur) ────────────
-UPLOAD_MAX_FILES = int(os.environ.get("CETAS_UPLOAD_MAX_FILES", "200"))
-UPLOAD_MAX_TOTAL_BYTES = int(os.environ.get("CETAS_UPLOAD_MAX_BYTES", str(20 * 1024 * 1024)))  # 20 Mo
+UPLOAD_MAX_FILES = int(os.environ.get("CETAS_UPLOAD_MAX_FILES", "1000"))
+UPLOAD_MAX_TOTAL_BYTES = int(os.environ.get("CETAS_UPLOAD_MAX_BYTES", str(150 * 1024 * 1024)))  # 150 Mo
 UPLOADED_PROJECT_DIRNAME = "uploaded_project"
 SERVER_PROJECT_DIRNAME = "server_project"
 WORKSPACES_DIRNAME = "workspaces"
