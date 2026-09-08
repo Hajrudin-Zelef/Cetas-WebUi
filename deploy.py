@@ -844,16 +844,26 @@ class DeployAPI:
 
     def _run_cmd(self, deploy_id, cmd, cwd=None):
         self._log(deploy_id, "$ " + " ".join(cmd), "cmd")
+        output_lines = []
         try:
             proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 cwd=cwd, text=True, bufsize=1
             )
             for line in iter(proc.stdout.readline, ""):
-                self._log(deploy_id, line.rstrip("\n"))
+                clean = line.rstrip("\n")
+                output_lines.append(clean)
+                self._log(deploy_id, clean)
             proc.wait()
             if proc.returncode != 0:
                 self._log(deploy_id, f"Erreur (code {proc.returncode})", "error")
+                full_output = "\n".join(output_lines)
+                if "Could not resolve host" in full_output or "Temporary failure in name resolution" in full_output:
+                    self._log(deploy_id, "⚠ Problème réseau/DNS : impossible de joindre GitHub. Vérifie ta connexion internet, ton DNS, ou si un VPN/proxy bloque l'accès.", "error")
+                elif "Permission denied" in full_output or "publickey" in full_output:
+                    self._log(deploy_id, "⚠ Problème d'authentification Git (clé SSH ou identifiants). Vérifie ta configuration Git.", "error")
+                elif "Could not read from remote repository" in full_output:
+                    self._log(deploy_id, "⚠ Dépôt distant inaccessible. Vérifie l'URL du repository et tes droits d'accès.", "error")
                 return False
             self._log(deploy_id, "OK", "ok")
             return True
