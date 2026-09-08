@@ -123,6 +123,12 @@ export function createChat(deps) {
     function addMsg(cls, content, useMarkdown) {
         const m = document.createElement('div');
         m.className = 'msg ' + cls;
+        if (cls === 'user' || cls === 'assistant') {
+            const sender = document.createElement('div');
+            sender.className = 'msg-sender';
+            sender.textContent = cls === 'user' ? 'Vous' : 'Marexcode';
+            m.appendChild(sender);
+        }
         if (Array.isArray(content)) {
             const textParts = content.filter(c => c.type === 'text').map(c => c.text).join('\n');
             const imageParts = content.filter(c => c.type === 'image');
