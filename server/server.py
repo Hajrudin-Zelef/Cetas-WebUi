@@ -180,6 +180,7 @@ def setup_save_vault(data: dict) -> bool:
     password = data.get("password", "")
     api_keys = data.get("keys", {})
     local_keys = data.get("local", {})
+    websearch_keys = data.get("websearch", {})
 
     vault_path = os.environ.get("CETAS_VAULT_PATH", os.path.join(BASE_DIR, ".vault", ".enc"))
     os.makedirs(os.path.dirname(vault_path), exist_ok=True)
@@ -190,7 +191,7 @@ def setup_save_vault(data: dict) -> bool:
         return False
 
     # Sauvegarder les clés dans le vault
-    vault_data = {"api_keys": api_keys, "local": local_keys}
+    vault_data = {"api_keys": api_keys, "local": local_keys, "websearch": websearch_keys}
     vault.save(password, vault_data)
 
     # Générer proxy_key et .env
@@ -215,6 +216,14 @@ def setup_save_vault(data: dict) -> bool:
         aesgcm = AESGCM(proxy_key_bytes)
         ct = aesgcm.encrypt(iv, url.encode("utf-8"), normalized.encode("utf-8"))
         env_lines.append(f"{normalized}_key={iv.hex()}:{ct.hex()}")
+
+    WS_ENV_MAP = {"tavily": "TAVILY_API_KEY", "exa": "EXA_API_KEY", "brave": "BRAVE_API_KEY", "jina": "JINA_API_KEY"}
+    for provider, key in websearch_keys.items():
+        env_name = WS_ENV_MAP.get(provider, f"{provider}_key".upper())
+        iv = _pysecrets.token_bytes(12)
+        aesgcm = AESGCM(proxy_key_bytes)
+        ct = aesgcm.encrypt(iv, key.encode("utf-8"), env_name.lower().encode("utf-8"))
+        env_lines.append(f"{env_name}={iv.hex()}:{ct.hex()}")
 
     with open(_env_path(), "w", encoding="utf-8") as f:
         f.write("\n".join(sorted(env_lines)) + "\n")
@@ -656,6 +665,8 @@ def load_api_keys():
 
     proxy_key = bytes.fromhex(data["proxy_key"])
 
+    WS_ENV_NAMES = {"tavily_api_key", "exa_api_key", "brave_api_key", "jina_api_key"}
+
     loaded = 0
     with open(_env_path(), "r", encoding="utf-8") as f:
         for line in f:
@@ -680,8 +691,13 @@ def load_api_keys():
             try:
                 aesgcm = AESGCM(proxy_key)
                 plaintext = aesgcm.decrypt(iv, ct, provider.encode("utf-8"))
-                normalized = provider.replace(".", "")  # llama.cpp → llamacpp
-                api_keys[normalized] = plaintext.decode("utf-8")
+                env_name = key.strip()
+                if env_name.lower() in WS_ENV_NAMES:
+                    os.environ[env_name] = plaintext.decode("utf-8")
+                    log.info("Clé websearch chargée: %s", env_name)
+                else:
+                    normalized = provider.replace(".", "")  # llama.cpp → llamacpp
+                    api_keys[normalized] = plaintext.decode("utf-8")
                 loaded += 1
             except Exception as e:
                 log.error("Échec déchiffrement %s: %s", provider, e)

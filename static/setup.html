@@ -43,6 +43,11 @@ input::placeholder{color:#5a5b63}
     <div class="grid" id="providers"></div>
   </div>
 
+  <div class="card">
+    <h2>Clés Web Search (optionnel)</h2>
+    <div class="grid" id="websearch-providers"></div>
+  </div>
+
   <button class="btn" id="save-btn">Enregistrer et démarrer</button>
   <div id="status"></div>
 </div>
@@ -64,6 +69,13 @@ const PROVIDERS = [
   { id: 'opencode-go', label: 'OpenCode Go', hint: 'sk-...' },
 ];
 
+const WEBSEARCH_PROVIDERS = [
+  { id: 'tavily', label: 'Tavily', hint: 'tvly-...' },
+  { id: 'exa', label: 'Exa', hint: '...' },
+  { id: 'brave', label: 'Brave Search', hint: '...' },
+  { id: 'jina', label: 'Jina', hint: '...' },
+];
+
 const providersEl = document.getElementById('providers');
 PROVIDERS.forEach(p => {
   const row = document.createElement('div');
@@ -71,6 +83,15 @@ PROVIDERS.forEach(p => {
   row.innerHTML = '<label for="key-' + p.id + '">' + p.label + '</label>' +
     '<input type="password" id="key-' + p.id + '" data-provider="' + p.id + '" placeholder="' + p.hint + '" autocomplete="off">';
   providersEl.appendChild(row);
+});
+
+const wsEl = document.getElementById('websearch-providers');
+WEBSEARCH_PROVIDERS.forEach(p => {
+  const row = document.createElement('div');
+  row.className = 'provider-row';
+  row.innerHTML = '<label for="ws-' + p.id + '">' + p.label + '</label>' +
+    '<input type="password" id="ws-' + p.id + '" data-websearch="' + p.id + '" placeholder="' + p.hint + '" autocomplete="off">';
+  wsEl.appendChild(row);
 });
 
 document.getElementById('save-btn').addEventListener('click', async () => {
@@ -89,6 +110,15 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     }
   });
 
+  const websearch = {};
+  document.querySelectorAll('input[data-websearch]').forEach(input => {
+    const val = input.value.trim();
+    if (val) {
+      const p = WEBSEARCH_PROVIDERS.find(x => x.id === input.dataset.websearch);
+      websearch[p.id] = val;
+    }
+  });
+
   const btn = document.getElementById('save-btn');
   btn.disabled = true;
   btn.textContent = 'Enregistrement...';
@@ -97,7 +127,7 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     const resp = await fetch('/setup/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password, keys })
+      body: JSON.stringify({ password, keys, websearch })
     });
     const data = await resp.json();
     if (resp.ok && data.ok) {
