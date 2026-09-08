@@ -831,16 +831,40 @@ class DeployAPI:
         if not repo or not exe:
             return {"ok": False, "error": "Configuration manquante"}
         exe_full = exe if os.path.isabs(exe) else os.path.join(repo, exe)
+        exe_full = os.path.normpath(exe_full)
         if not os.path.isfile(exe_full):
             return {"ok": False, "error": "Exécutable non trouvé : " + exe_full}
         try:
-            subprocess.Popen([exe_full], cwd=os.path.dirname(exe_full))
-            return {"ok": True}
+            workdir = os.path.dirname(exe_full)
+            if os.name == "nt":
+                flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+                proc = subprocess.Popen([exe_full], cwd=workdir, creationflags=flags,
+                                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                        stderr=subprocess.DEVNULL)
+            else:
+                proc = subprocess.Popen([exe_full], cwd=workdir, start_new_session=True,
+                                        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                        stderr=subprocess.DEVNULL)
+            time.sleep(1.0)
+            if proc.poll() is not None and proc.returncode != 0:
+                return {"ok": False, "error": f"Cetas.exe s'est arrêté immédiatement (code {proc.returncode}). Vérifie cetas_error.log à côté de l'exe."}
+            log.info("App lancée: %s (pid %s)", exe_full, proc.pid)
+            return {"ok": True, "pid": proc.pid}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
     def _log(self, deploy_id, text, level="info"):
         self._deploys[deploy_id]["logs"].append({"text": text, "level": level})
+
+    def _clean_target(self, repo):
+        """Dossier de build CETAS à nettoyer (celui de l'exe cible, pas tout dist/)."""
+        exe = self.config.get("exe_path", "")
+        rel = os.path.dirname(exe) if exe else os.path.join("dist", "Cetas")
+        if not rel or rel in (".", ""):
+            rel = os.path.join("dist", "Cetas")
+        if os.path.isabs(rel):
+            return os.path.normpath(rel)
+        return os.path.normpath(os.path.join(repo, rel))
 
     def _rmtree_retry(self, path, deploy_id, attempts=5, delay=1.0):
         last_err = None
@@ -917,16 +941,17 @@ class DeployAPI:
                 else:
                     self._log(deploy_id, "Aucun process Cetas.exe actif", "info")
                 self._log(deploy_id, "", "separator")
-                dist = os.path.join(repo, "dist")
+                dist = self._clean_target(repo)
+                self._log(deploy_id, f"Nettoyage de {dist}", "info")
                 if os.path.isdir(dist):
                     ok, err = self._rmtree_retry(dist, deploy_id)
                     if ok:
-                        self._log(deploy_id, "✓ dist/ supprimé", "ok")
+                        self._log(deploy_id, f"✓ {os.path.basename(dist)}/ supprimé", "ok")
                     else:
-                        self._log(deploy_id, f"✗ Erreur suppression dist/: {err}", "error")
-                        self._log(deploy_id, "⚠ Un fichier de dist/ est probablement encore verrouillé par un process. Ferme tout programme lié (antivirus en scan, explorateur ouvert sur ce dossier) et réessaie.", "error")
+                        self._log(deploy_id, f"✗ Erreur suppression {dist}: {err}", "error")
+                        self._log(deploy_id, "⚠ Un fichier est probablement encore verrouillé par un process. Ferme tout programme lié (antivirus en scan, explorateur ouvert sur ce dossier) et réessaie.", "error")
                         self._deploys[deploy_id]["done"] = True
-                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer dist/: {err}"
+                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer {dist}: {err}"
                         self._save_history(action, False)
                         return
                 self._log(deploy_id, "", "separator")
@@ -953,20 +978,21 @@ class DeployAPI:
                 else:
                     self._log(deploy_id, "Aucun process Cetas.exe actif", "info")
                 self._log(deploy_id, "", "separator")
-                dist = os.path.join(repo, "dist")
+                dist = self._clean_target(repo)
+                self._log(deploy_id, f"Nettoyage de {dist}", "info")
                 if os.path.isdir(dist):
                     ok, err = self._rmtree_retry(dist, deploy_id)
                     if ok:
-                        self._log(deploy_id, "✓ dist/ supprimé", "ok")
+                        self._log(deploy_id, f"✓ {os.path.basename(dist)}/ supprimé", "ok")
                     else:
-                        self._log(deploy_id, f"✗ Erreur suppression dist/: {err}", "error")
-                        self._log(deploy_id, "⚠ Un fichier de dist/ est probablement encore verrouillé par un process. Ferme tout programme lié (antivirus en scan, explorateur ouvert sur ce dossier) et réessaie.", "error")
+                        self._log(deploy_id, f"✗ Erreur suppression {dist}: {err}", "error")
+                        self._log(deploy_id, "⚠ Un fichier est probablement encore verrouillé par un process. Ferme tout programme lié (antivirus en scan, explorateur ouvert sur ce dossier) et réessaie.", "error")
                         self._deploys[deploy_id]["done"] = True
-                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer dist/: {err}"
+                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer {dist}: {err}"
                         self._save_history(action, False)
                         return
                 else:
-                    self._log(deploy_id, "dist/ n'existe pas, rien à faire")
+                    self._log(deploy_id, f"{dist} n'existe pas, rien à faire")
             elif action == "build":
                 self._log(deploy_id, "═══ Build PyInstaller ═══", "separator")
                 py = shutil.which("python") or "python"
