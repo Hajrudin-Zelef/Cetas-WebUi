@@ -104,7 +104,17 @@ class Vision:
 
                 if resp.status_code == 200:
                     data = resp.json()
-                    content = data["choices"][0]["message"]["content"]
+                    msg = data["choices"][0]["message"]
+                    content = msg.get("content") or ""
+                    reasoning = msg.get("reasoning_content") or ""
+                    if not content and reasoning:
+                        content = reasoning
+                    if not content:
+                        log.warning("VLM 200 mais content vide: %s", str(msg)[:200])
+                        if attempt < MAX_RETRIES:
+                            time.sleep(RETRY_DELAY)
+                            continue
+                        raise RuntimeError(f"Modèle {self.model} a retourné une réponse vide. Essaie un autre modèle (gemini-2.5-flash recommandé).")
                     log.info("VLM OK → %d chars en %.1fs", len(content), elapsed)
                     return {"text": content, "elapsed": elapsed}
 
