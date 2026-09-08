@@ -268,6 +268,11 @@ async function poll() {
 async function startAgent() {
   const instruction = document.getElementById('instruction').value.trim();
   if (!instruction) { alert('Décris d\'abord la tâche.'); return; }
+  if (!cfg.api_key_masked && !cfg.api_key) {
+    alert('Configure ta clé API dans les Paramètres (⚙) avant de lancer.');
+    showScreen('settings');
+    return;
+  }
   cfg.autonomy_mode = document.getElementById('modeSelect').value;
   await api('config', {autonomy_mode: cfg.autonomy_mode});
   const r = await api('start', {instruction});
@@ -286,7 +291,8 @@ function startPolling() {
 
 async function loadSettingsForm() {
   document.getElementById('setProvider').value = cfg.api_provider || 'openrouter';
-  document.getElementById('setApiKey').value = cfg.api_key_masked || '';
+  document.getElementById('setApiKey').value = '';
+  document.getElementById('setApiKey').placeholder = cfg.api_key_masked ? '✓ Clé configurée — laisse vide pour garder' : 'sk-...';
   document.getElementById('setBaseUrl').value = cfg.base_url_custom || '';
   document.getElementById('setMaxIter').value = cfg.max_iterations || 50;
   document.getElementById('setDelay').value = cfg.screenshot_delay || 1.5;
@@ -419,8 +425,11 @@ class AgentServer:
         return self.loop.get_state()
 
     def start(self, instruction):
-        if not self.config.get("api_key"):
-            return {"ok": False, "error": "Clé API manquante — ouvre les Paramètres"}
+        cfg = self._resolved_config()
+        if not cfg.get("api_key"):
+            return {"ok": False, "error": "Clé API manquante — ouvre les Paramètres et configure-la."}
+        if not cfg.get("model"):
+            return {"ok": False, "error": "Modèle non sélectionné — ouvre les Paramètres."}
         return self.loop.start(instruction)
 
     def stop(self):
