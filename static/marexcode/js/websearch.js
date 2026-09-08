@@ -50,9 +50,11 @@ window.marexInjectWebSearch = function(modelId) {
     });
     if (marexHasNativeSearch(modelId)) {
         if (hasWsTool) {
-            MAREXCODE_TOOLS = MAREXCODE_TOOLS.filter(function(t) {
-                return !(t.function && t.function.name === 'web_search');
-            });
+            for (var i = MAREXCODE_TOOLS.length - 1; i >= 0; i--) {
+                if (MAREXCODE_TOOLS[i].function && MAREXCODE_TOOLS[i].function.name === 'web_search') {
+                    MAREXCODE_TOOLS.splice(i, 1);
+                }
+            }
         }
     } else {
         if (!hasWsTool) {
