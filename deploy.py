@@ -76,6 +76,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .field-input{width:100%;background:var(--bg3);border:1px solid var(--bg4);border-radius:var(--radius-sm);padding:12px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s}
 .field-input:focus{border-color:var(--primary)}
 .field-input::placeholder{color:#475569}
+.field-row{display:flex;gap:8px;align-items:stretch}
+.field-row .field-input{flex:1}
+.browse-btn{padding:12px 16px;background:var(--bg3);border:1px solid var(--bg4);border-radius:var(--radius-sm);color:var(--primary);cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:all 0.2s}
+.browse-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 .field-hint{font-size:11px;color:var(--text2);margin-top:6px}
 .btn-primary{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:background 0.2s}
 .btn-primary:hover{background:var(--primary2)}
@@ -225,13 +229,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="setup-subtitle">Indique le chemin du repository CETAS et de l'exécutable.</div>
     <div class="field">
       <label class="field-label">Chemin du repository</label>
-      <input class="field-input" id="inputRepo" placeholder="D:\IA\MEGA NEW\NEVA PVE\CETAS\Cetas-WebUi">
-      <div class="field-hint">Dossier racine du projet CETAS (contient cetas.py, cetas.spec, etc.)</div>
+      <div class="field-row">
+        <input class="field-input" id="inputRepo" placeholder="Cliquer pour choisir..." onclick="document.getElementById('folderInput').click()">
+        <button class="browse-btn" onclick="document.getElementById('folderInput').click()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Parcourir</button>
+      </div>
+      <input type="file" id="folderInput" webkitdirectory style="display:none" onchange="onFolderSelected(this)">
+      <div class="field-hint">Sélectionne le dossier racine du projet CETAS</div>
     </div>
     <div class="field">
       <label class="field-label">Chemin de l'exécutable</label>
-      <input class="field-input" id="inputExe" placeholder=".\dist\Cetas\Cetas.exe">
-      <div class="field-hint">Relatif au repo ou chemin absolu</div>
+      <input class="field-input" id="inputExe" placeholder="Auto-détecté après sélection du dossier">
+      <div class="field-hint">Rempli automatiquement si dist\Cetas\Cetas.exe existe</div>
     </div>
     <button class="btn-primary" id="setupSaveBtn" onclick="saveSetup()">Suivant</button>
   </div>
@@ -420,6 +428,24 @@ async function onRocketClick() {
   if (!config.repo_path || !config.exe_path) { showScreen('setup'); return; }
   await runDetection();
   showScreen('detect');
+}
+
+function onFolderSelected(input) {
+  if (!input.files.length) return;
+  const firstFile = input.files[0];
+  const relPath = firstFile.webkitRelativePath;
+  const folderName = relPath.split('/')[0];
+  const fullPath = firstFile.path || firstFile.name;
+  let dir = fullPath.replace(/[\\\/][^\\\/]+$/, '');
+  if (dir.endsWith(folderName) || dir.endsWith(folderName + '\\') || dir.endsWith(folderName + '/')) {
+    // dir already ends with folder name, good
+  } else {
+    dir = dir + '\\' + folderName;
+  }
+  document.getElementById('inputRepo').value = dir;
+  document.getElementById('inputRepo').style.color = 'var(--text)';
+  const exePath = dir + '\\dist\\Cetas\\Cetas.exe';
+  document.getElementById('inputExe').value = '.\\dist\\Cetas\\Cetas.exe';
 }
 
 async function saveSetup() {
