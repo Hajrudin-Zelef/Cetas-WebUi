@@ -18,6 +18,9 @@ RUN pyright --version && typescript-language-server --version && bash-language-s
 # MCP client for external tool servers (Marexcode Phase 3)
 RUN pip3 install --break-system-packages mcp mcp-server-fetch httpx2
 
+# DuckDuckGo search for Marexcode WebSearch
+RUN pip3 install --break-system-packages duckduckgo-search
+
 # Formatters for Marexcode Phase 5
 RUN pip3 install --break-system-packages ruff
 RUN npm install -g prettier
@@ -28,6 +31,7 @@ COPY server/marexcode.py /app/marexcode.py
 COPY server/observability.py /app/observability.py
 COPY server/lsp.py /app/lsp.py
 COPY server/mcp.py /app/mcp_client.py
+COPY server/websearch.py /app/websearch.py
 COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
 COPY core/users-seed.json /usr/share/nginx/html/core/users-seed.json
 

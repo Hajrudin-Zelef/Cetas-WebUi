@@ -33,6 +33,11 @@ import secrets as _secrets_mod
 import jwt
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+try:
+    from websearch import search as websearch_search
+except ImportError:
+    from .websearch import search as websearch_search
+
 # Observabilité structurée
 try:
     from .observability import (
@@ -1555,6 +1560,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path == "/api/marexcode/redo":
             self._exec_redo()
             return
+        if self.path == "/api/websearch":
+            self._websearch()
+            return
         if self.path == "/api/marexcode/upload":
             self._marex_upload_project()
             return
@@ -1716,6 +1724,38 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
 
         self._respond_json({"results": results})
         log.info("GET /api/tavily/search q=%s -> %d résultats", query[:60], len(results))
+
+    def _websearch(self):
+        """POST /api/websearch — chain search: Tavily→Exa→Brave→Jina→SearXNG→DDG"""
+        if not _rate_check("websearch:" + self.client_address[0], 30, 60):
+            self._respond_json({"error": "Trop de requêtes. Réessayez dans une minute."}, 429)
+            return
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        query = str(data.get("query", "")).strip()
+        if not query:
+            self._respond_json({"error": "query requis"}, 400)
+            return
+        allowed = data.get("allowed_domains")
+        blocked = data.get("blocked_domains")
+        max_results = min(int(data.get("max_results", 10)), 20)
+        result = websearch_search(query, allowed, blocked, max_results)
+        hits = [h.to_dict() for h in result.get("hits", [])]
+        response = {"results": hits, "provider": result.get("provider", "none"),
+                    "duration": round(result.get("duration", 0), 2)}
+        if result.get("error"):
+            response["warning"] = result["error"]
+        self._respond_json(response)
+        log.info("POST /api/websearch q=%s provider=%s hits=%d", query[:60],
+                 result.get("provider", "?"), len(hits))
 
     def _proxy_request(self, method: str):
         if not _rate_check("proxy:" + self.client_address[0], 30, 60):
