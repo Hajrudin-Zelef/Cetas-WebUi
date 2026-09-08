@@ -47,7 +47,11 @@ PROVIDERS = {
     "openrouter": {"base_url": "https://openrouter.ai/api/v1",
                    "models": ["google/gemini-2.5-flash", "google/gemini-2.5-pro",
                               "openai/gpt-4o", "anthropic/claude-sonnet-4.5",
-                              "qwen/qwen2.5-vl-72b-instruct"]},
+                              "qwen/qwen2.5-vl-72b-instruct",
+                              "deepseek/deepseek-v4-flash-vision-exp",
+                              "openai/gpt-5.6-luna",
+                              "nvidia/nemotron-3.5-content-safety",
+                              "minimax/minimax-m3"]},
     "deepseek": {"base_url": "https://api.deepseek.com/v1",
                  "models": ["deepseek-chat"]},
 }
