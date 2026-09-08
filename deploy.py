@@ -696,9 +696,21 @@ class DeployAPI:
             self._log(deploy_id, f"Exception: {e}", "error")
             return False
 
+    def _current_branch(self, repo):
+        try:
+            out = subprocess.check_output(
+                ["git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD"],
+                text=True, timeout=5
+            ).strip()
+            return out
+        except Exception:
+            return "main"
+
     def _run_deploy(self, deploy_id, action, branch):
         repo = self.config.get("repo_path", "")
         exe = self.config.get("exe_path", "")
+        if not branch:
+            branch = self._current_branch(repo)
         try:
             if action == "auto":
                 self._log(deploy_id, "═══ Auto: Pull → Clean → Build ═══", "separator")
