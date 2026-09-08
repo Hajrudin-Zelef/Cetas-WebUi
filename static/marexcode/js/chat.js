@@ -449,7 +449,20 @@ export function createChat(deps) {
         { name: '/model', description: 'Afficher le modèle courant' },
         { name: '/undo', description: 'Annuler la dernière modification' },
         { name: '/redo', description: 'Rétablir la dernière annulation' },
+        { name: '/compact', description: 'Compresser l\'historique de conversation' },
+        { name: '/init', description: 'Analyser le repo et générer MAREXCODE.md' },
+        { name: '/mcp', description: 'Lister les serveurs MCP et leurs tools' },
+        { name: '/cost', description: 'Afficher l\'usage tokens de la session' },
+        { name: '/workspace', description: 'Lister/switcher les workspaces' },
+        { name: '/skills', description: 'Lister les skills actifs' },
+        { name: '/diff', description: 'Afficher le dernier patch/diff' },
     ];
+
+    function _authHeaders() {
+        const h = { 'Content-Type': 'application/json' };
+        if (typeof Auth !== 'undefined' && Auth.getToken) { const tk = Auth.getToken(); if (tk) h.Authorization = 'Bearer ' + tk; }
+        return h;
+    }
 
     async function handleSlashCommand(text) {
         const parts = text.split(/\s+/);
@@ -459,11 +472,15 @@ export function createChat(deps) {
         if (cmd === '/help') {
             let msg = '**Commandes disponibles :**\n\n';
             BUILTIN_COMMANDS.forEach(c => { msg += '- `' + c.name + '` — ' + c.description + '\n'; });
-            if (typeof CUSTOM_TOOLS !== 'undefined') {
-                Object.keys(CUSTOM_TOOLS).forEach(name => {
-                    msg += '- `/' + name + '` — ' + (CUSTOM_TOOLS[name].description || name) + '\n';
-                });
-            }
+            try {
+                const resp = await fetch('/api/marexcode/custom-tools', { headers: _authHeaders(), signal: AbortSignal.timeout(3000) });
+                if (resp.ok) {
+                    const tools = await resp.json().catch(() => ({}));
+                    Object.keys(tools).forEach(name => {
+                        msg += '- `/' + name + '` — ' + (tools[name].description || name) + '\n';
+                    });
+                }
+            } catch (e) {}
             addMsg('assistant', msg, true);
             return true;
         }
@@ -479,9 +496,7 @@ export function createChat(deps) {
         }
         if (cmd === '/undo') {
             try {
-                const headers = { 'Content-Type': 'application/json' };
-                if (typeof Auth !== 'undefined' && Auth.getToken) { const tk = Auth.getToken(); if (tk) headers.Authorization = 'Bearer ' + tk; }
-                const resp = await fetch('/api/marexcode/undo', { method: 'POST', headers, signal: AbortSignal.timeout(5000) });
+                const resp = await fetch('/api/marexcode/undo', { method: 'POST', headers: _authHeaders(), signal: AbortSignal.timeout(5000) });
                 const data = await resp.json().catch(() => ({}));
                 addMsg('assistant', data.ok ? '↩ Annulé : ' + data.file : (data.error || 'Erreur undo'));
                 if (typeof refreshUndoRedo === 'function') refreshUndoRedo();
@@ -490,13 +505,169 @@ export function createChat(deps) {
         }
         if (cmd === '/redo') {
             try {
-                const headers = { 'Content-Type': 'application/json' };
-                if (typeof Auth !== 'undefined' && Auth.getToken) { const tk = Auth.getToken(); if (tk) headers.Authorization = 'Bearer ' + tk; }
-                const resp = await fetch('/api/marexcode/redo', { method: 'POST', headers, signal: AbortSignal.timeout(5000) });
+                const resp = await fetch('/api/marexcode/redo', { method: 'POST', headers: _authHeaders(), signal: AbortSignal.timeout(5000) });
                 const data = await resp.json().catch(() => ({}));
                 addMsg('assistant', data.ok ? '↪ Rétabli : ' + data.file : (data.error || 'Erreur redo'));
                 if (typeof refreshUndoRedo === 'function') refreshUndoRedo();
             } catch (e) { addMsg('error', 'Erreur redo'); }
+            return true;
+        }
+        if (cmd === '/compact') {
+            const msgs = session.messages || [];
+            if (msgs.length <= 4) { addMsg('assistant', 'Pas assez de messages à compresser (minimum 5).'); return true; }
+            const keep = msgs.slice(-4);
+            const toSummarize = msgs.slice(0, -4);
+            const summary = toSummarize.map(m => {
+                const role = m.role === 'user' ? 'User' : 'Assistant';
+                const content = typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.filter(c => c.type === 'text').map(c => c.text).join(' ') : '');
+                return role + ': ' + content.substring(0, 150) + (content.length > 150 ? '…' : '');
+            }).join('\n');
+            session.messages = [
+                { role: 'system', content: '[Historique compressé — ' + toSummarize.length + ' messages résumés]\n' + summary },
+                ...keep
+            ];
+            addMsg('assistant', '✅ Historique compressé : ' + toSummarize.length + ' messages résumés, ' + keep.length + ' messages conservés.');
+            if (onSave) onSave(session);
+            return true;
+        }
+        if (cmd === '/init') {
+            addMsg('assistant', '🔍 Analyse du workspace en cours…');
+            try {
+                const treeResp = await fetch('/api/marexcode/tree', { headers: _authHeaders(), signal: AbortSignal.timeout(5000) });
+                const tree = await treeResp.json().catch(() => []);
+                const files = (Array.isArray(tree) ? tree : []).map(f => f.path || '');
+                const exts = {};
+                files.forEach(f => { const ext = f.split('.').pop(); exts[ext] = (exts[ext] || 0) + 1; });
+                const topExts = Object.entries(exts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                let stack = [];
+                if (exts.py) stack.push('Python');
+                if (exts.js || exts.mjs) stack.push('JavaScript');
+                if (exts.ts) stack.push('TypeScript');
+                if (exts.jsx || exts.tsx) stack.push('React');
+                if (exts.go) stack.push('Go');
+                if (exts.rs) stack.push('Rust');
+                if (exts.json && files.some(f => f.endsWith('package.json'))) stack.push('Node.js');
+                if (exts.json && files.some(f => f.endsWith('tsconfig.json'))) stack.push('TypeScript (config)');
+                if (files.some(f => f.endsWith('requirements.txt') || f.endsWith('pyproject.toml'))) stack.push('Python (pip)');
+                if (files.some(f => f.endsWith('Cargo.toml'))) stack.push('Rust (Cargo)');
+                if (files.some(f => f.endsWith('go.mod'))) stack.push('Go (modules)');
+                let md = '# Instructions du projet\n\n';
+                md += '## Structure\n\n';
+                md += '- Total fichiers : ' + files.length + '\n';
+                md += '- Extensions : ' + topExts.map(e => '.' + e[0] + ' (' + e[1] + ')').join(', ') + '\n\n';
+                md += '## Stack détecté\n\n';
+                md += (stack.length ? stack.join(', ') : 'Non détecté') + '\n\n';
+                md += '## Commandes utiles\n\n';
+                if (files.some(f => f.endsWith('package.json'))) md += '- `npm install` — installer les dépendances\n- `npm test` — lancer les tests\n- `npm run build` — builder le projet\n';
+                if (files.some(f => f.endsWith('requirements.txt') || f.endsWith('pyproject.toml'))) md += '- `pip install -r requirements.txt` — installer les dépendances\n- `pytest` — lancer les tests\n';
+                md += '\n<!-- Décris ici les conventions de code, les contraintes, le contexte du projet -->\n';
+                addMsg('assistant', '📝 **MAREXCODE.md généré** (' + files.length + ' fichiers analysés) :\n\n```markdown\n' + md + '```');
+            } catch (e) { addMsg('error', 'Erreur analyse workspace : ' + (e.message || e)); }
+            return true;
+        }
+        if (cmd === '/mcp') {
+            try {
+                const resp = await fetch('/api/mcp/servers', { headers: _authHeaders(), signal: AbortSignal.timeout(5000) });
+                const servers = await resp.json().catch(() => []);
+                if (!servers.length) { addMsg('assistant', 'Aucun serveur MCP configuré. Créez un fichier `mcp.json` dans le workspace.'); return true; }
+                let msg = '**Serveurs MCP :**\n\n';
+                for (const srv of servers) {
+                    const status = srv.connected ? '🟢' : '🔴';
+                    msg += status + ' **' + srv.name + '** (' + srv.type + ')';
+                    if (srv.tools_count > 0) msg += ' — ' + srv.tools_count + ' tools';
+                    msg += '\n';
+                    if (srv.tools_count > 0) {
+                        try {
+                            const tResp = await fetch('/api/mcp/' + encodeURIComponent(srv.name) + '/tools', { headers: _authHeaders(), signal: AbortSignal.timeout(3000) });
+                            const tools = await tResp.json().catch(() => []);
+                            tools.forEach(t => { msg += '  - `' + t.name + '`\n'; });
+                        } catch (e) {}
+                    }
+                }
+                addMsg('assistant', msg, true);
+            } catch (e) { addMsg('error', 'Erreur MCP : ' + (e.message || e)); }
+            return true;
+        }
+        if (cmd === '/cost') {
+            const msgs = session.messages || [];
+            let totalChars = 0;
+            let userChars = 0;
+            let assistantChars = 0;
+            msgs.forEach(m => {
+                const content = typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.filter(c => c.type === 'text').map(c => c.text).join(' ') : '');
+                totalChars += content.length;
+                if (m.role === 'user') userChars += content.length;
+                else assistantChars += content.length;
+            });
+            const estTokens = Math.ceil(totalChars / 4);
+            const model = session && session.model;
+            let msg = '**Usage session :**\n\n';
+            msg += '- Messages : ' + msgs.length + '\n';
+            msg += '- Caractères total : ' + totalChars.toLocaleString() + '\n';
+            msg += '- Tokens estimés : ~' + estTokens.toLocaleString() + '\n';
+            msg += '- User : ' + userChars.toLocaleString() + ' chars\n';
+            msg += '- Assistant : ' + assistantChars.toLocaleString() + ' chars\n';
+            if (model) msg += '- Modèle : `' + model + '`\n';
+            addMsg('assistant', msg, true);
+            return true;
+        }
+        if (cmd === '/workspace') {
+            try {
+                const resp = await fetch('/api/marexcode/workspaces', { headers: _authHeaders(), signal: AbortSignal.timeout(5000) });
+                const workspaces = await resp.json().catch(() => []);
+                if (!workspaces.length) { addMsg('assistant', 'Aucun workspace disponible.'); return true; }
+                let msg = '**Workspaces :**\n\n';
+                workspaces.forEach(ws => {
+                    const active = ws.active ? ' ✅' : '';
+                    msg += '- `' + ws.id + '` — ' + (ws.name || ws.id) + active + '\n';
+                });
+                if (args && args.startsWith('switch ')) {
+                    const wsId = args.replace('switch ', '').trim();
+                    const swResp = await fetch('/api/marexcode/workspaces/' + encodeURIComponent(wsId) + '/activate', { method: 'PUT', headers: _authHeaders(), signal: AbortSignal.timeout(5000) });
+                    const swData = await swResp.json().catch(() => ({}));
+                    msg += swData.ok ? '\n✅ Workspace activé : ' + wsId : '\n❌ Erreur : ' + (swData.error || 'inconnu');
+                }
+                addMsg('assistant', msg, true);
+            } catch (e) { addMsg('error', 'Erreur workspace : ' + (e.message || e)); }
+            return true;
+        }
+        if (cmd === '/skills') {
+            try {
+                const resp = await fetch('/api/marexcode/skills/config', { headers: _authHeaders(), signal: AbortSignal.timeout(5000) });
+                const skills = await resp.json().catch(() => []);
+                if (!skills.length) { addMsg('assistant', 'Aucun skill configuré.'); return true; }
+                let msg = '**Skills actifs :**\n\n';
+                skills.forEach(s => {
+                    const mode = s.mode === 'auto' ? '🟢 Auto' : s.mode === 'manual' ? '🟡 Manuel' : '⚪ Sur demande';
+                    const status = s.enabled ? mode : '🔴 Désactivé';
+                    msg += '- **' + s.id + '** — ' + (s.description || '') + ' [' + status + ']\n';
+                });
+                addMsg('assistant', msg, true);
+            } catch (e) { addMsg('error', 'Erreur skills : ' + (e.message || e)); }
+            return true;
+        }
+        if (cmd === '/diff') {
+            const msgs = session.messages || [];
+            let lastPatch = null;
+            for (let i = msgs.length - 1; i >= 0; i--) {
+                const content = typeof msgs[i].content === 'string' ? msgs[i].content : '';
+                if (content.includes('```diff') || content.includes('Replacements:') || content.includes('Edit ')) {
+                    lastPatch = content;
+                    break;
+                }
+            }
+            if (!lastPatch) {
+                const undoMsgs = msgs.filter(m => {
+                    const c = typeof m.content === 'string' ? m.content : '';
+                    return c.includes('patch') || c.includes('diff');
+                });
+                if (undoMsgs.length) lastPatch = undoMsgs[undoMsgs.length - 1].content;
+            }
+            if (lastPatch) {
+                addMsg('assistant', '**Dernier patch :**\n\n' + lastPatch.substring(0, 2000), true);
+            } else {
+                addMsg('assistant', 'Aucun patch/diff trouvé dans la session.');
+            }
             return true;
         }
         return false;
