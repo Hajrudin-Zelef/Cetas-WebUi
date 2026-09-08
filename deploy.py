@@ -325,7 +325,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <div class="action-desc">PyInstaller cetas.spec</div>
       </div>
     </div>
-    <select class="branch-select" id="branchSelect"></select>
+    <select class="branch-select" id="branchSelect">
+      <option value="">Chargement des branches...</option>
+    </select>
     <div style="padding:0 0 24px;margin-top:8px">
       <button class="btn-primary" onclick="startDeploy()">Exécuter</button>
     </div>
@@ -392,7 +394,7 @@ function selectAction(el) {
   el.classList.add('selected');
   selectedAction = el.dataset.action;
   const bs = document.getElementById('branchSelect');
-  bs.classList.toggle('visible', selectedAction === 'pull');
+  bs.classList.toggle('visible', selectedAction === 'pull' || selectedAction === 'auto');
 }
 
 async function loadBranches() {
@@ -403,6 +405,7 @@ async function loadBranches() {
   (r.branches || []).forEach(b => {
     const o = document.createElement('option');
     o.value = b; o.textContent = b;
+    if (r.current && b === r.current) { o.textContent = b + ' (courante)'; o.selected = true; }
     sel.appendChild(o);
   });
 }
@@ -487,7 +490,7 @@ async function startDeploy() {
   document.getElementById('mainProgress').classList.add('active');
   document.getElementById('mainProgressFill').style.width = '0%';
 
-  const branch = selectedAction === 'pull' ? document.getElementById('branchSelect').value : undefined;
+  const branch = (selectedAction === 'pull' || selectedAction === 'auto') ? document.getElementById('branchSelect').value : undefined;
   const r = await api('deploy', {action: selectedAction, branch: branch});
   const deployId = r.id;
 
@@ -652,16 +655,25 @@ class DeployAPI:
     def get_branches(self):
         repo = self.config.get("repo_path", "")
         if not repo:
-            return {"branches": []}
+            return {"branches": [], "current": ""}
+        current = ""
+        try:
+            out = subprocess.check_output(
+                ["git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD"],
+                text=True, timeout=5
+            ).strip()
+            current = out
+        except Exception:
+            pass
         try:
             out = subprocess.check_output(
                 ["git", "-C", repo, "branch", "-a", "--format=%(refname:short)"],
                 text=True, timeout=10
             )
             branches = [b.strip() for b in out.strip().split("\n") if b.strip() and "HEAD" not in b]
-            return {"branches": branches}
+            return {"branches": branches, "current": current}
         except Exception:
-            return {"branches": []}
+            return {"branches": [], "current": current}
 
     def deploy(self, action, branch=None):
         deploy_id = str(int(time.time() * 1000))
