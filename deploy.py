@@ -112,8 +112,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .branch-select.visible{display:block}
 
 /* Logs screen */
-.logs-content{flex:1;display:flex;flex-direction:column;padding:0}
-.logs-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--bg4)}
+.logs-content{flex:1;display:flex;flex-direction:column;padding:0;overflow:hidden}
+.logs-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--bg4);flex-shrink:0}
 .logs-title{font-size:14px;font-weight:600}
 .logs-status{font-size:12px;display:flex;align-items:center;gap:6px}
 .logs-status .dot{width:8px;height:8px;border-radius:50%}
@@ -121,17 +121,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .logs-status .dot.ok{background:var(--green)}
 .logs-status .dot.error{background:var(--red)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
-.logs-scroll{flex:1;overflow-y:auto;padding:16px 20px;font-family:'SF Mono',Consolas,monospace;font-size:12px;line-height:1.8}
+.logs-scroll{flex:1;overflow-y:auto;padding:16px 20px;font-family:'SF Mono',Consolas,monospace;font-size:12px;line-height:1.8;min-height:0}
 .log-line{white-space:pre-wrap;word-break:break-all}
 .log-line.info{color:var(--text2)}
 .log-line.ok{color:var(--green)}
 .log-line.error{color:var(--red)}
 .log-line.cmd{color:var(--primary)}
 .log-line.separator{color:var(--bg4);margin:8px 0}
-.logs-footer{padding:12px 20px;border-top:1px solid var(--bg4);display:flex;gap:12px}
+.logs-footer{padding:12px 20px;border-top:1px solid var(--bg4);display:flex;gap:12px;flex-shrink:0}
 .logs-footer .btn-primary{flex:1}
 .btn-secondary{padding:12px 20px;background:var(--bg3);color:var(--text);border:1px solid var(--bg4);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;flex:1}
 .btn-secondary:hover{background:var(--bg4)}
+.btn-success{padding:12px 20px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;flex:1}
+.btn-success:hover{background:#16a34a}
 
 /* Sidebar */
 .sidebar-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:90;display:none;opacity:0;transition:opacity 0.3s}
@@ -350,7 +352,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       </div>
     </div>
     <div class="logs-scroll" id="logsScroll"></div>
-    <div class="logs-footer">
+    <div class="logs-footer" id="logsFooter">
       <button class="btn-secondary" onclick="clearLogs()">Effacer</button>
       <button class="btn-primary" onclick="showScreen('main')">Retour</button>
     </div>
@@ -482,6 +484,7 @@ async function startDeploy() {
   isDeploying = true;
   logs = [];
   renderLogs();
+  showLogsFooter('running');
   showScreen('logs');
   setLogsStatus('running', 'En cours...');
   document.getElementById('rocketBtn').classList.add('deploying');
@@ -509,11 +512,13 @@ async function startDeploy() {
         document.getElementById('deployStatus').textContent = 'Échec du déploiement';
         document.getElementById('deployError').textContent = lr.error;
         document.getElementById('deployError').style.display = '';
+        showLogsFooter('error');
       } else {
         setLogsStatus('ok', 'Terminé');
         document.getElementById('deployStatus').textContent = 'Déploiement terminé';
         config.last_deploy = new Date().toISOString();
         updateMainUI();
+        showLogsFooter('ok');
       }
     }
   }, 500);
@@ -527,6 +532,22 @@ function renderLogs() {
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function scrollLogs() { const el = document.getElementById('logsScroll'); el.scrollTop = el.scrollHeight; }
+
+function showLogsFooter(state) {
+  const footer = document.getElementById('logsFooter');
+  if (state === 'ok') {
+    footer.innerHTML = '<button class="btn-secondary" onclick="showScreen(\'main\')">Accueil</button><button class="btn-success" onclick="launchApp()">Lancer l\'app</button>';
+  } else if (state === 'error') {
+    footer.innerHTML = '<button class="btn-secondary" onclick="showScreen(\'main\')">Accueil</button><button class="btn-primary" onclick="startDeploy()">Réessayer</button>';
+  } else {
+    footer.innerHTML = '<button class="btn-secondary" onclick="clearLogs()">Effacer</button><button class="btn-primary" onclick="showScreen(\'main\')">Retour</button>';
+  }
+}
+
+async function launchApp() {
+  const r = await api('launch');
+  if (!r.ok) alert(r.error || 'Impossible de lancer l\'app');
+}
 
 function setLogsStatus(state, text) {
   document.getElementById('logsDot').className = 'dot ' + state;
@@ -686,6 +707,20 @@ class DeployAPI:
         d = self._deploys.get(deploy_id, {"logs": [], "done": False, "error": None})
         return {"logs": d["logs"], "done": d["done"], "error": d["error"]}
 
+    def launch_app(self):
+        repo = self.config.get("repo_path", "")
+        exe = self.config.get("exe_path", "")
+        if not repo or not exe:
+            return {"ok": False, "error": "Configuration manquante"}
+        exe_full = exe if os.path.isabs(exe) else os.path.join(repo, exe)
+        if not os.path.isfile(exe_full):
+            return {"ok": False, "error": "Exécutable non trouvé : " + exe_full}
+        try:
+            subprocess.Popen([exe_full], cwd=os.path.dirname(exe_full))
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
     def _log(self, deploy_id, text, level="info"):
         self._deploys[deploy_id]["logs"].append({"text": text, "level": level})
 
@@ -818,6 +853,8 @@ class DeployHTTPHandler(http.server.BaseHTTPRequestHandler):
             self._json(self.api.save_config(body))
         elif path == "/api/deploy":
             self._json(self.api.deploy(body.get("action", "auto"), body.get("branch")))
+        elif path == "/api/launch":
+            self._json(self.api.launch_app())
         else:
             self.send_response(404)
             self.end_headers()
