@@ -216,6 +216,7 @@ export function createChat(deps) {
         if (n === 'write' || n === 'edit') return '✎';
         if (n === 'glob') return '◎';
         if (n === 'lsp') return '⟡';
+        if (n === 'web_search') return '🌐';
         if (n.startsWith('mcp_')) return '⬡';
         if (n.startsWith('custom_')) return '⚙';
         return '•';
@@ -234,6 +235,7 @@ export function createChat(deps) {
         if (n === 'edit') return 'Edit ' + path;
         if (n === 'glob') return 'Glob "' + (args.pattern || '') + '" (' + (result && result.count != null ? result.count : '?') + ' files)';
         if (n === 'lsp') return 'LSP ' + (args.operation || '') + ' ' + (args.file || '') + ':' + (args.line || 0);
+        if (n === 'web_search') return 'Recherche: "' + (args.query || '') + '"';
         if (n.startsWith('mcp_')) {
             var mcpParts = n.split('_');
             return 'MCP ' + (mcpParts[1] || '') + '.' + mcpParts.slice(2).join('_') + '…';
@@ -856,6 +858,7 @@ export function createChat(deps) {
                 Grep: 'Searching' + (d.args && d.args.pattern ? ' "' + d.args.pattern.substring(0, 30) + '"' : '') + '…',
                 Glob: 'Finding files' + (d.args && d.args.pattern ? ' "' + d.args.pattern.substring(0, 30) + '"' : '') + '…',
                 LSP: 'LSP ' + (d.args && d.args.operation || 'definition') + '…',
+                web_search: 'Recherche web…',
                 TodoWrite: 'Updating todos…'
             };
             var statusAction = actionMap[d.name];
