@@ -443,9 +443,72 @@ export function createChat(deps) {
         }
     }
 
+    const BUILTIN_COMMANDS = [
+        { name: '/help', description: 'Afficher les commandes disponibles' },
+        { name: '/clear', description: 'Effacer le chat' },
+        { name: '/model', description: 'Afficher le modèle courant' },
+        { name: '/undo', description: 'Annuler la dernière modification' },
+        { name: '/redo', description: 'Rétablir la dernière annulation' },
+    ];
+
+    async function handleSlashCommand(text) {
+        const parts = text.split(/\s+/);
+        const cmd = parts[0].toLowerCase();
+        const args = parts.slice(1).join(' ');
+
+        if (cmd === '/help') {
+            let msg = '**Commandes disponibles :**\n\n';
+            BUILTIN_COMMANDS.forEach(c => { msg += '- `' + c.name + '` — ' + c.description + '\n'; });
+            if (typeof CUSTOM_TOOLS !== 'undefined') {
+                Object.keys(CUSTOM_TOOLS).forEach(name => {
+                    msg += '- `/' + name + '` — ' + (CUSTOM_TOOLS[name].description || name) + '\n';
+                });
+            }
+            addMsg('assistant', msg, true);
+            return true;
+        }
+        if (cmd === '/clear') {
+            if (typeof newSession === 'function') newSession();
+            else { session.messages = []; chatLog.innerHTML = ''; setChatVisible(false); }
+            return true;
+        }
+        if (cmd === '/model') {
+            const m = session && session.model;
+            addMsg('assistant', 'Modèle courant : `' + (m || 'aucun') + '`', true);
+            return true;
+        }
+        if (cmd === '/undo') {
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (typeof Auth !== 'undefined' && Auth.getToken) { const tk = Auth.getToken(); if (tk) headers.Authorization = 'Bearer ' + tk; }
+                const resp = await fetch('/api/marexcode/undo', { method: 'POST', headers, signal: AbortSignal.timeout(5000) });
+                const data = await resp.json().catch(() => ({}));
+                addMsg('assistant', data.ok ? '↩ Annulé : ' + data.file : (data.error || 'Erreur undo'));
+                if (typeof refreshUndoRedo === 'function') refreshUndoRedo();
+            } catch (e) { addMsg('error', 'Erreur undo'); }
+            return true;
+        }
+        if (cmd === '/redo') {
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (typeof Auth !== 'undefined' && Auth.getToken) { const tk = Auth.getToken(); if (tk) headers.Authorization = 'Bearer ' + tk; }
+                const resp = await fetch('/api/marexcode/redo', { method: 'POST', headers, signal: AbortSignal.timeout(5000) });
+                const data = await resp.json().catch(() => ({}));
+                addMsg('assistant', data.ok ? '↪ Rétabli : ' + data.file : (data.error || 'Erreur redo'));
+                if (typeof refreshUndoRedo === 'function') refreshUndoRedo();
+            } catch (e) { addMsg('error', 'Erreur redo'); }
+            return true;
+        }
+        return false;
+    }
+
     async function send() {
         const text = ta.value.trim();
         if (!text && pendingImages.length === 0) return;
+        if (text.startsWith('/')) {
+            const handled = await handleSlashCommand(text);
+            if (handled) { ta.value = ''; ta.dispatchEvent(new Event('input')); return; }
+        }
         const queueEnabled = localStorage.getItem('marex-message-queue') === '1';
         if (running && queueEnabled) {
             messageQueue.push(text);
@@ -711,6 +774,86 @@ export function createChat(deps) {
         refreshUndoRedo();
     }
 
+    function setupSlashCommands() {
+        const dropdown = document.getElementById('slash-commands-dropdown');
+        if (!dropdown || !ta) return;
+        let selectedIdx = -1;
+
+        function getAllCommands() {
+            const cmds = [...BUILTIN_COMMANDS];
+            try {
+                if (typeof CUSTOM_TOOLS !== 'undefined' && CUSTOM_TOOLS) {
+                    Object.keys(CUSTOM_TOOLS).forEach(name => {
+                        cmds.push({ name: '/' + name, description: CUSTOM_TOOLS[name].description || name });
+                    });
+                }
+            } catch (e) {}
+            return cmds;
+        }
+
+        function showDropdown(filter) {
+            const all = getAllCommands();
+            const filtered = filter ? all.filter(c => c.name.startsWith(filter)) : all;
+            if (filtered.length === 0) { hideDropdown(); return; }
+            selectedIdx = 0;
+            dropdown.innerHTML = filtered.map((c, i) =>
+                '<div class="slash-cmd-item' + (i === 0 ? ' selected' : '') + '" data-cmd="' + c.name + '">' +
+                '<span class="slash-cmd-name">' + c.name + '</span>' +
+                '<span class="slash-cmd-desc">' + c.description + '</span></div>'
+            ).join('');
+            dropdown.style.display = 'block';
+            dropdown.querySelectorAll('.slash-cmd-item').forEach(item => {
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    ta.value = item.dataset.cmd + ' ';
+                    hideDropdown();
+                    ta.focus();
+                });
+            });
+        }
+
+        function hideDropdown() { dropdown.style.display = 'none'; selectedIdx = -1; }
+
+        function moveSelection(dir) {
+            const items = dropdown.querySelectorAll('.slash-cmd-item');
+            if (!items.length) return;
+            items[selectedIdx] && items[selectedIdx].classList.remove('selected');
+            selectedIdx = (selectedIdx + dir + items.length) % items.length;
+            items[selectedIdx].classList.add('selected');
+            items[selectedIdx].scrollIntoView({ block: 'nearest' });
+        }
+
+        function selectCurrent() {
+            const items = dropdown.querySelectorAll('.slash-cmd-item');
+            if (selectedIdx >= 0 && items[selectedIdx]) {
+                ta.value = items[selectedIdx].dataset.cmd + ' ';
+                hideDropdown();
+                ta.focus();
+            }
+        }
+
+        ta.addEventListener('input', () => {
+            const val = ta.value;
+            if (val.startsWith('/') && val.indexOf('\n') === -1) {
+                showDropdown(val.split(/\s/)[0]);
+            } else {
+                hideDropdown();
+            }
+        });
+
+        ta.addEventListener('keydown', (e) => {
+            if (dropdown.style.display === 'none') return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); moveSelection(1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); moveSelection(-1); }
+            else if (e.key === 'Tab') { e.preventDefault(); selectCurrent(); }
+            else if (e.key === 'Escape') { hideDropdown(); }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && e.target !== ta) hideDropdown();
+        });
+    }
+
     return {
         send,
         stop,
@@ -723,7 +866,8 @@ export function createChat(deps) {
         preloadInstructions,
         refreshUndoRedo,
         setupUndoRedo,
-        setupImageDrop
+        setupImageDrop,
+        setupSlashCommands
     };
 }
 

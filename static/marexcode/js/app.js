@@ -1611,6 +1611,7 @@ function boot() {
     setupChat();
     if (chat.setupUndoRedo) chat.setupUndoRedo();
     if (chat.setupImageDrop) chat.setupImageDrop();
+    if (chat.setupSlashCommands) chat.setupSlashCommands();
 
     chat.newSession();
     initModelSelect(refs.menuModel, refs.labelModel, (m) => {
