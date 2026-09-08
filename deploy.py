@@ -31,6 +31,8 @@ except ImportError:
 logging.basicConfig(level=logging.INFO, format="[deploy] %(message)s")
 log = logging.getLogger(__name__)
 
+_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
+
 APP_TITLE = "CETAS Deploy"
 APP_VERSION = "1.0.0"
 CONFIG_FILE = "config.json"
@@ -607,8 +609,12 @@ function showLogsFooter(state) {
 }
 
 async function launchApp() {
-  const r = await api('launch');
-  if (!r.ok) alert(r.error || 'Impossible de lancer l\'app');
+  try {
+    const r = await api('launch');
+    if (!r.ok) alert(r.error || 'Impossible de lancer l\'app');
+  } catch(e) {
+    alert('Erreur lancement : ' + e.message);
+  }
 }
 
 async function loadSettings() {
@@ -746,7 +752,7 @@ class DeployAPI:
         r = shutil.which("git")
         if r:
             try:
-                v = subprocess.check_output(["git", "--version"], text=True, timeout=5).strip()
+                v = subprocess.check_output(["git", "--version"], text=True, timeout=5, creationflags=_NO_WINDOW).strip()
                 result["git"] = True
                 result["git_version"] = v
             except Exception:
@@ -759,7 +765,7 @@ class DeployAPI:
         r = shutil.which("python") or shutil.which("python3")
         if r:
             try:
-                v = subprocess.check_output([r, "--version"], text=True, timeout=5).strip()
+                v = subprocess.check_output([r, "--version"], text=True, timeout=5, creationflags=_NO_WINDOW).strip()
                 result["python"] = True
                 result["python_version"] = v
             except Exception:
@@ -771,7 +777,7 @@ class DeployAPI:
 
         try:
             v = subprocess.check_output([r or "python", "-m", "PyInstaller", "--version"],
-                                        text=True, timeout=10).strip()
+                                        text=True, timeout=10, creationflags=_NO_WINDOW).strip()
             result["pyinstaller"] = True
             result["pyinstaller_version"] = "PyInstaller " + v
         except Exception:
@@ -798,7 +804,7 @@ class DeployAPI:
         try:
             out = subprocess.check_output(
                 ["git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD"],
-                text=True, timeout=5
+                text=True, timeout=5, creationflags=_NO_WINDOW
             ).strip()
             current = out
         except Exception:
@@ -806,7 +812,7 @@ class DeployAPI:
         try:
             out = subprocess.check_output(
                 ["git", "-C", repo, "branch", "-a", "--format=%(refname:short)"],
-                text=True, timeout=10
+                text=True, timeout=10, creationflags=_NO_WINDOW
             )
             branches = [b.strip() for b in out.strip().split("\n") if b.strip() and "HEAD" not in b]
             return {"branches": branches, "current": current}
@@ -885,7 +891,7 @@ class DeployAPI:
         try:
             proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=cwd, text=True, bufsize=1
+                cwd=cwd, text=True, bufsize=1, creationflags=_NO_WINDOW
             )
             for line in iter(proc.stdout.readline, ""):
                 clean = line.rstrip("\n")
@@ -912,7 +918,7 @@ class DeployAPI:
         try:
             out = subprocess.check_output(
                 ["git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD"],
-                text=True, timeout=5
+                text=True, timeout=5, creationflags=_NO_WINDOW
             ).strip()
             return out
         except Exception as e:
@@ -935,7 +941,7 @@ class DeployAPI:
                 self._log(deploy_id, "", "separator")
                 self._log(deploy_id, "═══ Fermeture Cetas.exe ═══", "separator")
                 result = subprocess.run(["taskkill", "/F", "/IM", "Cetas.exe"],
-                                         capture_output=True, text=True)
+                                         capture_output=True, text=True, creationflags=_NO_WINDOW)
                 if result.returncode == 0:
                     self._log(deploy_id, "✓ Cetas.exe fermé", "ok")
                 else:
@@ -972,7 +978,7 @@ class DeployAPI:
                 self._log(deploy_id, "═══ Nettoyage ═══", "separator")
                 self._log(deploy_id, "═══ Fermeture Cetas.exe ═══", "separator")
                 result = subprocess.run(["taskkill", "/F", "/IM", "Cetas.exe"],
-                                         capture_output=True, text=True)
+                                         capture_output=True, text=True, creationflags=_NO_WINDOW)
                 if result.returncode == 0:
                     self._log(deploy_id, "✓ Cetas.exe fermé", "ok")
                 else:
@@ -1060,6 +1066,8 @@ class DeployHTTPHandler(http.server.BaseHTTPRequestHandler):
             self._json(self.api.get_branches())
         elif path == "/api/browse":
             self._json(self.api.browse_folder())
+        elif path == "/api/launch":
+            self._json(self.api.launch_app())
         elif path == "/api/logs":
             qs = urlparse(self.path).query
             did = ""
