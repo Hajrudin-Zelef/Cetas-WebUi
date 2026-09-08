@@ -766,6 +766,14 @@ class DeployAPI:
                     self._deploys[deploy_id]["error"] = "Git pull échoué"
                     return
                 self._log(deploy_id, "", "separator")
+                self._log(deploy_id, "═══ Fermeture Cetas.exe ═══", "separator")
+                result = subprocess.run(["taskkill", "/F", "/IM", "Cetas.exe"],
+                                         capture_output=True, text=True)
+                if result.returncode == 0:
+                    self._log(deploy_id, "✓ Cetas.exe fermé", "ok")
+                else:
+                    self._log(deploy_id, "Aucun process Cetas.exe actif", "info")
+                self._log(deploy_id, "", "separator")
                 dist = os.path.join(repo, "dist")
                 if os.path.isdir(dist):
                     shutil.rmtree(dist, ignore_errors=True)
@@ -784,6 +792,14 @@ class DeployAPI:
                     return
             elif action == "clean":
                 self._log(deploy_id, "═══ Nettoyage ═══", "separator")
+                self._log(deploy_id, "═══ Fermeture Cetas.exe ═══", "separator")
+                result = subprocess.run(["taskkill", "/F", "/IM", "Cetas.exe"],
+                                         capture_output=True, text=True)
+                if result.returncode == 0:
+                    self._log(deploy_id, "✓ Cetas.exe fermé", "ok")
+                else:
+                    self._log(deploy_id, "Aucun process Cetas.exe actif", "info")
+                self._log(deploy_id, "", "separator")
                 dist = os.path.join(repo, "dist")
                 if os.path.isdir(dist):
                     shutil.rmtree(dist, ignore_errors=True)
