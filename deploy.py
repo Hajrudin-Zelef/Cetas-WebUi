@@ -388,7 +388,7 @@ function showScreen(id) {
   closeSidebar();
   if (id === 'detect') runDetection();
   if (id === 'logs') scrollLogs();
-  if (id === 'action') loadBranches();
+  if (id === 'action') { loadBranches(); document.getElementById('branchSelect').classList.toggle('visible', selectedAction === 'pull' || selectedAction === 'auto'); }
 }
 
 function selectAction(el) {
