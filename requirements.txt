@@ -3,3 +3,4 @@ PyJWT
 pywebview
 pystray
 Pillow
+duckduckgo-search

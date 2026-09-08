@@ -6,6 +6,7 @@ block_cipher = None
 
 datas = [
     ('static', 'static'),
+    ('server', 'server'),
     ('core/win/crypto_windows.py', 'core/win'),
     ('core/linux/crypto_linux.py', 'core/linux'),
     ('core/users-seed.json', 'core'),
@@ -41,6 +42,10 @@ a = Analysis(
         'webview.platforms.edgechromium',
         'observability',
         'marexcode',
+        'websearch',
+        'lsp',
+        'mcp',
+        'duckduckgo_search',
     ],
     hookspath=[],
     runtime_hooks=[],
