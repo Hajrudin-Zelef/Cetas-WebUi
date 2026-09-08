@@ -21,6 +21,15 @@ async function _searchSearXNG(e){
 }
 
 async function executeWebSearch(e){
+  try{
+    var h={"Content-Type":"application/json"};
+    if(typeof Auth!=="undefined"&&Auth.getToken){var token=Auth.getToken();if(token)h["Authorization"]="Bearer "+token}
+    var r=await fetch("/api/websearch",{method:"POST",headers:h,body:JSON.stringify({query:e,max_results:10}),signal:AbortSignal.timeout(15000)});
+    if(!r.ok)throw new Error("WebSearch returned "+r.status);
+    var a=await r.json();
+    var results=(a.results||[]).map(function(x){return{title:_sanitize(x.title),url:_sanitize(x.url),snippet:_sanitize(x.description||x.snippet||"")}});
+    if(results.length>0)return results;
+  }catch(err){console.warn("[search-engine] /api/websearch failed:",err.message)}
   try{var t=await _searchTavily(e);if(t&&t.length>0)return t}catch(e){console.warn("[search-engine] Tavily échoué:",e.message)}
   try{var t=await _searchSearXNG(e);if(t&&t.length>0)return t}catch(e){console.warn("[search-engine] SearXNG échoué:",e.message)}
   return[];
