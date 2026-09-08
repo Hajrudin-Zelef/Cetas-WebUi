@@ -2727,6 +2727,36 @@ function updateLocalFallbackVisibility() {
     document.getElementById("local-fallback-row").style.display = n ? "" : "none";
 }
 
+function _loadWebsearchKeys() {
+    fetch("/api/websearch/keys", { headers: { "Authorization": "Bearer " + (localStorage.getItem("cetas_token") || "") } })
+        .then(r => r.json()).then(data => {
+            document.getElementById("ws-tavily-key").value = data.TAVILY_API_KEY || "";
+            document.getElementById("ws-exa-key").value = data.EXA_API_KEY || "";
+            document.getElementById("ws-brave-key").value = data.BRAVE_API_KEY || "";
+            document.getElementById("ws-jina-key").value = data.JINA_API_KEY || "";
+        }).catch(() => {});
+}
+
+document.getElementById("websearch-save-btn")?.addEventListener("click", () => {
+    const payload = {
+        TAVILY_API_KEY: document.getElementById("ws-tavily-key").value.trim(),
+        EXA_API_KEY: document.getElementById("ws-exa-key").value.trim(),
+        BRAVE_API_KEY: document.getElementById("ws-brave-key").value.trim(),
+        JINA_API_KEY: document.getElementById("ws-jina-key").value.trim(),
+    };
+    fetch("/api/websearch/keys", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (localStorage.getItem("cetas_token") || "") },
+        body: JSON.stringify(payload)
+    }).then(r => r.json()).then(d => {
+        if (d.ok) {
+            const btn = document.getElementById("websearch-save-btn");
+            btn.textContent = "✓ Sauvegardé";
+            setTimeout(() => btn.textContent = "Sauvegarder", 2000);
+        }
+    }).catch(() => {});
+});
+
 function openApiKeysModal(e = "apimodeles") {
     document.querySelectorAll(".apikey-eye-btn").forEach((e => {
         const t = document.getElementById(e.dataset.target);
@@ -2747,7 +2777,8 @@ function openApiKeysModal(e = "apimodeles") {
     document.querySelectorAll(".apikeys-tab").forEach((e => e.classList.remove("active"))), 
     document.querySelectorAll(".apikeys-panel").forEach((e => e.classList.remove("active"))), 
     document.querySelector('.apikeys-tab[data-tab="' + e + '"]').classList.add("active"), 
-    document.getElementById("panel-" + e).classList.add("active"), "faq" === e && loadFaq(), 
+    document.getElementById("panel-" + e).classList.add("active"), "faq" === e && loadFaq(),
+    "websearch" === e && _loadWebsearchKeys(),
     updateThemeOptions();
     const n = apikeysModalOverlay.querySelector(".sp-modal.apikeys-modal");
     if (apikeysModalOverlay.classList.remove("closing", "opening"), n && n.classList.remove("closing", "opening", "morphing-from-dock", "morphing-to-dock"), 

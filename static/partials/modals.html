@@ -56,6 +56,7 @@
                 <button class="apikeys-tab" data-tab="statistiques">Statistiques</button>
                 <button class="apikeys-tab" data-tab="logs">Logs et événements</button>
                 <button class="apikeys-tab" data-tab="share">Partager</button>
+                <button class="apikeys-tab" data-tab="websearch">Recherche Web</button>
             </div>
             <div class="apikeys-tab-content">
                 <button type="button" id="apikeys-close-btn" class="apikeys-close-btn" title="Fermer">&times;</button>
@@ -419,6 +420,37 @@
                         <p class="share-panel-text">Deux petites règles seulement : <strong>ne pas vendre Cetas</strong>, et le partager <strong>uniquement depuis le lien ci-dessus</strong>. C'est tout !</p>
                         <p class="share-panel-text">Merci à toutes celles et ceux qui partagent Cetas autour d'eux 🙏</p>
                     </div>
+                    </div>
+                </div>
+                <!-- Panel Recherche Web -->
+                <div class="apikeys-panel" id="panel-websearch">
+                    <h3>Recherche Web</h3>
+                    <p class="apikey-intro">Clés API pour la chaîne de recherche web (Tavily → Exa → Brave → Jina → SearXNG → DuckDuckGo). Sans clé, seul DuckDuckGo est utilisé.</p>
+                    <div class="apikeys-panel-body">
+                        <div class="audio-setting-row">
+                            <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                            <label class="audio-setting-label" for="ws-tavily-key">Tavily <span class="rp-hint-btn custom-select-info" data-tooltip="Recherche web IA. Clé sur tavily.com">&#10;tvly-...</span></label>
+                            <input type="password" id="ws-tavily-key" class="audio-setting-input" placeholder="tvly-..." autocomplete="off">
+                        </div>
+                        <div class="audio-setting-row">
+                            <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                            <label class="audio-setting-label" for="ws-exa-key">Exa <span class="rp-hint-btn custom-select-info" data-tooltip="Recherche web sémantique. Clé sur exa.ai">&#10;...</span></label>
+                            <input type="password" id="ws-exa-key" class="audio-setting-input" placeholder="..." autocomplete="off">
+                        </div>
+                        <div class="audio-setting-row">
+                            <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                            <label class="audio-setting-label" for="ws-brave-key">Brave Search <span class="rp-hint-btn custom-select-info" data-tooltip="Brave Search API. Clé sur api.search.brave.com">&#10;...</span></label>
+                            <input type="password" id="ws-brave-key" class="audio-setting-input" placeholder="..." autocomplete="off">
+                        </div>
+                        <div class="audio-setting-row">
+                            <span class="audio-setting-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                            <label class="audio-setting-label" for="ws-jina-key">Jina <span class="rp-hint-btn custom-select-info" data-tooltip="Jina Reader + Search. Clé sur jina.ai">&#10;...</span></label>
+                            <input type="password" id="ws-jina-key" class="audio-setting-input" placeholder="..." autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="models-save-row">
+                        <span></span>
+                        <button type="button" id="websearch-save-btn" class="models-save-btn">Sauvegarder</button>
                     </div>
                 </div>
                 <!-- Barre de sauvegarde globale (sticky, visible sur tous les onglets) -->

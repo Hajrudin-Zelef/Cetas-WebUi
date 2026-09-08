@@ -1448,6 +1448,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if path.startswith("/api/tavily/search"):
             self._tavily_search()
             return
+        # Websearch keys
+        if path == "/api/websearch/keys":
+            self._websearch_keys_get()
+            return
         # Proxy
         if path.startswith("/api/proxy/"):
             self._proxy_request("GET")
@@ -1603,6 +1607,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         # Settings utilisateur
         if self.path == "/api/settings":
             self._settings_put()
+            return
+        # Websearch keys
+        if self.path == "/api/websearch/keys":
+            self._websearch_keys_put()
             return
         if self.path.startswith("/api/marexcode/sessions/"):
             sid = self.path[len("/api/marexcode/sessions/"):]
@@ -1772,6 +1780,79 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         self._respond_json(response)
         log.info("POST /api/websearch q=%s provider=%s hits=%d", query[:60],
                  result.get("provider", "?"), len(hits))
+
+    def _websearch_keys_get(self):
+        """GET /api/websearch/keys — retourne les clés websearch (masquées)."""
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        WS_KEYS = ["TAVILY_API_KEY", "EXA_API_KEY", "BRAVE_API_KEY", "JINA_API_KEY"]
+        result = {}
+        for k in WS_KEYS:
+            v = os.environ.get(k, "")
+            result[k] = v[:4] + "****" + v[-4:] if len(v) > 8 else ("***" if v else "")
+        self._respond_json(result)
+
+    def _websearch_keys_put(self):
+        """PUT /api/websearch/keys — met à jour les clés websearch dans le vault."""
+        import secrets as _pysecrets
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        password = os.environ.get("CETAS_VAULT_PASSWORD", "").strip()
+        if not password:
+            self._respond_json({"error": "Vault password not set"}, 500)
+            return
+        SecureVault = _load_vault()
+        vault = SecureVault(_vault_path())
+        try:
+            vault_data = vault.load(password)
+        except Exception:
+            self._respond_json({"error": "Vault ouverture échouée"}, 500)
+            return
+        if not vault_data:
+            vault_data = {}
+        proxy_key_hex = vault_data.get("proxy_key", "")
+        if not proxy_key_hex:
+            self._respond_json({"error": "proxy_key absente"}, 500)
+            return
+        proxy_key = bytes.fromhex(proxy_key_hex)
+        WS_ENV_MAP = {"tavily": "TAVILY_API_KEY", "exa": "EXA_API_KEY", "brave": "BRAVE_API_KEY", "jina": "JINA_API_KEY"}
+        ws_data = vault_data.get("websearch", {})
+        for provider, env_name in WS_ENV_MAP.items():
+            val = data.get(env_name, "").strip()
+            if val and val.endswith("****"):
+                continue
+            if val:
+                ws_data[provider] = val
+                os.environ[env_name] = val
+            elif provider in ws_data:
+                del ws_data[provider]
+                os.environ.pop(env_name, None)
+        vault_data["websearch"] = ws_data
+        vault.save(password, vault_data)
+        env_path = _env_path()
+        env_lines = []
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                env_lines = [l for l in f.read().splitlines() if not any(l.startswith(e + "=") for e in WS_ENV_MAP.values())]
+        for provider, key in ws_data.items():
+            env_name = WS_ENV_MAP.get(provider)
+            iv = _pysecrets.token_bytes(12)
+            aesgcm = AESGCM(proxy_key)
+            ct = aesgcm.encrypt(iv, key.encode("utf-8"), env_name.lower().encode("utf-8"))
+            env_lines.append(f"{env_name}={iv.hex()}:{ct.hex()}")
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(sorted(env_lines)) + "\n")
+        self._respond_json({"ok": True})
+        log.info("Websearch keys updated by %s", username)
 
     def _proxy_request(self, method: str):
         if not _rate_check("proxy:" + self.client_address[0], 30, 60):
