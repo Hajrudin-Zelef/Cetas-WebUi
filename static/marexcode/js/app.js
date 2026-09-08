@@ -1610,6 +1610,7 @@ function boot() {
     fillUserInfo();
     setupChat();
     if (chat.setupUndoRedo) chat.setupUndoRedo();
+    if (chat.setupImageDrop) chat.setupImageDrop();
 
     chat.newSession();
     initModelSelect(refs.menuModel, refs.labelModel, (m) => {

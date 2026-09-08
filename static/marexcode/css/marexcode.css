@@ -824,6 +824,12 @@ html,body{
   transition:height 0.05s ease-out;
 }
 .composer textarea::placeholder{ color:var(--text-tertiary); }
+.image-preview{ display:flex; gap:8px; padding:8px 16px; flex-wrap:wrap; border-bottom:1px solid var(--border); }
+.image-preview-item{ position:relative; }
+.image-preview-item img{ height:60px; border-radius:6px; border:1px solid var(--border); }
+.image-preview-remove{ position:absolute; top:-4px; right:-4px; width:18px; height:18px; border-radius:50%; background:var(--danger); color:#fff; border:none; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; }
+.message-images{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.message-images img{ max-width:300px; max-height:300px; border-radius:8px; cursor:pointer; }
 
 .composer-footer{
   display:flex;

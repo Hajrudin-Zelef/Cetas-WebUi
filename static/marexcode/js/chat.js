@@ -18,6 +18,54 @@ export function createChat(deps) {
     let thinkStepEl = null;
     let cachedInstructions = { global: '', workspace: '', memory: '' };
     let messageQueue = [];
+    let pendingImages = [];
+
+    function setupImageDrop() {
+        if (!ta) return;
+        ta.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+        ta.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].type.startsWith('image/')) addImage(files[i]);
+            }
+        });
+        ta.addEventListener('paste', (e) => {
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items) return;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.startsWith('image/')) {
+                    e.preventDefault();
+                    addImage(items[i].getAsFile());
+                }
+            }
+        });
+    }
+
+    function addImage(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            pendingImages.push({ dataUrl: reader.result, mimeType: file.type, name: file.name });
+            renderImagePreview();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function renderImagePreview() {
+        const preview = document.getElementById('image-preview');
+        if (!preview) return;
+        if (pendingImages.length === 0) { preview.style.display = 'none'; preview.innerHTML = ''; return; }
+        preview.style.display = 'flex';
+        preview.innerHTML = pendingImages.map((img, i) =>
+            '<div class="image-preview-item"><img src="' + img.dataUrl + '" alt="' + (img.name || 'image') + '"><button class="image-preview-remove" data-idx="' + i + '">×</button></div>'
+        ).join('');
+        preview.querySelectorAll('.image-preview-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                pendingImages.splice(parseInt(btn.dataset.idx), 1);
+                renderImagePreview();
+            });
+        });
+    }
 
     async function preloadInstructions() {
         try {
@@ -72,16 +120,42 @@ export function createChat(deps) {
         return esc(md);
     }
 
-    function addMsg(cls, text, useMarkdown) {
+    function addMsg(cls, content, useMarkdown) {
         const m = document.createElement('div');
         m.className = 'msg ' + cls;
-        if (useMarkdown && cls === 'assistant') {
+        if (Array.isArray(content)) {
+            const textParts = content.filter(c => c.type === 'text').map(c => c.text).join('\n');
+            const imageParts = content.filter(c => c.type === 'image');
+            if (useMarkdown && cls === 'assistant' && textParts) {
+                const inner = document.createElement('div');
+                inner.className = 'md';
+                inner.innerHTML = renderMarkdown(textParts);
+                m.appendChild(inner);
+            } else if (textParts) {
+                m.textContent = textParts;
+            }
+            if (imageParts.length > 0) {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'message-images';
+                imageParts.forEach(img => {
+                    const src = img.dataUrl || ('data:' + (img.mimeType || 'image/png') + ';base64,' + img.data);
+                    const imgEl = document.createElement('img');
+                    imgEl.src = src;
+                    imgEl.alt = 'Image';
+                    imgEl.style.maxWidth = '300px';
+                    imgEl.style.borderRadius = '8px';
+                    imgEl.style.marginTop = '8px';
+                    imgContainer.appendChild(imgEl);
+                });
+                m.appendChild(imgContainer);
+            }
+        } else if (useMarkdown && cls === 'assistant') {
             const inner = document.createElement('div');
             inner.className = 'md';
-            inner.innerHTML = renderMarkdown(text || '');
+            inner.innerHTML = renderMarkdown(content || '');
             m.appendChild(inner);
         } else {
-            m.textContent = text;
+            m.textContent = content;
         }
         chatLog.appendChild(m);
         chatLog.scrollTop = chatLog.scrollHeight;
@@ -371,7 +445,7 @@ export function createChat(deps) {
 
     async function send() {
         const text = ta.value.trim();
-        if (!text) return;
+        if (!text && pendingImages.length === 0) return;
         const queueEnabled = localStorage.getItem('marex-message-queue') === '1';
         if (running && queueEnabled) {
             messageQueue.push(text);
@@ -393,8 +467,21 @@ export function createChat(deps) {
         if (!session.title || session.title === 'Nouvelle conversation') {
             session.title = text.length > 40 ? text.substring(0, 40) + '…' : text;
         }
-        session.messages.push({ role: 'user', content: text });
-        addMsg('user', text);
+        let userContent;
+        if (pendingImages.length > 0) {
+            userContent = [];
+            if (text) userContent.push({ type: 'text', text: text });
+            pendingImages.forEach(img => {
+                const base64 = img.dataUrl.split(',')[1] || '';
+                userContent.push({ type: 'image', data: base64, mimeType: img.mimeType, dataUrl: img.dataUrl });
+            });
+            pendingImages = [];
+            renderImagePreview();
+        } else {
+            userContent = text;
+        }
+        session.messages.push({ role: 'user', content: userContent });
+        addMsg('user', userContent);
         updateTokenCounter();
         trackActivity().catch(() => {});
 
@@ -635,7 +722,8 @@ export function createChat(deps) {
         isRunning: () => running,
         preloadInstructions,
         refreshUndoRedo,
-        setupUndoRedo
+        setupUndoRedo,
+        setupImageDrop
     };
 }
 
