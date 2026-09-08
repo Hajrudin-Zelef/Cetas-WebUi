@@ -1343,6 +1343,31 @@ Marexcode existe sous deux formes :
   Endpoints : POST undo/redo, GET undo-log. Boutons ↩ ↪ dans composer footer.
   Raccourcis : Ctrl+Z (undo), Ctrl+Shift+Z / Ctrl+Y (redo). Auto-refresh après Write/Edit.
   System prompt : règle 13 (MCP) + 14 (Custom Tools).
+- **Phase 9 — Image Support** : Drag & drop + Ctrl+V paste d'images dans le textarea.
+  Preview avec bouton ✕. `send()` construit un content array `[{type:"text"}, {type:"image", data, mimeType}]`.
+  `addMsg()` rend les images avec `.message-images`. Pas de backend — inline base64.
+  `streamModelWithTools` formate déjà pour OpenAI/Anthropic/Gemini.
+- **Phase 10 — Slash Commands** : 12 commandes built-in + autocomplete dropdown.
+  `/help` `/clear` `/model` `/undo` `/redo` `/compact` `/init` `/mcp` `/cost` `/workspace` `/skills` `/diff`.
+  Auto-complétion avec Arrow/Tab/Escape/mousedown. Intercept dans `send()` avant le flow normal.
+  Custom commands depuis `tools.json` (réutilise Phase 4).
+
+**Slash Commands détaillées :**
+
+| Commande | Action |
+|----------|--------|
+| `/help` | Liste les commandes built-in + custom tools |
+| `/clear` | Efface le chat (newSession) |
+| `/model` | Affiche le modèle courant |
+| `/undo` | Annule la dernière modification (POST /api/marexcode/undo) |
+| `/redo` | Rétablit la dernière annulation (POST /api/marexcode/redo) |
+| `/compact` | Compresse l'historique (garde 4 derniers messages, résume le reste) |
+| `/init` | Analyse le workspace (tree API), détecte la stack, génère MAREXCODE.md |
+| `/mcp` | Liste les serveurs MCP et leurs tools |
+| `/cost` | Affiche l'usage tokens (user vs assistant, tokens estimés) |
+| `/workspace` | Liste les workspaces, `/workspace switch {id}` pour activer |
+| `/skills` | Liste les skills actifs avec mode (Auto/Manuel/Sur demande) |
+| `/diff` | Affiche le dernier patch/diff dans la session |
 
 **Sécurité (durcie) :**
 - `EXEC_SANDBOX` ne prend **plus** `CETAS_BASE_DIR` en fallback (défaut = `DATA_DIR`) — élimine le
