@@ -13,6 +13,7 @@ import sys
 import json
 import time
 import shutil
+import logging
 import datetime
 import threading
 import subprocess
@@ -26,6 +27,9 @@ try:
 except ImportError:
     print("Erreur: pywebview non installé. pip install pywebview")
     sys.exit(1)
+
+logging.basicConfig(level=logging.INFO, format="[deploy] %(message)s")
+log = logging.getLogger(__name__)
 
 APP_TITLE = "CETAS Deploy"
 APP_VERSION = "1.0.0"
@@ -704,8 +708,8 @@ class DeployAPI:
             try:
                 with open(p, "r", encoding="utf-8") as f:
                     self.config.update(json.load(f))
-            except Exception:
-                pass
+            except Exception as e:
+                log.warning("Config corrompue, utilisation des défauts: %s", e)
 
     def get_config(self):
         cfg = dict(self.config)
@@ -719,8 +723,8 @@ class DeployAPI:
             result = self._window.create_file_dialog(webview.FOLDER_DIALOG)
             if result and len(result) > 0:
                 return {"path": result[0]}
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("Dialogue dossier annulé ou erreur: %s", e)
         return {"path": ""}
 
     def save_config(self, data):
@@ -805,7 +809,8 @@ class DeployAPI:
             )
             branches = [b.strip() for b in out.strip().split("\n") if b.strip() and "HEAD" not in b]
             return {"branches": branches, "current": current}
-        except Exception:
+        except Exception as e:
+            log.warning("Erreur lors de la récupération des branches: %s", e)
             return {"branches": [], "current": current}
 
     def deploy(self, action, branch=None):
@@ -862,7 +867,8 @@ class DeployAPI:
                 text=True, timeout=5
             ).strip()
             return out
-        except Exception:
+        except Exception as e:
+            log.warning("Impossible de détecter la branche courante: %s", e)
             return "main"
 
     def _run_deploy(self, deploy_id, action, branch):
@@ -889,8 +895,15 @@ class DeployAPI:
                 self._log(deploy_id, "", "separator")
                 dist = os.path.join(repo, "dist")
                 if os.path.isdir(dist):
-                    shutil.rmtree(dist, ignore_errors=True)
-                    self._log(deploy_id, "✓ dist/ supprimé", "ok")
+                    try:
+                        shutil.rmtree(dist)
+                        self._log(deploy_id, "✓ dist/ supprimé", "ok")
+                    except Exception as e:
+                        self._log(deploy_id, f"✗ Erreur suppression dist/: {e}", "error")
+                        self._deploys[deploy_id]["done"] = True
+                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer dist/: {e}"
+                        self._save_history(action, False)
+                        return
                 self._log(deploy_id, "", "separator")
                 py = shutil.which("python") or "python"
                 if not self._run_cmd(deploy_id, [py, "-m", "PyInstaller", "--clean", "--noconfirm", "cetas.spec"], cwd=repo):
@@ -917,8 +930,15 @@ class DeployAPI:
                 self._log(deploy_id, "", "separator")
                 dist = os.path.join(repo, "dist")
                 if os.path.isdir(dist):
-                    shutil.rmtree(dist, ignore_errors=True)
-                    self._log(deploy_id, "✓ dist/ supprimé", "ok")
+                    try:
+                        shutil.rmtree(dist)
+                        self._log(deploy_id, "✓ dist/ supprimé", "ok")
+                    except Exception as e:
+                        self._log(deploy_id, f"✗ Erreur suppression dist/: {e}", "error")
+                        self._deploys[deploy_id]["done"] = True
+                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer dist/: {e}"
+                        self._save_history(action, False)
+                        return
                 else:
                     self._log(deploy_id, "dist/ n'existe pas, rien à faire")
             elif action == "build":
@@ -963,8 +983,8 @@ class DeployAPI:
         try:
             with open(self._config_path(), "w", encoding="utf-8") as f:
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning("Impossible de sauvegarder l'historique: %s", e)
 
 
 class DeployHTTPHandler(http.server.BaseHTTPRequestHandler):
