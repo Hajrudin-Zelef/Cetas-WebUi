@@ -930,13 +930,18 @@ class DeployAPI:
                     self._save_history(action, False)
                     return
 
-            exe_full = exe if os.path.isabs(exe) else os.path.join(repo, exe)
-            if os.path.isfile(exe_full):
-                self._log(deploy_id, "", "separator")
-                self._log(deploy_id, f"✓ Exécutable trouvé: {exe_full}", "ok")
-            else:
-                self._log(deploy_id, "", "separator")
-                self._log(deploy_id, f"⚠ Exécutable non trouvé: {exe_full}", "error")
+            if action in ("auto", "build"):
+                exe_full = exe if os.path.isabs(exe) else os.path.join(repo, exe)
+                if os.path.isfile(exe_full):
+                    self._log(deploy_id, "", "separator")
+                    self._log(deploy_id, f"✓ Exécutable trouvé: {exe_full}", "ok")
+                else:
+                    self._log(deploy_id, "", "separator")
+                    self._log(deploy_id, f"⚠ Exécutable non trouvé: {exe_full}", "error")
+                    self._deploys[deploy_id]["done"] = True
+                    self._deploys[deploy_id]["error"] = f"Exécutable introuvable après {action}: {exe_full}"
+                    self._save_history(action, False)
+                    return
 
             self._deploys[deploy_id]["done"] = True
             self._save_history(action, True)
