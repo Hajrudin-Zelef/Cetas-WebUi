@@ -124,6 +124,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="topbar">
     <span class="topbar-title">""" + APP_TITLE + r"""</span>
     <div style="display:flex;align-items:center;gap:10px">
+      <span id="keyStatus" style="cursor:pointer;font-size:14px" onclick="showScreen('settings')" title="Clé API">🔑 ✗</span>
       <span class="badge idle" id="stateBadge">Inactif</span>
       <button class="topbar-btn" onclick="showScreen('settings')" title="Paramètres">⚙</button>
     </div>
@@ -262,7 +263,20 @@ async function poll() {
       const d = new Date();
       document.getElementById('shotMeta').textContent = d.toLocaleTimeString();
     }
+    updateKeyStatus();
   } catch(e) {}
+}
+
+function updateKeyStatus() {
+  const el = document.getElementById('keyStatus');
+  if (!el) return;
+  if (cfg.api_key_masked) {
+    el.textContent = '🔑 ✓';
+    el.title = 'Clé API configurée';
+  } else {
+    el.textContent = '🔑 ✗';
+    el.title = 'Clé API manquante — ouvre les Paramètres';
+  }
 }
 
 async function startAgent() {
@@ -338,6 +352,7 @@ const MODELS = """ + json.dumps(PROVIDERS) + r""";
   const r = await api('config');
   cfg = r;
   document.getElementById('modeSelect').value = cfg.autonomy_mode || 'auto';
+  updateKeyStatus();
   startPolling();
 })();
 </script>
@@ -367,6 +382,8 @@ class AgentServer:
             cfg = self._resolved_config()
             cfg["_gen"] = self._config_gen()
             self._loop = AgentLoop(cfg)
+            log.info("AgentLoop créé: api_key=%s, model=%s",
+                     "present" if cfg.get("api_key") else "MISSING", cfg.get("model"))
         return self._loop
 
     def _config_gen(self):
@@ -426,6 +443,9 @@ class AgentServer:
 
     def start(self, instruction):
         cfg = self._resolved_config()
+        log.info("Start: api_key=%s, model=%s, base_url=%s",
+                 "present (" + cfg["api_key"][:8] + "...)" if cfg.get("api_key") else "MISSING",
+                 cfg.get("model"), cfg.get("base_url"))
         if not cfg.get("api_key"):
             return {"ok": False, "error": "Clé API manquante — ouvre les Paramètres et configure-la."}
         if not cfg.get("model"):
