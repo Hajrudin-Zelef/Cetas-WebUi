@@ -13,6 +13,7 @@ import sys
 import json
 import time
 import shutil
+import datetime
 import threading
 import subprocess
 import http.server
@@ -27,6 +28,7 @@ except ImportError:
     sys.exit(1)
 
 APP_TITLE = "CETAS Deploy"
+APP_VERSION = "1.0.0"
 CONFIG_FILE = "config.json"
 LOGO_SVG = """<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>"""
 
@@ -189,6 +191,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="sidebar-item" onclick="showScreen('logs')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Logs
+    </div>
+    <div class="sidebar-item" onclick="showScreen('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Paramètres
     </div>
   </div>
 </div>
@@ -359,6 +365,56 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<!-- Screen: Settings -->
+<div class="screen" id="screen-settings">
+  <div class="topbar">
+    <button class="topbar-btn" onclick="showScreen('main')">&larr;</button>
+    <span class="topbar-title">Paramètres</span>
+    <span></span>
+  </div>
+  <div class="setup-content" style="overflow-y:auto">
+    <div class="setup-title">Paramètres</div>
+    <div class="setup-subtitle">Configuration de l'outil de déploiement.</div>
+
+    <div class="field">
+      <label class="field-label">Chemin du repository</label>
+      <div class="field-row">
+        <input class="field-input" id="settingsRepo" placeholder="Chemin du dossier...">
+        <button class="browse-btn" onclick="browseFolderSettings()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Parcourir</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Chemin de l'exécutable</label>
+      <input class="field-input" id="settingsExe" placeholder=".\dist\Cetas\Cetas.exe">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Branche par défaut</label>
+      <select class="field-input" id="settingsBranch" style="padding:12px 16px;cursor:pointer">
+        <option value="">Chargement...</option>
+      </select>
+      <div class="field-hint">Branche utilisée pour l'action Auto si aucune sélection explicite</div>
+    </div>
+
+    <button class="btn-primary" onclick="saveSettings()" style="margin-bottom:24px">Enregistrer</button>
+
+    <div class="deploy-divider" style="margin-bottom:20px"></div>
+
+    <div class="setup-title" style="font-size:16px">Historique</div>
+    <div id="historyList" style="margin-bottom:24px">
+      <div style="color:var(--text2);font-size:13px;padding:12px 0">Aucun déploiement</div>
+    </div>
+
+    <div class="deploy-divider" style="margin-bottom:20px"></div>
+
+    <div style="text-align:center;padding:12px 0">
+      <div style="color:var(--text2);font-size:12px;margin-bottom:4px">CETAS Deploy v""" + APP_VERSION + r"""</div>
+      <div style="color:var(--text2);font-size:11px;word-break:break-all">Config : <span id="configPathDisplay"></span></div>
+    </div>
+  </div>
+</div>
+
 <script>
 let config = {};
 let logs = [];
@@ -389,6 +445,7 @@ function showScreen(id) {
   if (id === 'detect') runDetection();
   if (id === 'logs') scrollLogs();
   if (id === 'action') { loadBranches(); document.getElementById('branchSelect').classList.toggle('visible', selectedAction === 'pull' || selectedAction === 'auto'); }
+  if (id === 'settings') loadSettings();
 }
 
 function selectAction(el) {
@@ -549,6 +606,57 @@ async function launchApp() {
   if (!r.ok) alert(r.error || 'Impossible de lancer l\'app');
 }
 
+async function loadSettings() {
+  document.getElementById('settingsRepo').value = config.repo_path || '';
+  document.getElementById('settingsExe').value = config.exe_path || '';
+  document.getElementById('configPathDisplay').textContent = config._config_path || '';
+  const r = await api('branches');
+  const sel = document.getElementById('settingsBranch');
+  sel.innerHTML = '';
+  (r.branches || []).forEach(b => {
+    const o = document.createElement('option');
+    o.value = b; o.textContent = b;
+    if (b === (config.default_branch || r.current)) { o.selected = true; }
+    sel.appendChild(o);
+  });
+  renderHistory();
+}
+
+async function saveSettings() {
+  const repo = document.getElementById('settingsRepo').value.trim();
+  const exe = document.getElementById('settingsExe').value.trim();
+  const branch = document.getElementById('settingsBranch').value;
+  if (!repo || !exe) return;
+  const r = await api('config', {repo_path: repo, exe_path: exe, default_branch: branch});
+  if (r.ok) { config.repo_path = repo; config.exe_path = exe; config.default_branch = branch; updateMainUI(); alert('Enregistré !'); }
+}
+
+async function browseFolderSettings() {
+  const r = await api('browse');
+  if (r.path) {
+    document.getElementById('settingsRepo').value = r.path;
+    document.getElementById('settingsExe').value = '.\\dist\\Cetas\\Cetas.exe';
+  }
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  const h = config.history || [];
+  if (!h.length) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:12px 0">Aucun déploiement</div>'; return; }
+  el.innerHTML = h.slice(-10).reverse().map(item => {
+    const d = new Date(item.date);
+    const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+    let t = 'à l\'instant';
+    if (diff > 86400) t = 'il y a ' + Math.floor(diff/86400) + 'j';
+    else if (diff > 3600) t = 'il y a ' + Math.floor(diff/3600) + 'h';
+    else if (diff > 60) t = 'il y a ' + Math.floor(diff/60) + 'min';
+    const icon = item.ok ? '✓' : '✗';
+    const color = item.ok ? 'var(--green)' : 'var(--red)';
+    const actions = {auto:'Auto',pull:'Git Pull',clean:'Nettoyer',build:'Build'};
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)"><span style="color:'+color+';font-size:16px;font-weight:700;width:20px">'+icon+'</span><div style="flex:1"><div style="font-size:13px">'+(actions[item.action]||item.action)+'</div><div style="font-size:11px;color:var(--text2)">'+t+'</div></div></div>';
+  }).join('');
+}
+
 function setLogsStatus(state, text) {
   document.getElementById('logsDot').className = 'dot ' + state;
   document.getElementById('logsStatusText').textContent = text;
@@ -600,7 +708,9 @@ class DeployAPI:
                 pass
 
     def get_config(self):
-        return dict(self.config)
+        cfg = dict(self.config)
+        cfg["_config_path"] = self._config_path()
+        return cfg
 
     def browse_folder(self):
         if not self._window:
@@ -616,6 +726,8 @@ class DeployAPI:
     def save_config(self, data):
         self.config["repo_path"] = data.get("repo_path", self.config["repo_path"])
         self.config["exe_path"] = data.get("exe_path", self.config["exe_path"])
+        if "default_branch" in data:
+            self.config["default_branch"] = data["default_branch"]
         self.config["first_run"] = False
         try:
             with open(self._config_path(), "w", encoding="utf-8") as f:
@@ -764,6 +876,7 @@ class DeployAPI:
                 if not self._run_cmd(deploy_id, ["git", "pull", "origin", branch or "main"], cwd=repo):
                     self._deploys[deploy_id]["done"] = True
                     self._deploys[deploy_id]["error"] = "Git pull échoué"
+                    self._save_history(action, False)
                     return
                 self._log(deploy_id, "", "separator")
                 self._log(deploy_id, "═══ Fermeture Cetas.exe ═══", "separator")
@@ -783,12 +896,14 @@ class DeployAPI:
                 if not self._run_cmd(deploy_id, [py, "-m", "PyInstaller", "--clean", "--noconfirm", "cetas.spec"], cwd=repo):
                     self._deploys[deploy_id]["done"] = True
                     self._deploys[deploy_id]["error"] = "Build PyInstaller échoué"
+                    self._save_history(action, False)
                     return
             elif action == "pull":
                 self._log(deploy_id, "═══ Git Pull ═══", "separator")
                 if not self._run_cmd(deploy_id, ["git", "pull", "origin", branch or "main"], cwd=repo):
                     self._deploys[deploy_id]["done"] = True
                     self._deploys[deploy_id]["error"] = "Git pull échoué"
+                    self._save_history(action, False)
                     return
             elif action == "clean":
                 self._log(deploy_id, "═══ Nettoyage ═══", "separator")
@@ -812,6 +927,7 @@ class DeployAPI:
                 if not self._run_cmd(deploy_id, [py, "-m", "PyInstaller", "--clean", "--noconfirm", "cetas.spec"], cwd=repo):
                     self._deploys[deploy_id]["done"] = True
                     self._deploys[deploy_id]["error"] = "Build PyInstaller échoué"
+                    self._save_history(action, False)
                     return
 
             exe_full = exe if os.path.isabs(exe) else os.path.join(repo, exe)
@@ -823,10 +939,27 @@ class DeployAPI:
                 self._log(deploy_id, f"⚠ Exécutable non trouvé: {exe_full}", "error")
 
             self._deploys[deploy_id]["done"] = True
+            self._save_history(action, True)
         except Exception as e:
             self._deploys[deploy_id]["done"] = True
             self._deploys[deploy_id]["error"] = str(e)
             self._log(deploy_id, f"Exception: {e}", "error")
+            self._save_history(action, False)
+
+    def _save_history(self, action, ok):
+        if "history" not in self.config:
+            self.config["history"] = []
+        self.config["history"].append({
+            "date": datetime.datetime.now().isoformat(),
+            "action": action,
+            "ok": ok
+        })
+        self.config["history"] = self.config["history"][-10:]
+        try:
+            with open(self._config_path(), "w", encoding="utf-8") as f:
+                json.dump(self.config, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
 
 
 class DeployHTTPHandler(http.server.BaseHTTPRequestHandler):
