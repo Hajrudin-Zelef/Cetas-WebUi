@@ -230,10 +230,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="field">
       <label class="field-label">Chemin du repository</label>
       <div class="field-row">
-        <input class="field-input" id="inputRepo" placeholder="Cliquer pour choisir..." onclick="document.getElementById('folderInput').click()">
-        <button class="browse-btn" onclick="document.getElementById('folderInput').click()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Parcourir</button>
+        <input class="field-input" id="inputRepo" placeholder="Coller le chemin ou cliquer Parcourir...">
+        <button class="browse-btn" onclick="browseFolder()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Parcourir</button>
       </div>
-      <input type="file" id="folderInput" webkitdirectory style="display:none" onchange="onFolderSelected(this)">
       <div class="field-hint">Sélectionne le dossier racine du projet CETAS</div>
     </div>
     <div class="field">
@@ -430,22 +429,13 @@ async function onRocketClick() {
   showScreen('detect');
 }
 
-function onFolderSelected(input) {
-  if (!input.files.length) return;
-  const firstFile = input.files[0];
-  const relPath = firstFile.webkitRelativePath;
-  const folderName = relPath.split('/')[0];
-  const fullPath = firstFile.path || firstFile.name;
-  let dir = fullPath.replace(/[\\\/][^\\\/]+$/, '');
-  if (dir.endsWith(folderName) || dir.endsWith(folderName + '\\') || dir.endsWith(folderName + '/')) {
-    // dir already ends with folder name, good
-  } else {
-    dir = dir + '\\' + folderName;
+async function browseFolder() {
+  const r = await api('browse');
+  if (r.path) {
+    document.getElementById('inputRepo').value = r.path;
+    document.getElementById('inputRepo').style.color = 'var(--text)';
+    document.getElementById('inputExe').value = '.\\dist\\Cetas\\Cetas.exe';
   }
-  document.getElementById('inputRepo').value = dir;
-  document.getElementById('inputRepo').style.color = 'var(--text)';
-  const exePath = dir + '\\dist\\Cetas\\Cetas.exe';
-  document.getElementById('inputExe').value = '.\\dist\\Cetas\\Cetas.exe';
 }
 
 async function saveSetup() {
@@ -566,7 +556,11 @@ class DeployAPI:
     def __init__(self):
         self.config = {"repo_path": "", "exe_path": ".\\dist\\Cetas\\Cetas.exe"}
         self._deploys = {}
+        self._window = None
         self._load_config()
+
+    def set_window(self, window):
+        self._window = window
 
     def _config_path(self):
         base = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -583,6 +577,17 @@ class DeployAPI:
 
     def get_config(self):
         return dict(self.config)
+
+    def browse_folder(self):
+        if not self._window:
+            return {"path": ""}
+        try:
+            result = self._window.create_file_dialog(webview.FOLDER_DIALOG)
+            if result and len(result) > 0:
+                return {"path": result[0]}
+        except Exception:
+            pass
+        return {"path": ""}
 
     def save_config(self, data):
         self.config["repo_path"] = data.get("repo_path", self.config["repo_path"])
@@ -768,6 +773,8 @@ class DeployHTTPHandler(http.server.BaseHTTPRequestHandler):
             self._json(self.api.detect())
         elif path == "/api/branches":
             self._json(self.api.get_branches())
+        elif path == "/api/browse":
+            self._json(self.api.browse_folder())
         elif path == "/api/logs":
             qs = urlparse(self.path).query
             did = ""
@@ -820,6 +827,7 @@ def main():
             min_size=(360, 600),
             resizable=True, text_select=True
         )
+        api.set_window(window)
         webview.start(debug=False)
 
 
