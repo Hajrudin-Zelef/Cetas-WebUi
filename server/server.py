@@ -49,7 +49,7 @@ try:
         redact_event as _obs_redact,
         generate_id as _obs_id,
     )
-    from marexcode import MarexcodeMixin
+    from .marexcode import MarexcodeMixin
 except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from observability import (
