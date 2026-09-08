@@ -298,12 +298,13 @@ function fillModels() {
   const p = document.getElementById('setProvider').value;
   const sel = document.getElementById('setModel');
   sel.innerHTML = '';
-  (MODELS[p] || []).forEach(m => {
+  const list = (MODELS[p] && MODELS[p].models) || [];
+  list.forEach(m => {
     const o = document.createElement('option');
     o.value = m; o.textContent = m;
     sel.appendChild(o);
   });
-  if (cfg.model && (MODELS[p] || []).includes(cfg.model)) sel.value = cfg.model;
+  if (cfg.model && list.includes(cfg.model)) sel.value = cfg.model;
 }
 
 function onProviderChange() {
