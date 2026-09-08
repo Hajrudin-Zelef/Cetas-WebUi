@@ -842,6 +842,19 @@ class DeployAPI:
     def _log(self, deploy_id, text, level="info"):
         self._deploys[deploy_id]["logs"].append({"text": text, "level": level})
 
+    def _rmtree_retry(self, path, deploy_id, attempts=5, delay=1.0):
+        last_err = None
+        for i in range(attempts):
+            try:
+                shutil.rmtree(path)
+                return True, None
+            except Exception as e:
+                last_err = e
+                if i < attempts - 1:
+                    self._log(deploy_id, f"Fichier verrouillé, nouvelle tentative dans {delay}s... ({i+1}/{attempts})", "info")
+                    time.sleep(delay)
+        return False, last_err
+
     def _run_cmd(self, deploy_id, cmd, cwd=None):
         self._log(deploy_id, "$ " + " ".join(cmd), "cmd")
         output_lines = []
@@ -906,13 +919,14 @@ class DeployAPI:
                 self._log(deploy_id, "", "separator")
                 dist = os.path.join(repo, "dist")
                 if os.path.isdir(dist):
-                    try:
-                        shutil.rmtree(dist)
+                    ok, err = self._rmtree_retry(dist, deploy_id)
+                    if ok:
                         self._log(deploy_id, "✓ dist/ supprimé", "ok")
-                    except Exception as e:
-                        self._log(deploy_id, f"✗ Erreur suppression dist/: {e}", "error")
+                    else:
+                        self._log(deploy_id, f"✗ Erreur suppression dist/: {err}", "error")
+                        self._log(deploy_id, "⚠ Un fichier de dist/ est probablement encore verrouillé par un process. Ferme tout programme lié (antivirus en scan, explorateur ouvert sur ce dossier) et réessaie.", "error")
                         self._deploys[deploy_id]["done"] = True
-                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer dist/: {e}"
+                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer dist/: {err}"
                         self._save_history(action, False)
                         return
                 self._log(deploy_id, "", "separator")
@@ -941,13 +955,14 @@ class DeployAPI:
                 self._log(deploy_id, "", "separator")
                 dist = os.path.join(repo, "dist")
                 if os.path.isdir(dist):
-                    try:
-                        shutil.rmtree(dist)
+                    ok, err = self._rmtree_retry(dist, deploy_id)
+                    if ok:
                         self._log(deploy_id, "✓ dist/ supprimé", "ok")
-                    except Exception as e:
-                        self._log(deploy_id, f"✗ Erreur suppression dist/: {e}", "error")
+                    else:
+                        self._log(deploy_id, f"✗ Erreur suppression dist/: {err}", "error")
+                        self._log(deploy_id, "⚠ Un fichier de dist/ est probablement encore verrouillé par un process. Ferme tout programme lié (antivirus en scan, explorateur ouvert sur ce dossier) et réessaie.", "error")
                         self._deploys[deploy_id]["done"] = True
-                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer dist/: {e}"
+                        self._deploys[deploy_id]["error"] = f"Impossible de supprimer dist/: {err}"
                         self._save_history(action, False)
                         return
                 else:
