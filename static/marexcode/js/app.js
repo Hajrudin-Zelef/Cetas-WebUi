@@ -375,9 +375,49 @@ function setupPlusMenu() {
             marexPrefs.effort = pill.dataset.effort;
             effortPills.querySelectorAll('.cdrop-pill').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
-        });
+         });
     });
 
+    // Section Recherche web
+    const divider2 = document.createElement('div');
+    divider2.className = 'cdrop-divider';
+    menu.appendChild(divider2);
+
+    const webLabel = document.createElement('div');
+    webLabel.className = 'cdrop-section-label';
+    webLabel.textContent = 'Recherche web';
+    menu.appendChild(webLabel);
+
+    const webRow = document.createElement('div');
+    webRow.className = 'cdrop-row';
+    webRow.innerHTML = '<span class="cdrop-row-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Recherche web</span></span>' +
+        '<label class="cdrop-toggle"><input type="checkbox" id="marex-websearch-toggle"><span class="cdrop-toggle-slider"></span></label>';
+    menu.appendChild(webRow);
+
+    const webPills = document.createElement('div');
+    webPills.className = 'cdrop-pills';
+    webPills.id = 'marex-websearch-pills';
+    webPills.style.display = marexPrefs.webSearch ? 'flex' : 'none';
+    const webDepths = [['standard', 'Standard'], ['deep', 'Approfondie']];
+    webPills.innerHTML = webDepths.map(([val, label]) =>
+        '<button type="button" class="cdrop-pill' + (marexPrefs.webSearchDepth === val ? ' active' : '') + '" data-depth="' + val + '">' + label + '</button>'
+    ).join('');
+    menu.appendChild(webPills);
+
+    const webToggle = webRow.querySelector('#marex-websearch-toggle');
+    webToggle.checked = marexPrefs.webSearch;
+    webToggle.addEventListener('change', () => {
+        marexPrefs.webSearch = webToggle.checked;
+        webPills.style.display = webToggle.checked ? 'flex' : 'none';
+        updateWebSearchGlobe();
+    });
+    webPills.querySelectorAll('.cdrop-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+            marexPrefs.webSearchDepth = pill.dataset.depth;
+            webPills.querySelectorAll('.cdrop-pill').forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+        });
+    });
 }
 
 // ── Dropdowns (cdrops) ──
@@ -1575,10 +1615,41 @@ function boot() {
     if (chat.setupSlashCommands) chat.setupSlashCommands();
 
     chat.newSession();
+
+    function updateWebSearchGlobe() {
+        const globe = document.getElementById('web-globe-btn');
+        if (!globe) return;
+        const model = getSelectedModelId(refs.menuModel);
+        const editors = (typeof WEB_SEARCH_EDITEURS !== 'undefined') ? WEB_SEARCH_EDITEURS : [];
+        const editor = (typeof getModelEditeur === 'function') ? getModelEditeur(model) : '';
+        const canSearch = editors.indexOf(editor) >= 0;
+        globe.style.display = canSearch ? '' : 'none';
+        if (canSearch) {
+            globe.classList.toggle('active', marexPrefs.webSearch);
+            globe.title = marexPrefs.webSearch ? 'Recherche web activée' : 'Recherche web désactivée';
+        }
+    }
+    window.updateWebSearchGlobe = updateWebSearchGlobe;
+
     initModelSelect(refs.menuModel, refs.labelModel, (m) => {
         const s = chat.getSession();
         if (s) s.model = m;
+        updateWebSearchGlobe();
     });
+
+    const webGlobe = document.getElementById('web-globe-btn');
+    if (webGlobe) {
+        webGlobe.addEventListener('click', () => {
+            marexPrefs.webSearch = !marexPrefs.webSearch;
+            const toggle = document.getElementById('marex-websearch-toggle');
+            if (toggle) toggle.checked = marexPrefs.webSearch;
+            const pills = document.getElementById('marex-websearch-pills');
+            if (pills) pills.style.display = marexPrefs.webSearch ? 'flex' : 'none';
+            localStorage.setItem('marex-web-search', marexPrefs.webSearch ? '1' : '0');
+            updateWebSearchGlobe();
+        });
+    }
+    updateWebSearchGlobe();
 
     setupSettings(router);
     setupNewSession();

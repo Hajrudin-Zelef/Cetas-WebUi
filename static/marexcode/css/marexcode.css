@@ -831,6 +831,9 @@ html,body{
 .message-images{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
 .message-images img{ max-width:300px; max-height:300px; border-radius:8px; cursor:pointer; }
 .slash-commands-dropdown{ position:absolute; bottom:100%; left:16px; right:16px; max-height:200px; overflow-y:auto; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; z-index:100; box-shadow:0 -4px 12px rgba(0,0,0,0.3); margin-bottom:4px; }
+.web-globe-btn{ color:var(--text-tertiary); transition:color .2s ease, opacity .2s ease; }
+.web-globe-btn.active{ color:var(--accent); opacity:1; }
+.web-globe-btn:not(.active){ opacity:0.4; }
 .slash-cmd-item{ display:flex; gap:12px; padding:8px 12px; cursor:pointer; align-items:center; }
 .slash-cmd-item:hover,.slash-cmd-item.selected{ background:var(--bg-input-btn); }
 .slash-cmd-name{ font-weight:600; color:var(--accent); font-size:13px; min-width:80px; }
