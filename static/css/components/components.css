@@ -1426,6 +1426,10 @@ body.dark .provider-tab-icon {
     filter: invert(1) brightness(1.1);
 }
 
+body.dark .provider-tab-icon.provider-tab-icon--color {
+    filter: none;
+}
+
 .provider-tab-label {
     min-width: 0;
     white-space: nowrap;

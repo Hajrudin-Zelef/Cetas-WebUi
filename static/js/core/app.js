@@ -2727,29 +2727,105 @@ function updateLocalFallbackVisibility() {
     document.getElementById("local-fallback-row").style.display = n ? "" : "none";
 }
 
+const WS_PROVIDERS_CONFIG = [
+    { id: "tavily", label: "Tavily", icon: "Tavily.png", color: !0, placeholder: "tvly-...", link: "https://app.tavily.com/home", linkLabel: "Obtenir une clé API Tavily", envVar: "TAVILY_API_KEY" },
+    { id: "exa", label: "Exa", icon: "Exa.png", color: !0, placeholder: "...", link: "https://dashboard.exa.ai/api-keys", linkLabel: "Obtenir une clé API Exa", envVar: "EXA_API_KEY" },
+    { id: "brave", label: "Brave Search", icon: "Brave.svg", color: !1, placeholder: "BSA...", link: "https://api-dashboard.search.brave.com/app/keys", linkLabel: "Obtenir une clé API Brave Search", envVar: "BRAVE_API_KEY" },
+    { id: "jina", label: "Jina", icon: "Jina.webp", color: !0, placeholder: "jina_...", link: "https://jina.ai/api-dashboard/api-keys", linkLabel: "Obtenir une clé API Jina", envVar: "JINA_API_KEY" }
+];
+
+const _WS_EYE_SVG = '<svg class="apikey-eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg class="apikey-eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+let _wsActiveProvider = "tavily", _wsKeysDirty = !1, _wsInited = !1;
+
+function _setWsKeysDirty(e) {
+    _wsKeysDirty = e;
+    const t = document.getElementById("websearch-save-btn");
+    t && (t.disabled = !e, t.classList.toggle("models-save-btn--dirty", e));
+}
+
+function _buildWsTabsHtml() {
+    return WS_PROVIDERS_CONFIG.map(((e, t) => `
+        <button type="button" class="provider-tab${0 === t ? " active" : ""}" data-ws-provider="${e.id}" title="${escHtml(e.label)}">
+            <img src="images/${e.icon}" class="provider-tab-icon${e.color ? " provider-tab-icon--color" : ""}" alt="${escHtml(e.label)}">
+            <span class="provider-tab-label">${escHtml(e.label)}</span>
+        </button>
+    `)).join("");
+}
+
+function _buildWsSectionHtml(e, t) {
+    return `
+        <div class="provider-section${t ? " active" : ""}" data-ws-provider="${e.id}">
+            <div class="apikey-label-row">
+                <label class="sp-modal-label" for="ws-${e.id}-key">Clé API ${escHtml(e.label)}</label>
+                <a class="apikey-get-link" href="${e.link}" target="_blank" rel="noopener noreferrer">${escHtml(e.linkLabel)}</a>
+            </div>
+            <div class="apikey-field">
+                <div class="apikey-input-wrap">
+                    <input type="password" id="ws-${e.id}-key" class="sp-modal-input apikey-input" placeholder="${escHtml(e.placeholder)}" autocomplete="off" data-ws-env="${e.envVar}">
+                    <button type="button" class="apikey-eye-btn" data-target="ws-${e.id}-key" title="Afficher la clé" aria-label="Afficher la clé">${_WS_EYE_SVG}</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function _selectWsProvider(e) {
+    _wsActiveProvider = e;
+    document.querySelectorAll("#ws-providers-tabs .provider-tab").forEach((t => t.classList.toggle("active", t.dataset.wsProvider === e)));
+    document.querySelectorAll("#ws-provider-content .provider-section").forEach((t => t.classList.toggle("active", t.dataset.wsProvider === e)));
+}
+
+function _initWebsearchPanel() {
+    if (_wsInited) return;
+    const tabs = document.getElementById("ws-providers-tabs"), content = document.getElementById("ws-provider-content");
+    if (!tabs || !content) return;
+    tabs.innerHTML = _buildWsTabsHtml();
+    content.innerHTML = WS_PROVIDERS_CONFIG.map(((e, t) => _buildWsSectionHtml(e, 0 === t))).join("");
+    tabs.querySelectorAll(".provider-tab").forEach((t => t.addEventListener("click", (() => _selectWsProvider(t.dataset.wsProvider)))));
+    content.querySelectorAll(".apikey-input").forEach((e => e.addEventListener("input", (() => _setWsKeysDirty(!0)))));
+    content.querySelectorAll(".apikey-eye-btn").forEach((btn => {
+        btn.addEventListener("click", (() => {
+            const inp = document.getElementById(btn.dataset.target);
+            if (!inp) return;
+            const show = "password" === inp.type;
+            inp.type = show ? "text" : "password", btn.classList.toggle("shown", show),
+            btn.title = show ? "Masquer la clé" : "Afficher la clé";
+        }));
+    }));
+    _wsInited = !0;
+}
+
 function _loadWebsearchKeys() {
-    fetch("/api/websearch/keys", { headers: { "Authorization": "Bearer " + (localStorage.getItem("cetas_token") || "") } })
-        .then(r => r.json()).then(data => {
-            document.getElementById("ws-tavily-key").value = data.TAVILY_API_KEY || "";
-            document.getElementById("ws-exa-key").value = data.EXA_API_KEY || "";
-            document.getElementById("ws-brave-key").value = data.BRAVE_API_KEY || "";
-            document.getElementById("ws-jina-key").value = data.JINA_API_KEY || "";
+    _initWebsearchPanel();
+    const t = "undefined" != typeof Auth && Auth.getToken ? Auth.getToken() : "";
+    fetch("/api/websearch/keys", { headers: { Authorization: "Bearer " + t } })
+        .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then(data => {
+            for (const p of WS_PROVIDERS_CONFIG) {
+                const inp = document.getElementById("ws-" + p.id + "-key");
+                if (inp) inp.value = data[p.envVar] || "";
+            }
+            _setWsKeysDirty(!1);
         }).catch(() => {});
 }
 
+document.getElementById("websearch-cancel-btn")?.addEventListener("click", _loadWebsearchKeys);
+
 document.getElementById("websearch-save-btn")?.addEventListener("click", () => {
-    const payload = {
-        TAVILY_API_KEY: document.getElementById("ws-tavily-key").value.trim(),
-        EXA_API_KEY: document.getElementById("ws-exa-key").value.trim(),
-        BRAVE_API_KEY: document.getElementById("ws-brave-key").value.trim(),
-        JINA_API_KEY: document.getElementById("ws-jina-key").value.trim(),
-    };
+    const payload = {};
+    for (const p of WS_PROVIDERS_CONFIG) {
+        const inp = document.getElementById("ws-" + p.id + "-key");
+        payload[p.envVar] = inp ? inp.value.trim() : "";
+    }
+    const t = "undefined" != typeof Auth && Auth.getToken ? Auth.getToken() : "";
     fetch("/api/websearch/keys", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (localStorage.getItem("cetas_token") || "") },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + t },
         body: JSON.stringify(payload)
     }).then(r => r.json()).then(d => {
         if (d.ok) {
+            _setWsKeysDirty(!1);
             const btn = document.getElementById("websearch-save-btn");
             btn.textContent = "✓ Sauvegardé";
             setTimeout(() => btn.textContent = "Sauvegarder", 2000);
