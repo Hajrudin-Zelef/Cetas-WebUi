@@ -1,7 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
+import { readFileSync } from 'node:fs';
 
-const m = await import('../features/faq.js');
+const src = readFileSync(new URL('../features/faq.js', import.meta.url), 'utf8');
+const m = new Function(src + '\nreturn { FAQ_CATEGORIES, FAQ_DATA };')();
 
 test('FAQ_CATEGORIES est un array avec ≥ 2 catégories', () => {
     assert.ok(Array.isArray(m.FAQ_CATEGORIES));

@@ -1,11 +1,11 @@
-export const FAQ_CATEGORIES = [
+const FAQ_CATEGORIES = [
   { id: "general", label: "Général" },
   { id: "marexcode", label: "Marexcode" },
   { id: "fonctionnalites", label: "Fonctionnalités" },
   { id: "troubleshoot", label: "Dépannage" }
 ];
 
-export const FAQ_DATA = [
+const FAQ_DATA = [
 
   // ═══════════════════════════════════════════════════════════════════
   //  GÉNÉRAL
