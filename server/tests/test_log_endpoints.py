@@ -15,6 +15,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from observability import init_observability, log_event, read_events, generate_id, redact_event, get_summary, correlate_incidents
 
 
+def _load_server_module():
+    """Charge server/server.py par chemin — robuste à la pollution d'import
+    cross-fichiers (sys.modules['server'] change selon l'ordre de collecte)."""
+    import importlib.util
+    name = "cetas_server_impl"
+    if name in sys.modules:
+        return sys.modules[name]
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "server.py")
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def _make_event(level="info", event="test.event", component="frontend", **extra):
     return {
         "timestamp": "2026-09-03T20:00:00Z",
@@ -106,23 +121,76 @@ class TestMimoAnalysis(unittest.TestCase):
 
     def test_fallback_on_no_key(self):
         """Mimo returns fallback when opencode key is missing."""
-        import importlib
-        # Patch api_keys to be empty
-        import server
-        old_keys = server.api_keys.copy()
-        server.api_keys["opencode"] = ""
+        srv = _load_server_module()
+        old_keys = srv.api_keys.copy()
+        srv.api_keys["opencode"] = ""
         try:
-            result = server._analyze_with_mimo([_make_event()])
+            result = srv._analyze_with_mimo([_make_event()])
             self.assertIn("error", result)
             self.assertTrue(result.get("fallback"))
         finally:
-            server.api_keys.clear()
-            server.api_keys.update(old_keys)
+            srv.api_keys.clear()
+            srv.api_keys.update(old_keys)
 
     def test_fallback_on_empty_incidents(self):
-        import server
-        result = server._analyze_with_mimo([])
+        srv = _load_server_module()
+        result = srv._analyze_with_mimo([])
         self.assertIn("error", result)
+
+    def test_analyze_conn_error_is_safe(self):
+        """HTTPSConnection constructor failure must not raise UnboundLocalError."""
+        import http.client
+        srv = _load_server_module()
+
+        def _boom(*args, **kwargs):
+            raise OSError("connection refused")
+
+        original = http.client.HTTPSConnection
+        http.client.HTTPSConnection = _boom
+        try:
+            srv.api_keys["opencode"] = "sk-test"
+            result = srv._analyze_with_mimo([_make_event()])
+        finally:
+            http.client.HTTPSConnection = original
+        self.assertIn("error", result)
+
+
+class TestWindowHours(unittest.TestCase):
+    """_coerce_window_hours coercion helper."""
+
+    def test_int_coercion(self):
+        srv = _load_server_module()
+        self.assertEqual(srv._coerce_window_hours("abc"), 24)
+        self.assertEqual(srv._coerce_window_hours(None), 24)
+        self.assertEqual(srv._coerce_window_hours("30"), 30)
+        self.assertEqual(srv._coerce_window_hours(30), 30)
+        self.assertEqual(srv._coerce_window_hours("200"), 168)
+        self.assertEqual(srv._coerce_window_hours("abc", default=12), 12)
+
+
+class TestSummaryContract(unittest.TestCase):
+    """GET /api/logs/summary data contract."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        init_observability(self.tmpdir)
+        for i in range(6):
+            log_event(_make_event(
+                level="error" if i % 2 == 0 else "info",
+                event="provider.request.failed" if i % 2 == 0 else "provider.ok",
+                provider="groq" if i < 4 else "google",
+            ))
+
+    def test_summary_includes_events(self):
+        summary = get_summary()
+        self.assertIn("events", summary)
+        self.assertEqual(len(summary["events"]), 6)
+
+    def test_summary_level_filter(self):
+        summary = get_summary(level="error")
+        self.assertEqual(len(summary["events"]), 3)
+        for ev in summary["events"]:
+            self.assertEqual(ev["level"], "error")
 
 
 if __name__ == "__main__":

@@ -46,7 +46,6 @@ try:
         read_events as _obs_read,
         correlate_incidents as _obs_correlate,
         get_summary as _obs_summary,
-        redact_event as _obs_redact,
         generate_id as _obs_id,
     )
     from .marexcode import MarexcodeMixin
@@ -58,7 +57,6 @@ except ImportError:
         read_events as _obs_read,
         correlate_incidents as _obs_correlate,
         get_summary as _obs_summary,
-        redact_event as _obs_redact,
         generate_id as _obs_id,
     )
     from marexcode import MarexcodeMixin
@@ -911,6 +909,7 @@ def _analyze_with_mimo(incidents):
         "temperature": 0.1,
         "max_tokens": 1024,
     }).encode()
+    conn = None
     try:
         conn = http.client.HTTPSConnection("opencode.ai", timeout=30)
         conn.request(
@@ -934,10 +933,20 @@ def _analyze_with_mimo(incidents):
     except Exception as e:
         return {"error": str(e), "fallback": True}
     finally:
-        try:
-            conn.close()
-        except Exception:
-            pass
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _coerce_window_hours(value, default: int = 24, cap: int = 168) -> int:
+    """Convertit window_hours en int borné. Retourne default sur entrée invalide."""
+    try:
+        hours = int(value)
+    except (TypeError, ValueError):
+        return default
+    return min(hours, cap)
 
 
 # ── Marexcode backend : sandbox + sessions + arborescence ──────────────
@@ -1990,7 +1999,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             if not ev.get("timestamp") or not ev.get("event") or not ev.get("level"):
                 continue
             ev["component"] = ev.get("component", "frontend")
-            _obs_log(_obs_redact(ev))
+            _obs_log(ev)
             accepted += 1
         self._respond_json({"ok": True, "accepted": accepted})
 
@@ -2007,7 +2016,14 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
                     k, v = part.split("=", 1)
                     params[unquote(k)] = unquote(v)
         since = params.get("since")
-        summary = _obs_summary(since_iso=since)
+        level = params.get("level")
+        if not level or level == "all":
+            level = None
+        summary = _obs_summary(since_iso=since, level=level)
+        by_level = summary.get("by_level", {})
+        summary["errors"] = by_level.get("error", 0)
+        summary["warnings"] = by_level.get("warning", 0)
+        summary["incidents"] = len(summary.get("top_incidents", []))
         self._respond_json(summary)
 
     def _log_analyze(self):
@@ -2026,7 +2042,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             self._respond_json({"error": "JSON invalide"}, 400)
             return
         since = data.get("since")
-        window_hours = min(int(data.get("window_hours", 24)), 168)
+        window_hours = _coerce_window_hours(data.get("window_hours"))
         if since:
             from datetime import datetime as _dt, timedelta, timezone
             try:

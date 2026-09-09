@@ -28,22 +28,33 @@ function filterByLevel(events, level) {
 
 function renderTimeline(events) {
     const el = document.getElementById("logs-timeline");
+    el.innerHTML = "";
     if (!events.length) {
         el.innerHTML = '<div class="logs-empty">Aucun événement pour cette période.</div>';
         return;
     }
-    el.innerHTML = events.map((e, i) => `
-        <div class="logs-event" data-index="${i}">
-            <div class="logs-event-header">
-                ${levelBadge(e.level)}
-                <span class="logs-event-time">${formatTimestamp(e.timestamp)}</span>
-                <span class="logs-event-source">${e.source || ""}</span>
-            </div>
-            <div class="logs-event-message">${e.message}</div>
-        </div>
-    `).join("");
-    el.querySelectorAll(".logs-event").forEach((div, i) => {
+    events.forEach((e, i) => {
+        const div = document.createElement("div");
+        div.className = "logs-event";
+        div.dataset.index = i;
+        const header = document.createElement("div");
+        header.className = "logs-event-header";
+        header.innerHTML = levelBadge(e.level);
+        const time = document.createElement("span");
+        time.className = "logs-event-time";
+        time.textContent = formatTimestamp(e.timestamp);
+        const source = document.createElement("span");
+        source.className = "logs-event-source";
+        source.textContent = e.source || "";
+        header.appendChild(time);
+        header.appendChild(source);
+        const msg = document.createElement("div");
+        msg.className = "logs-event-message";
+        msg.textContent = e.message || "";
+        div.appendChild(header);
+        div.appendChild(msg);
         div.addEventListener("click", () => showDetail(events[i]));
+        el.appendChild(div);
     });
 }
 
@@ -67,26 +78,40 @@ function renderIncidents(incidents) {
     const list = document.getElementById("logs-incidents-list");
     if (!incidents || !incidents.length) { el.style.display = "none"; return; }
     el.style.display = "block";
-    list.innerHTML = incidents.map(inc => `
-        <div class="logs-incident-card">
-            <div class="logs-incident-title">${inc.title || "Incident"}</div>
-            <div class="logs-incident-meta">${inc.count ?? 0} occurrence${(inc.count ?? 0) > 1 ? "s" : ""} — première: ${formatTimestamp(inc.first_at)}, dernière: ${formatTimestamp(inc.last_at)}</div>
-        </div>
-    `).join("");
+    list.innerHTML = "";
+    incidents.forEach(inc => {
+        const card = document.createElement("div");
+        card.className = "logs-incident-card";
+        const title = document.createElement("div");
+        title.className = "logs-incident-title";
+        title.textContent = inc.title || "Incident";
+        const meta = document.createElement("div");
+        meta.className = "logs-incident-meta";
+        meta.textContent = `${inc.count ?? 0} occurrence${(inc.count ?? 0) > 1 ? "s" : ""} — première: ${formatTimestamp(inc.first_occurrence || inc.first_at)}, dernière: ${formatTimestamp(inc.last_occurrence || inc.last_at)}`;
+        card.appendChild(title);
+        card.appendChild(meta);
+        list.appendChild(card);
+    });
+}
+
+function _esc(v) {
+    return String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function renderReport(report) {
     const el = document.getElementById("logs-report");
     const content = document.getElementById("logs-report-content");
     el.style.display = "block";
+    const a = report && report.analysis && typeof report.analysis === "object" ? report.analysis : report;
     let html = "";
-    if (report.severity) html += `<div class="logs-report-severity"><span class="logs-badge logs-badge-${report.severity}">${report.severity}</span></div>`;
-    if (report.summary) html += `<div class="logs-report-field"><strong>Résumé:</strong> ${report.summary}</div>`;
-    if (report.recommendations && report.recommendations.length) {
-        html += `<div class="logs-report-field"><strong>Recommandations:</strong><ul>${report.recommendations.map(r => `<li>${r}</li>`).join("")}</ul></div>`;
-    }
-    if (report.analysis) html += `<div class="logs-report-field"><strong>Analyse:</strong> ${report.analysis}</div>`;
-    content.innerHTML = html || `<pre>${JSON.stringify(report, null, 2)}</pre>`;
+    if (a && a.severity) html += `<div class="logs-report-severity"><span class="logs-badge logs-badge-${_esc(a.severity)}">${_esc(a.severity)}</span></div>`;
+    if (a && a.summary) html += `<div class="logs-report-field"><strong>Résumé:</strong> ${_esc(a.summary)}</div>`;
+    if (a && a.probable_cause) html += `<div class="logs-report-field"><strong>Cause probable:</strong> ${_esc(a.probable_cause)}</div>`;
+    if (a && a.recommendation) html += `<div class="logs-report-field"><strong>Recommandation:</strong> ${_esc(a.recommendation)}</div>`;
+    if (a && Array.isArray(a.validation_steps) && a.validation_steps.length) html += `<div class="logs-report-field"><strong>Étapes de validation:</strong><ul>${a.validation_steps.map(s => `<li>${_esc(s)}</li>`).join("")}</ul></div>`;
+    if (a && Array.isArray(a.unknowns) && a.unknowns.length) html += `<div class="logs-report-field"><strong>Points inconnus:</strong><ul>${a.unknowns.map(s => `<li>${_esc(s)}</li>`).join("")}</ul></div>`;
+    if (report && report.model) html += `<div class="logs-report-field"><strong>Modèle:</strong> ${_esc(report.model)}</div>`;
+    content.innerHTML = html || `<pre>${_esc(JSON.stringify(report, null, 2))}</pre>`;
 }
 
 function exportJson(events) {
@@ -108,20 +133,27 @@ async function fetchLogs() {
     const since = parsePeriod(periodEl ? periodEl.value : "1h");
     const level = levelEl ? levelEl.value : "all";
 
+    let status = 0;
     try {
         const url = `${LOGS_BASE}/summary?since=${encodeURIComponent(since)}&level=${level}`;
         const headers = {};
         if (token) headers["Authorization"] = "Bearer " + token;
         const resp = await fetch(url, { headers });
+        status = resp.status;
         if (!resp.ok) throw new Error(resp.status);
         const data = await resp.json();
         _logsEvents = data.events || [];
         renderCounters(data);
-        renderIncidents(data.incidents);
+        renderIncidents(data.top_incidents || data.incident_list);
         renderTimeline(_logsEvents);
     } catch {
         const el = document.getElementById("logs-timeline");
-        if (el) el.innerHTML = '<div class="logs-empty">Impossible de charger les logs.</div>';
+        if (el) {
+            if (status === 401 || status === 403)
+                el.innerHTML = '<div class="logs-empty">Accès réservé aux administrateurs.</div>';
+            else
+                el.innerHTML = '<div class="logs-empty">Impossible de charger les logs.</div>';
+        }
     }
 }
 

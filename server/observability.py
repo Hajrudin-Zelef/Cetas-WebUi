@@ -293,9 +293,9 @@ def correlate_incidents(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
 # Summary
 # ---------------------------------------------------------------------------
 
-def get_summary(since_iso: str | None = None) -> dict[str, Any]:
+def get_summary(since_iso: str | None = None, level: str | None = None) -> dict[str, Any]:
     """Aggregate event counts by level, provider, and error_type."""
-    events = read_events(since_iso=since_iso)
+    events = read_events(since_iso=since_iso, level=level)
     by_level: dict[str, int] = {}
     by_provider: dict[str, int] = {}
     by_error: dict[str, int] = {}
@@ -327,4 +327,5 @@ def get_summary(since_iso: str | None = None) -> dict[str, Any]:
         "by_provider": by_provider,
         "by_error_type": by_error,
         "top_incidents": top,
+        "events": events,
     }
