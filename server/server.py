@@ -700,8 +700,8 @@ def load_api_keys():
                     api_keys[normalized] = plaintext.decode("utf-8")
                 loaded += 1
             except Exception as e:
-                log.error("Échec déchiffrement %s: %s", provider, e)
-                sys.exit(1)
+                log.error("Échec déchiffrement %s: %s — clé ignorée", provider, e)
+                continue
 
     log.info("%d clés API chargées en mémoire.", loaded)
     if loaded == 0 and not setup_mode:
