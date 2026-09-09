@@ -1500,6 +1500,24 @@ body.dark .provider-tab-icon.provider-tab-icon--color {
 }
 
 /* --- FAQ --- */
+.faq-search {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text);
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.faq-search:focus {
+    border-color: var(--accent);
+}
+.faq-search::placeholder {
+    color: var(--text-muted);
+}
 .faq-tabs {
     display: flex;
     background: var(--bg-hover);

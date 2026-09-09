@@ -2558,38 +2558,70 @@ document.querySelectorAll(".dashboard-tab").forEach((e => {
     }));
 })), initConfigAutoSave();
 
-let _faqLoaded = !1, _faqActiveCategory = null;
+let _faqLoaded = !1, _faqActiveCategory = null, _faqSearchActive = !1;
+
+function _renderFaqItem(e) {
+    const n = document.createElement("div");
+    n.className = "faq-item";
+    n.innerHTML = '<button class="faq-question"><span class="faq-question-arrow">\u203a</span><span></span></button><div class="faq-answer"></div>';
+    n.querySelector(".faq-question span:last-child").textContent = e.question;
+    n.querySelector(".faq-answer").innerHTML = e.answer;
+    n.querySelector(".faq-question").addEventListener("click", (() => {
+        const t = n.classList.contains("open");
+        document.getElementById("faq-container").querySelectorAll(".faq-item.open").forEach((t => {
+            t !== n && t.classList.remove("open");
+        })), n.classList.toggle("open", !t);
+    }));
+    return n;
+}
 
 function renderFaqItems(e) {
     const t = document.getElementById("faq-container");
     t.innerHTML = "";
-    const n = FAQ_DATA.filter((t => t.category === e));
-    for (const e of n) {
-        const n = document.createElement("div");
-        n.className = "faq-item", n.innerHTML = '<button class="faq-question"><span class="faq-question-arrow">›</span><span></span></button><div class="faq-answer"></div>', 
-        n.querySelector(".faq-question span:last-child").textContent = e.question, n.querySelector(".faq-answer").innerHTML = e.answer, 
-        n.querySelector(".faq-question").addEventListener("click", (() => {
-            const e = n.classList.contains("open");
-            t.querySelectorAll(".faq-item.open").forEach((e => {
-                e !== n && e.classList.remove("open");
-            })), n.classList.toggle("open", !e);
-        })), t.appendChild(n);
+    const items = FAQ_DATA.filter((t => t.category === e));
+    items.forEach((e => t.appendChild(_renderFaqItem(e))));
+}
+
+function renderFaqSearch(query) {
+    const t = document.getElementById("faq-container");
+    t.innerHTML = "";
+    if (!query.trim()) {
+        _faqSearchActive = !1;
+        renderFaqItems(_faqActiveCategory);
+        return;
     }
+    _faqSearchActive = !0;
+    const q = query.toLowerCase();
+    const hits = FAQ_DATA.filter((e => e.question.toLowerCase().includes(q)));
+    if (!hits.length) {
+        t.innerHTML = '<div class="logs-empty">Aucun résultat pour "' + escHtml(query) + '"</div>';
+        return;
+    }
+    hits.forEach((e => t.appendChild(_renderFaqItem(e))));
 }
 
 function loadFaq() {
     if (_faqLoaded) return;
-    const e = document.getElementById("faq-tabs");
-    e.innerHTML = "";
-    for (const t of FAQ_CATEGORIES) {
-        const n = document.createElement("button");
-        n.className = "faq-tab", n.textContent = t.label, n.dataset.category = t.id, n.addEventListener("click", (() => {
-            e.querySelectorAll(".faq-tab").forEach((e => e.classList.remove("active"))), n.classList.add("active"), 
-            _faqActiveCategory = t.id, renderFaqItems(t.id);
-        })), e.appendChild(n);
+    const tabsEl = document.getElementById("faq-tabs");
+    tabsEl.innerHTML = "";
+    for (const cat of FAQ_CATEGORIES) {
+        const btn = document.createElement("button");
+        btn.className = "faq-tab", btn.textContent = cat.label, btn.dataset.category = cat.id, btn.addEventListener("click", (() => {
+            tabsEl.querySelectorAll(".faq-tab").forEach((e => e.classList.remove("active"))), btn.classList.add("active"),
+            _faqActiveCategory = cat.id, renderFaqItems(cat.id);
+            const search = document.getElementById("faq-search");
+            if (search) search.value = "";
+            _faqSearchActive = !1;
+        })), tabsEl.appendChild(btn);
     }
-    const t = e.querySelector(".faq-tab");
-    t && (t.classList.add("active"), _faqActiveCategory = FAQ_CATEGORIES[0].id, renderFaqItems(FAQ_CATEGORIES[0].id)), 
+    const first = tabsEl.querySelector(".faq-tab");
+    first && (first.classList.add("active"), _faqActiveCategory = FAQ_CATEGORIES[0].id, renderFaqItems(FAQ_CATEGORIES[0].id));
+
+    const searchEl = document.getElementById("faq-search");
+    if (searchEl) {
+        searchEl.value = "";
+        searchEl.addEventListener("input", (() => renderFaqSearch(searchEl.value)));
+    }
     _faqLoaded = !0;
 }
 
