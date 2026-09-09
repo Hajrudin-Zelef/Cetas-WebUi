@@ -40,7 +40,10 @@ except ImportError:
 try:
     from .mcp import MCPManager
 except ImportError:
-    from mcp import MCPManager
+    try:
+        from mcp_client import MCPManager
+    except ImportError:
+        from mcp import MCPManager
 
 log = logging.getLogger(__name__)
 
