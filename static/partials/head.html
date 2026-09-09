@@ -23,27 +23,41 @@
     window.addEventListener("DOMContentLoaded", function() {
         var modal = document.querySelector(".apikeys-modal");
         if (!modal) return;
-        var tabContent = document.querySelector(".apikeys-tab-content");
-        var panel = document.querySelector(".apikeys-panel");
-        var panelBody = document.querySelector(".apikeys-panel-body");
+        var tc = document.querySelector(".apikeys-tab-content");
+        var activePanel = document.querySelector(".apikeys-panel.active");
+        var body = activePanel ? activePanel.querySelector(".apikeys-panel-body") : null;
+        var bodyKids = [];
+        if (body) {
+            for (var i = 0; i < body.children.length; i++) {
+                var c = body.children[i];
+                var cs = getComputedStyle(c);
+                bodyKids.push({
+                    tag: c.tagName, cls: c.className.substring(0,40),
+                    w: cs.width, display: cs.display, flex: cs.flex,
+                    ai: cs.alignItems, fgw: cs.flexGrow
+                });
+            }
+        }
+        var tabs = document.querySelector(".apikeys-tabs");
         var data = {
             innerWidth: window.innerWidth,
             isMobile: window.innerWidth <= 768,
             modal_w: getComputedStyle(modal).width,
-            modal_d: getComputedStyle(modal).display,
             modal_fd: getComputedStyle(modal).flexDirection,
-            tabs_w: tabContent ? getComputedStyle(tabContent.closest(".apikeys-tabs")||modal).width : "n/a",
-            tc_w: tabContent ? getComputedStyle(tabContent).width : "n/a",
-            tc_flex: tabContent ? getComputedStyle(tabContent).flex : "n/a",
-            panel_w: panel ? getComputedStyle(panel).width : "n/a",
-            pb_w: panelBody ? getComputedStyle(panelBody).width : "n/a",
-            pb_flex: panelBody ? getComputedStyle(panelBody).flex : "n/a",
-            pb_ai: panelBody ? getComputedStyle(panelBody).alignItems : "n/a"
+            tabs_w: tabs ? getComputedStyle(tabs).width : "n/a",
+            tc_w: tc ? getComputedStyle(tc).width : "n/a",
+            tc_flex: tc ? getComputedStyle(tc).flex : "n/a",
+            panel_w: activePanel ? getComputedStyle(activePanel).width : "n/a",
+            panel_id: activePanel ? activePanel.id : "none",
+            pb_w: body ? getComputedStyle(body).width : "n/a",
+            pb_flex: body ? getComputedStyle(body).flex : "n/a",
+            pb_ai: body ? getComputedStyle(body).alignItems : "n/a",
+            children: bodyKids
         };
         console.warn("[CETAS-LAYOUT]", JSON.stringify(data, null, 2));
         if (!window._cetasLayoutDone) {
             var d = document.createElement("pre");
-            d.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:11px;padding:8px;z-index:99999;max-height:200px;overflow:auto";
+            d.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:10px;padding:6px;z-index:99999;max-height:250px;overflow:auto";
             d.textContent = "[CETAS-LAYOUT]\n" + JSON.stringify(data, null, 2);
             document.body.appendChild(d);
             window._cetasLayoutDone = true;
