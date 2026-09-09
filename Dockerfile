@@ -94,6 +94,7 @@ RUN cat /usr/share/nginx/html/static/css/base/variables.css \
         /usr/share/nginx/html/static/css/base/layout.css \
         /usr/share/nginx/html/static/css/features/chat.css \
         /usr/share/nginx/html/static/css/features/marexcode.css \
+        /usr/share/nginx/html/static/css/features/logs-events.css \
         /usr/share/nginx/html/static/css/components/components.css \
         /usr/share/nginx/html/static/css/components/canvas.css \
         /usr/share/nginx/html/static/css/components/catalog.css \

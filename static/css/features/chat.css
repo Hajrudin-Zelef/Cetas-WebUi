@@ -2171,3 +2171,10 @@ body.ocean-theme .typing-avatar {
         filter: blur(0);
     }
 }
+
+/* Web search indicator (déplacé depuis style.css inline — perdait au build Docker) */
+.web-search-indicator{display:flex;align-items:center;gap:8px;padding:8px 12px;margin:8px 0;background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(139,92,246,.1));border:1px solid rgba(59,130,246,.3);border-radius:8px;font-size:.85rem;color:var(--text);animation:web-search-pulse 1.5s ease-in-out infinite}
+.web-search-indicator svg{flex-shrink:0;color:#3b82f6;animation:web-search-spin 1s linear infinite}
+.web-search-indicator span{font-weight:500}
+@keyframes web-search-pulse{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes web-search-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
