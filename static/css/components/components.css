@@ -1470,12 +1470,14 @@ body.dark .provider-tab-icon.provider-tab-icon--color {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    min-width: 0;
 }
 
 .provider-section {
     display: none;
     flex-direction: column;
     gap: 14px;
+    min-width: 0;
 }
 
 /* Espace plus important entre le champ URL/clé et la liste de modèles, pour
