@@ -1341,6 +1341,25 @@
     padding: 20px 24px 12px;
 }
 
+/* Fix largeur : contenu migré depuis .right-panel dans la modale Paramètres.
+   .rp-* garde son style visuel, mais doit occuper toute la largeur du
+   nouveau conteneur (840px) au lieu de la largeur intrinsèque de 280px.
+   Ne touche pas .right-panel d'origine (panneau latéral du chat). */
+#panel-conversation-body,
+#panel-conversation-body .right-panel-section,
+#panel-conversation-body .rp-tabs,
+#panel-conversation-body select,
+#panel-conversation-body .rp-range,
+#panel-conversation-body .rp-text-input,
+#panel-conversation-body .sp-textarea {
+    width: 100%;
+    max-width: none;
+}
+
+#panel-conversation-body .image-format-options {
+    width: 100%;
+}
+
 /* Lorsqu'un intro suit le titre, le titre n'a plus de bordure ni de marge basse :
    le bloc « titre + description » forme un seul header collant.
    Hauteur figée à 38px pour matcher exactement `top: 38px` de l'intro et éviter
