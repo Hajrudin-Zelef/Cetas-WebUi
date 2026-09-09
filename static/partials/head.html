@@ -28,36 +28,34 @@
         var body = activePanel ? activePanel.querySelector(".apikeys-panel-body") : null;
         var bodyKids = [];
         if (body) {
-            for (var i = 0; i < body.children.length; i++) {
+            for (var i = 0; i < Math.min(body.children.length, 6); i++) {
                 var c = body.children[i];
-                var cs = getComputedStyle(c);
+                var r = c.getBoundingClientRect();
                 bodyKids.push({
-                    tag: c.tagName, cls: c.className.substring(0,40),
-                    w: cs.width, display: cs.display, flex: cs.flex,
-                    ai: cs.alignItems, fgw: cs.flexGrow
+                    tag: c.tagName, cls: (c.className||"").substring(0,40),
+                    rect_w: Math.round(r.width), rect_h: Math.round(r.height),
+                    rect_x: Math.round(r.left), display: getComputedStyle(c).display,
+                    flex: getComputedStyle(c).flex
                 });
             }
         }
+        var mR = modal.getBoundingClientRect(), tcR = tc ? tc.getBoundingClientRect() : null;
         var tabs = document.querySelector(".apikeys-tabs");
+        var tR = tabs ? tabs.getBoundingClientRect() : null;
         var data = {
             innerWidth: window.innerWidth,
             isMobile: window.innerWidth <= 768,
-            modal_w: getComputedStyle(modal).width,
-            modal_fd: getComputedStyle(modal).flexDirection,
-            tabs_w: tabs ? getComputedStyle(tabs).width : "n/a",
-            tc_w: tc ? getComputedStyle(tc).width : "n/a",
-            tc_flex: tc ? getComputedStyle(tc).flex : "n/a",
-            panel_w: activePanel ? getComputedStyle(activePanel).width : "n/a",
-            panel_id: activePanel ? activePanel.id : "none",
-            pb_w: body ? getComputedStyle(body).width : "n/a",
-            pb_flex: body ? getComputedStyle(body).flex : "n/a",
-            pb_ai: body ? getComputedStyle(body).alignItems : "n/a",
+            modal: {w: Math.round(mR.width), h: Math.round(mR.height), fd: getComputedStyle(modal).flexDirection},
+            tabs: tR ? {w: Math.round(tR.width), x: Math.round(tR.left)} : "n/a",
+            tabContent: tcR ? {w: Math.round(tcR.width), x: Math.round(tcR.left)} : "n/a",
+            panel: activePanel ? {w: Math.round(activePanel.getBoundingClientRect().width), id: activePanel.id} : "n/a",
+            body: body ? {w: Math.round(body.getBoundingClientRect().width), flex: getComputedStyle(body).flex} : "n/a",
             children: bodyKids
         };
         console.warn("[CETAS-LAYOUT]", JSON.stringify(data, null, 2));
         if (!window._cetasLayoutDone) {
             var d = document.createElement("pre");
-            d.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:10px;padding:6px;z-index:99999;max-height:250px;overflow:auto";
+            d.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:10px;padding:6px;z-index:99999;max-height:300px;overflow:auto";
             d.textContent = "[CETAS-LAYOUT]\n" + JSON.stringify(data, null, 2);
             document.body.appendChild(d);
             window._cetasLayoutDone = true;
