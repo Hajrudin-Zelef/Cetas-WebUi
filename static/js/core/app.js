@@ -2810,6 +2810,10 @@ function _loadWebsearchKeys() {
         }).catch(() => {});
 }
 
+window._loadWebsearchKeys = _loadWebsearchKeys;
+
+document.getElementById("ws-providers-tabs") && _initWebsearchPanel();
+
 document.getElementById("websearch-cancel-btn")?.addEventListener("click", _loadWebsearchKeys);
 
 document.getElementById("websearch-save-btn")?.addEventListener("click", () => {
