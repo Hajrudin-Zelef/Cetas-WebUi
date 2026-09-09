@@ -17,48 +17,16 @@
     <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16.png">
 
+    <style>
+    /* Layout critique du modal Paramètres — inline pour bypasser tout cache (SW/HTTP).
+       Ces règles garantissent que le flex row du modal et ses enfants s'étendent
+       correctement sur toute la largeur, quel que soit l'état du CSS externe. */
+    .apikeys-modal { width: 840px !important; height: 640px !important; flex-direction: row !important; padding: 0 !important; gap: 0 !important; overflow: hidden !important; }
+    .apikeys-tab-content { flex: 1 1 0% !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; padding: 0 !important; overflow: hidden !important; }
+    .apikeys-panel { flex: 1 1 0% !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; padding: 0 !important; }
+    .apikeys-panel.active { display: flex !important; }
+    .apikeys-panel-body { flex: 1 1 0% !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; overflow-y: auto !important; padding: 20px 24px 12px !important; }
+    </style>
+
     <link rel="stylesheet" href="css/style.css?v=7" id="main-css">
     <link rel="stylesheet" href="css/ocean.css">
-    <script>
-    window.addEventListener("DOMContentLoaded", function() {
-        var modal = document.querySelector(".apikeys-modal");
-        if (!modal) return;
-        var tc = document.querySelector(".apikeys-tab-content");
-        var activePanel = document.querySelector(".apikeys-panel.active");
-        var body = activePanel ? activePanel.querySelector(".apikeys-panel-body") : null;
-        var bodyKids = [];
-        if (body) {
-            for (var i = 0; i < Math.min(body.children.length, 6); i++) {
-                var c = body.children[i];
-                var r = c.getBoundingClientRect();
-                bodyKids.push({
-                    tag: c.tagName, cls: (c.className||"").substring(0,40),
-                    rect_w: Math.round(r.width), rect_h: Math.round(r.height),
-                    rect_x: Math.round(r.left), display: getComputedStyle(c).display,
-                    flex: getComputedStyle(c).flex
-                });
-            }
-        }
-        var mR = modal.getBoundingClientRect(), tcR = tc ? tc.getBoundingClientRect() : null;
-        var tabs = document.querySelector(".apikeys-tabs");
-        var tR = tabs ? tabs.getBoundingClientRect() : null;
-        var data = {
-            innerWidth: window.innerWidth,
-            isMobile: window.innerWidth <= 768,
-            modal: {w: Math.round(mR.width), h: Math.round(mR.height), fd: getComputedStyle(modal).flexDirection},
-            tabs: tR ? {w: Math.round(tR.width), x: Math.round(tR.left)} : "n/a",
-            tabContent: tcR ? {w: Math.round(tcR.width), x: Math.round(tcR.left)} : "n/a",
-            panel: activePanel ? {w: Math.round(activePanel.getBoundingClientRect().width), id: activePanel.id} : "n/a",
-            body: body ? {w: Math.round(body.getBoundingClientRect().width), flex: getComputedStyle(body).flex} : "n/a",
-            children: bodyKids
-        };
-        console.warn("[CETAS-LAYOUT]", JSON.stringify(data, null, 2));
-        if (!window._cetasLayoutDone) {
-            var d = document.createElement("pre");
-            d.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:10px;padding:6px;z-index:99999;max-height:300px;overflow:auto";
-            d.textContent = "[CETAS-LAYOUT]\n" + JSON.stringify(data, null, 2);
-            document.body.appendChild(d);
-            window._cetasLayoutDone = true;
-        }
-    });
-    </script>
