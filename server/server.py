@@ -717,9 +717,24 @@ def load_api_keys():
 DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
 JWT_SECRET_PATH = os.path.join(DATA_DIR, ".jwt_secret")
 CONV_DIR = os.path.join(BASE_DIR, "conversations")
-os.makedirs(CONV_DIR, exist_ok=True)
-os.makedirs(DATA_DIR, exist_ok=True)
 USERS_PATH = os.path.join(DATA_DIR, "users.json")
+
+
+def _reinit_data_paths():
+    """Re-lit les variables module-level depuis os.environ.
+    Appeler APRÈS apply_frozen_defaults() qui définit CETAS_DATA_DIR
+    dans le contexte PyInstaller (frozen). Sans cela, les chemins
+    restaient a '/app/data' sur Windows au lieu de %APPDATA%/Cetas/data."""
+    global DATA_DIR, JWT_SECRET_PATH, CONV_DIR, USERS_PATH
+    DATA_DIR = os.environ.get("CETAS_DATA_DIR", "/app/data")
+    JWT_SECRET_PATH = os.path.join(DATA_DIR, ".jwt_secret")
+    CONV_DIR = os.path.join(BASE_DIR, "conversations")
+    USERS_PATH = os.path.join(DATA_DIR, "users.json")
+    os.makedirs(CONV_DIR, exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+
+_reinit_data_paths()
 
 # Cache RAM : {username: {filename: data_json}} pour accès rapide
 _conv_cache: dict[str, dict[str, dict]] = {}
@@ -2574,6 +2589,8 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
     def _error(self, code: int, msg: str):
         body = json.dumps({"error": msg}).encode()
         origin = self.headers.get("Origin", "")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
         self.send_header("Access-Control-Allow-Origin", _cors_origin(origin))
         self.send_header("Vary", "Origin")
         self.send_header("X-Frame-Options", "DENY")
