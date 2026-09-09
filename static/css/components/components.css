@@ -1211,8 +1211,8 @@
 .apikeys-modal {
     flex-direction: row !important;
     padding: 0 !important;
-    width: 840px !important;
-    height: 640px !important;
+    width: 960px !important;
+    height: 700px !important;
     gap: 0 !important;
     overflow: hidden !important;
 }
