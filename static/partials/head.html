@@ -17,16 +17,5 @@
     <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16.png">
 
-    <style>
-    /* Layout critique du modal Paramètres — inline pour bypasser tout cache (SW/HTTP).
-       Ces règles garantissent que le flex row du modal et ses enfants s'étendent
-       correctement sur toute la largeur, quel que soit l'état du CSS externe. */
-    .apikeys-modal { width: 840px !important; height: 640px !important; flex-direction: row !important; padding: 0 !important; gap: 0 !important; overflow: hidden !important; }
-    .apikeys-tab-content { flex: 1 1 0% !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; padding: 0 !important; overflow: hidden !important; }
-    .apikeys-panel { flex: 1 1 0% !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; padding: 0 !important; }
-    .apikeys-panel.active { display: flex !important; }
-    .apikeys-panel-body { flex: 1 1 0% !important; min-width: 0 !important; display: flex !important; flex-direction: column !important; overflow-y: auto !important; padding: 20px 24px 12px !important; }
-    </style>
-
     <link rel="stylesheet" href="css/style.css?v=7" id="main-css">
     <link rel="stylesheet" href="css/ocean.css">
