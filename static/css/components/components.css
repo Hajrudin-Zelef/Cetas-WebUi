@@ -532,7 +532,8 @@
 /* --- Modale System Prompt --- */
 .sp-modal-overlay,
 .budget-alert-overlay,
-.custom-dialog-overlay {
+.custom-dialog-overlay,
+#apikeys-modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.35);
