@@ -2595,14 +2595,30 @@ function loadFaq() {
 
 const shareCopyBtn = document.getElementById("share-copy-btn"), shareLinkInput = document.getElementById("share-link-input");
 
+const CETAS_SHARE_URL = "https://cetas.neva-ci.pro/";
+if (shareLinkInput && !shareLinkInput.value) shareLinkInput.value = CETAS_SHARE_URL;
+
 shareCopyBtn.addEventListener("click", (() => {
-    shareLinkInput.select(), navigator.clipboard.writeText(shareLinkInput.value).then((() => {
+    const url = shareLinkInput.value.trim();
+    if (!url) return;
+    shareLinkInput.select();
+    const onCopied = () => {
         const e = shareCopyBtn.innerHTML;
         shareCopyBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copié !', 
         setTimeout((() => {
             shareCopyBtn.innerHTML = e;
         }), 2e3);
-    })).catch((function() {}));
+    };
+    const onFail = () => {
+        try {
+            document.execCommand("copy") && onCopied();
+        } catch {}
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(onCopied).catch(onFail);
+    } else {
+        onFail();
+    }
 }));
 
 var themeTogglePanel = document.getElementById("theme-toggle-panel");
