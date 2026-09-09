@@ -674,7 +674,9 @@ def load_api_keys():
             if not line or line.startswith("#") or "=" not in line:
                 continue
             key, val = line.split("=", 1)
-            provider = key.lower().replace("_key", "").replace(" ", "_")
+            env_key = key.strip()
+            env_key_lower = env_key.lower()
+            provider = env_key_lower.replace("_key", "").replace(" ", "_")
 
             if ":" not in val:
                 log.warning("Entrée .env ignorée (format invalide): %s", key)
@@ -690,17 +692,20 @@ def load_api_keys():
 
             try:
                 aesgcm = AESGCM(proxy_key)
-                plaintext = aesgcm.decrypt(iv, ct, provider.encode("utf-8"))
-                env_name = key.strip()
-                if env_name.lower() in WS_ENV_NAMES:
-                    os.environ[env_name] = plaintext.decode("utf-8")
-                    log.info("Clé websearch chargée: %s", env_name)
+                # AAD de chiffrement : les clés API sont scellées sous le provider
+                # sans suffixe ("openai" pour openai_key), les clés websearch sous
+                # le nom d'env complet ("brave_api_key" pour BRAVE_API_KEY).
+                aad = env_key_lower if env_key_lower in WS_ENV_NAMES else provider
+                plaintext = aesgcm.decrypt(iv, ct, aad.encode("utf-8"))
+                if env_key_lower in WS_ENV_NAMES:
+                    os.environ[env_key] = plaintext.decode("utf-8")
+                    log.info("Clé websearch chargée: %s", env_key)
                 else:
                     normalized = provider.replace(".", "")  # llama.cpp → llamacpp
                     api_keys[normalized] = plaintext.decode("utf-8")
                 loaded += 1
             except Exception as e:
-                log.error("Échec déchiffrement %s: %s — clé ignorée", provider, e)
+                log.error("Échec déchiffrement %s: %s", provider, e)
                 continue
 
     log.info("%d clés API chargées en mémoire.", loaded)
