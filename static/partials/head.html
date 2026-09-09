@@ -19,3 +19,34 @@
 
     <link rel="stylesheet" href="css/style.css?v=7" id="main-css">
     <link rel="stylesheet" href="css/ocean.css">
+    <script>
+    window.addEventListener("DOMContentLoaded", function() {
+        var modal = document.querySelector(".apikeys-modal");
+        if (!modal) return;
+        var tabContent = document.querySelector(".apikeys-tab-content");
+        var panel = document.querySelector(".apikeys-panel");
+        var panelBody = document.querySelector(".apikeys-panel-body");
+        var data = {
+            innerWidth: window.innerWidth,
+            isMobile: window.innerWidth <= 768,
+            modal_w: getComputedStyle(modal).width,
+            modal_d: getComputedStyle(modal).display,
+            modal_fd: getComputedStyle(modal).flexDirection,
+            tabs_w: tabContent ? getComputedStyle(tabContent.closest(".apikeys-tabs")||modal).width : "n/a",
+            tc_w: tabContent ? getComputedStyle(tabContent).width : "n/a",
+            tc_flex: tabContent ? getComputedStyle(tabContent).flex : "n/a",
+            panel_w: panel ? getComputedStyle(panel).width : "n/a",
+            pb_w: panelBody ? getComputedStyle(panelBody).width : "n/a",
+            pb_flex: panelBody ? getComputedStyle(panelBody).flex : "n/a",
+            pb_ai: panelBody ? getComputedStyle(panelBody).alignItems : "n/a"
+        };
+        console.warn("[CETAS-LAYOUT]", JSON.stringify(data, null, 2));
+        if (!window._cetasLayoutDone) {
+            var d = document.createElement("pre");
+            d.style.cssText = "position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-size:11px;padding:8px;z-index:99999;max-height:200px;overflow:auto";
+            d.textContent = "[CETAS-LAYOUT]\n" + JSON.stringify(data, null, 2);
+            document.body.appendChild(d);
+            window._cetasLayoutDone = true;
+        }
+    });
+    </script>
