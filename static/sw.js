@@ -1,5 +1,5 @@
 // Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius.
-const CACHE_NAME = 'cetas-cache-v6';
+const CACHE_NAME = 'cetas-cache-v7';
 const OFFLINE_URLS = [
   './',
   './index.html',
@@ -37,7 +37,8 @@ self.addEventListener('fetch', (event) => {
 
   const isHTML = url.pathname.endsWith('.html') || url.pathname === '/' || !url.pathname.includes('.');
   const isMarexcode = url.pathname.includes('/marexcode/');
-  if (isHTML || isMarexcode) {
+  const isAppCode = url.pathname.includes('/css/') || url.pathname.includes('/js/');
+  if (isHTML || isMarexcode || isAppCode) {
     event.respondWith(
       fetch(event.request).then((response) => {
         if (response && response.status === 200) {
