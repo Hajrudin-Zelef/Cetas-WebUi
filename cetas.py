@@ -104,6 +104,18 @@ def main():
         text_select=True,
     )
 
+    def _on_loaded():
+        window.evaluate_js('''
+            document.addEventListener("keydown", function(e) {
+                if (e.key === "F5" || (e.ctrlKey && e.key === "r") || (e.ctrlKey && e.shiftKey && (e.key === "R" || e.key === "r"))) {
+                    e.preventDefault();
+                    window.location.href = window.location.href;
+                }
+            });
+        ''')
+
+    window.events.loaded += _on_loaded
+
     # ── Tray icon (M5) ──────────────────────────────────────────────
     _tray_icon = None
     _tray_thread = None
