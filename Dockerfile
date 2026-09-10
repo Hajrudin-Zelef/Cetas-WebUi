@@ -21,6 +21,9 @@ RUN pip3 install --break-system-packages mcp mcp-server-fetch httpx2
 # DuckDuckGo search for Marexcode WebSearch
 RUN pip3 install --break-system-packages duckduckgo-search
 
+# Google OAuth (Sign in with Google)
+RUN pip3 install --break-system-packages google-auth
+
 # Formatters for Marexcode Phase 5
 RUN pip3 install --break-system-packages ruff
 RUN npm install -g prettier
