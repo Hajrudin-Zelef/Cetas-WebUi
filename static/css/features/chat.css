@@ -237,6 +237,23 @@ body.dark .message-text code {
     white-space: nowrap;
 }
 
+.message-text .table-wrap {
+    scrollbar-width: thin;
+}
+
+.message-text .table-wrap::-webkit-scrollbar {
+    height: 8px;
+}
+
+.message-text .table-wrap::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.message-text .table-wrap::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 .message-text th, .message-text td {
     border: 1px solid var(--border);
     padding: 8px 12px;
