@@ -164,7 +164,7 @@ Cetas-WebUi/
 │   │   └── assets/                # icônes inline SVG (0 dépendance externe)
 │   ├── setup.html              # Page configuration initiale (vault local) — M3
 │   ├── manifest.json              # PWA manifest
-│   ├── sw.js                      # Service worker (v6 : network-first HTML + assets /marexcode/)
+│   ├── sw.js                      # Service worker (v7 : network-first HTML + CSS/JS app code)
 │   ├── partials/                  # HTML partials (SSI includes)
 │   │   ├── head.html              # Meta, CSP, CSS
 │   │   ├── splash.html            # Splash screen
@@ -239,6 +239,8 @@ Cetas-WebUi/
 │   │       ├── static-paths.test.mjs
 │   │       ├── validate-pools.mjs
 │   │       ├── logs-events.test.mjs
+│   │       ├── faq-structure.test.mjs
+│   │       ├── html-css-structure.test.mjs
 │   │       ├── model-select-structure.test.mjs
 │   │       ├── canvas-structure.test.mjs
 │   │       ├── chat-structure.test.mjs
@@ -247,7 +249,7 @@ Cetas-WebUi/
 │   │       └── marex-permission.test.mjs      # Tests permissions granulaires par outil (allow/ask/deny)
 │   ├── css/
 │   │   ├── base/                  # Variables, layout
-│   │   ├── features/              # Chat
+│   │   ├── features/              # Chat, logs-events, marexcode
 │   │   ├── components/            # Components, canvas, catalog, storage, menu
 │   │   ├── themes/                # Ocean theme
 │   │   ├── style.css              # ← CONCATÉNÉ (build)
@@ -257,6 +259,10 @@ Cetas-WebUi/
 │       ├── Cetas42.ico            # Icône Windows (pour PyInstaller .exe) — M4
 │       ├── icons.svg              # Sprite SVG (28 icônes)
 │       ├── *.svg                  # Icônes providers
+│       ├── Brave.svg            # Icône Brave Search
+│       ├── Tavily.png           # Icône Tavily
+│       ├── Exa.png              # Icône Exa
+│       ├── Jina.webp            # Icône Jina
 │       └── icon-*.png             # Icons PWA
 │
 ├── server/                        # ── BACKEND ──
@@ -333,6 +339,10 @@ Le proxy est un serveur HTTP Python (stdlib) qui :
 > **Static serving local (M0)** : en mode desktop (sans nginx), `server.py` sert directement
 > les fichiers `static/` via `_serve_static()` avec rendu SSI (`_ssi_render`).
 > Le mode web (Docker) continue d'utiliser nginx.
+>
+> **Desktop local-only** : `IS_DESKTOP` (hostname === 127.0.0.1) désactive la sync serveur.
+> Conversations (IndexedDB) et settings (localStorage) restent sur le PC. Le serveur sert uniquement au proxy API.
+> `_reinit_data_paths()` corrige `DATA_DIR` après `apply_frozen_defaults()` pour résoudre le path `/app/data` sur Windows.
 
 > **`create_server()`** (M2) : extrait de `main()` pour réutilisation par `cetas.py` (launcher desktop).
 > Configure le serveur sans le démarrer, permet un lancement en thread daemon.
@@ -721,7 +731,8 @@ static/marexcode/
 | → Rôles | `#sidebar-roles-btn` | `roles.js` | Ouvre modale gestion rôles |
 | → Prompts | `#sidebar-prompts-btn` | `prompts.js` | Ouvre modale gestion prompts |
 | → Sauvegardes | `#dashboard-btn` | `export-import.js` | Ouvre modale sauvegarde/import |
-| → FAQ | `#sidebar-faq-btn` | `faq.js` | Ouvre panel FAQ dans config |
+| → FAQ | `#sidebar-faq-btn` | `faq.js` | Ouvre panel FAQ dans config (4 catégories, recherche, 34 items) |
+| → Logs et événements | onglet `data-tab="logs"` | `logs-events.js` | Timeline + compteurs + analyse IA Mimo 2.5 |
 | → Thème | `#theme-toggle` | `theme.js` | Bascule light/dark/auto (caché) |
 | → Déconnexion | `#logout-btn` | `auth.js` | Déconnecte (caché si non loggé) |
 | **Config (roue)** | `#apikeys-btn` | `config-providers.js` | Ouvre modale Configuration |
@@ -1225,6 +1236,9 @@ Structure: `MODELS_DATA` avec 5 catégories:
 node --test static/tests/router.test.mjs      # SamAgent (classifieur, score, pools, fallback, santé, télémétrie, local, abort)
 node static/tests/validate-pools.mjs          # pools ↔ static/js/data/models.js (exit 1 si écart)
 node --test static/tests/static-paths.test.mjs # chemins statiques (index + partials)
+node --test static/tests/html-css-structure.test.mjs  # HTML div-balance + CSS brace-balance (29 tests)
+node --test static/tests/faq-structure.test.mjs        # Structure données FAQ (9 tests)
+node --test static/tests/logs-events.test.mjs          # Logs & Events module (6 tests)
 # Observabilité en navigateur (console) :
 dumpRouteStats()
 ```
