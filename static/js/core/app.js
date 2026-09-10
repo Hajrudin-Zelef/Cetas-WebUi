@@ -2777,11 +2777,26 @@ function updateLocalFallbackVisibility() {
 }
 
 const WS_PROVIDERS_CONFIG = [
-    { id: "tavily", label: "Tavily", icon: "Tavily.png", color: !0, placeholder: "tvly-...", link: "https://app.tavily.com/home", linkLabel: "Obtenir une clé API Tavily", envVar: "TAVILY_API_KEY" },
-    { id: "exa", label: "Exa", icon: "Exa.png", color: !0, placeholder: "...", link: "https://dashboard.exa.ai/api-keys", linkLabel: "Obtenir une clé API Exa", envVar: "EXA_API_KEY" },
-    { id: "brave", label: "Brave Search", icon: "Brave.svg", color: !1, placeholder: "BSA...", link: "https://api-dashboard.search.brave.com/app/keys", linkLabel: "Obtenir une clé API Brave Search", envVar: "BRAVE_API_KEY" },
-    { id: "jina", label: "Jina", icon: "Jina.webp", color: !0, placeholder: "jina_...", link: "https://jina.ai/api-dashboard/api-keys", linkLabel: "Obtenir une clé API Jina", envVar: "JINA_API_KEY" }
+    { id: "tavily", label: "Tavily", icon: "Tavily.png", color: !0, placeholder: "tvly-...", link: "https://app.tavily.com/home", linkLabel: "Obtenir une clé API Tavily", envVar: "TAVILY_API_KEY", hasKey: !0 },
+    { id: "exa", label: "Exa", icon: "Exa.png", color: !0, placeholder: "...", link: "https://dashboard.exa.ai/api-keys", linkLabel: "Obtenir une clé API Exa", envVar: "EXA_API_KEY", hasKey: !0 },
+    { id: "brave", label: "Brave Search", icon: "Brave.svg", color: !1, placeholder: "BSA...", link: "https://api-dashboard.search.brave.com/app/keys", linkLabel: "Obtenir une clé API Brave Search", envVar: "BRAVE_API_KEY", hasKey: !0 },
+    { id: "jina", label: "Jina", icon: "Jina.webp", color: !0, placeholder: "jina_...", link: "https://jina.ai/api-dashboard/api-keys", linkLabel: "Obtenir une clé API Jina", envVar: "JINA_API_KEY", hasKey: !0 },
+    { id: "searxng", label: "SearXNG", icon: "icons.svg#icon-globe", color: !1, hasKey: !1 },
+    { id: "ddg", label: "DuckDuckGo", icon: "icons.svg#icon-globe", color: !1, hasKey: !1 }
 ];
+
+function _wsEnabledProviders() {
+    try { return JSON.parse(localStorage.getItem("ws_enabled_providers")) || WS_PROVIDERS_CONFIG.map(p => p.id); }
+    catch (e) { return WS_PROVIDERS_CONFIG.map(p => p.id); }
+}
+
+function _wsSetProviderEnabled(id, enabled) {
+    let list = _wsEnabledProviders();
+    if (enabled && !list.includes(id)) list.push(id);
+    if (!enabled) list = list.filter(x => x !== id);
+    localStorage.setItem("ws_enabled_providers", JSON.stringify(list));
+    if (window.STATE) window.STATE.enabledProviders = list;
+}
 
 const _WS_EYE_SVG = '<svg class="apikey-eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg class="apikey-eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
@@ -2803,8 +2818,26 @@ function _buildWsTabsHtml() {
 }
 
 function _buildWsSectionHtml(e, t) {
+    const enabled = _wsEnabledProviders().includes(e.id);
+    const switchHtml = `
+        <div class="apikey-label-row">
+            <span class="sp-modal-label">Activer ${escHtml(e.label)}</span>
+            <label class="plus-menu-toggle" id="ws-${e.id}-switch-label">
+                <input type="checkbox" id="ws-${e.id}-switch" data-ws-provider-switch="${e.id}"${enabled ? " checked" : ""}>
+                <span class="plus-menu-toggle-slider"></span>
+            </label>
+        </div>
+    `;
+    if (!e.hasKey) {
+        return `
+        <div class="provider-section${t ? " active" : ""}" data-ws-provider="${e.id}">
+            ${switchHtml}
+        </div>
+        `;
+    }
     return `
         <div class="provider-section${t ? " active" : ""}" data-ws-provider="${e.id}">
+            ${switchHtml}
             <div class="apikey-label-row">
                 <label class="sp-modal-label" for="ws-${e.id}-key">Clé API ${escHtml(e.label)}</label>
                 <a class="apikey-get-link" href="${e.link}" target="_blank" rel="noopener noreferrer">${escHtml(e.linkLabel)}</a>
@@ -2833,6 +2866,7 @@ function _initWebsearchPanel() {
     content.innerHTML = WS_PROVIDERS_CONFIG.map(((e, t) => _buildWsSectionHtml(e, 0 === t))).join("");
     tabs.querySelectorAll(".provider-tab").forEach((t => t.addEventListener("click", (() => _selectWsProvider(t.dataset.wsProvider)))));
     content.querySelectorAll(".apikey-input").forEach((e => e.addEventListener("input", (() => _setWsKeysDirty(!0)))));
+    content.querySelectorAll("[data-ws-provider-switch]").forEach((sw => sw.addEventListener("change", (() => _wsSetProviderEnabled(sw.dataset.wsProviderSwitch, sw.checked)))));
     content.querySelectorAll(".apikey-eye-btn").forEach((btn => {
         btn.addEventListener("click", (() => {
             const inp = document.getElementById(btn.dataset.target);
@@ -2862,6 +2896,7 @@ function _loadWebsearchKeys() {
 window._loadWebsearchKeys = _loadWebsearchKeys;
 
 document.getElementById("ws-providers-tabs") && _initWebsearchPanel();
+if (window.STATE) window.STATE.enabledProviders = _wsEnabledProviders();
 
 document.getElementById("websearch-cancel-btn")?.addEventListener("click", _loadWebsearchKeys);
 
