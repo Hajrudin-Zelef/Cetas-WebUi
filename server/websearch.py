@@ -246,11 +246,18 @@ def search(query, allowed_domains=None, blocked_domains=None, max_results=10, pr
     """Run providers in parallel (auto mode). Return first with results, preferring earlier providers on tie.
     providers: optional list of provider keys (tavily/exa/brave/jina/searxng/ddg) to restrict to.
     """
-    active_providers = ALL_PROVIDERS
-    if providers:
+    if providers is None:
+        active_providers = ALL_PROVIDERS
+    else:
         active_providers = [PROVIDER_KEY_MAP[p] for p in providers if p in PROVIDER_KEY_MAP]
-        if not active_providers:
-            active_providers = ALL_PROVIDERS
+
+    if not active_providers:
+        return {
+            "hits": [],
+            "provider": "none",
+            "duration": 0,
+            "error": "Aucun provider de recherche actif"
+        }
 
     errors = []
     results_by_idx = {}
