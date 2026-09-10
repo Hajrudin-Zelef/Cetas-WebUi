@@ -1724,17 +1724,17 @@ body.dark #cost-info {
 
 #thinking-toggle-btn.custom-select-info {
     opacity: 1;
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    min-height: 28px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
     padding: 0;
     font-size: inherit;
     margin-left: 2px;
     cursor: pointer;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #1e90ff, #00bfff, #0077b6);
-    box-shadow: 0 2px 6px rgba(30, 144, 255, 0.3);
+    border-radius: 6px;
+    background: linear-gradient(135deg, #87CEEB, #ADD8E6, #B0E0E6);
+    box-shadow: 0 2px 6px rgba(135, 206, 235, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1745,7 +1745,7 @@ body.dark #cost-info {
 
 #thinking-toggle-btn.custom-select-info:hover {
     transform: scale(1.1);
-    box-shadow: 0 3px 10px rgba(30, 144, 255, 0.5);
+    box-shadow: 0 3px 10px rgba(135, 206, 235, 0.6);
 }
 
 #thinking-toggle-btn.custom-select-info:active {
@@ -1753,15 +1753,22 @@ body.dark #cost-info {
 }
 
 #thinking-toggle-btn.custom-select-info.active {
-    background: linear-gradient(135deg, #00bfff, #1e90ff, #0077b6);
-    box-shadow: 0 0 10px rgba(30, 144, 255, 0.6), inset 0 0 0 1.5px rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, #ADD8E6, #87CEEB, #5F9EA0);
+    box-shadow: 0 0 10px rgba(135, 206, 235, 0.7), inset 0 0 0 1.5px rgba(255, 255, 255, 0.4);
 }
 
 #thinking-toggle-btn.custom-select-info img {
-    width: 20px;
-    height: 20px;
-    border-radius: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
     object-fit: contain;
+}
+
+#thinking-toggle-btn[style*="display:none"],
+#thinking-toggle-btn:not([style]),
+#thinking-toggle-btn[style=""] {
+    background: none;
+    box-shadow: none;
 }
 
 /* Boutons toolbar dans la ligne 2 */
