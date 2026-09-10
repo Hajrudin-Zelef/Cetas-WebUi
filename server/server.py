@@ -695,7 +695,11 @@ def load_api_keys():
             provider = env_key_lower.replace("_key", "").replace(" ", "_")
 
             if ":" not in val:
-                log.warning("Entrée .env ignorée (format invalide): %s", key)
+                if env_key.startswith("GOOGLE_"):
+                    os.environ[env_key] = val.strip()
+                    log.info("Variable brute chargée: %s", env_key)
+                else:
+                    log.warning("Entrée .env ignorée (format invalide): %s", key)
                 continue
 
             iv_hex, ct_hex = val.split(":", 1)
