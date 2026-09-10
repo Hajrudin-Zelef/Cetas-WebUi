@@ -28,11 +28,8 @@ async function executeWebSearch(e){
     if(!r.ok)throw new Error("WebSearch returned "+r.status);
     var a=await r.json();
     var results=(a.results||[]).map(function(x){return{title:_sanitize(x.title),url:_sanitize(x.url),snippet:_sanitize(x.description||x.snippet||"")}});
-    if(results.length>0)return results;
-  }catch(err){console.warn("[search-engine] /api/websearch failed:",err.message)}
-  try{var t=await _searchTavily(e);if(t&&t.length>0)return t}catch(e){console.warn("[search-engine] Tavily échoué:",e.message)}
-  try{var t=await _searchSearXNG(e);if(t&&t.length>0)return t}catch(e){console.warn("[search-engine] SearXNG échoué:",e.message)}
-  return[];
+    return results;
+  }catch(err){console.warn("[search-engine] /api/websearch failed:",err.message);return[]}
 }
 
 async function executeWebFetch(e){
