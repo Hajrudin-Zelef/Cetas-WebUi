@@ -587,11 +587,15 @@ def _persist_jwt_secret() -> None:
 
 def _create_jwt(username: str, role: str) -> str:
     now = int(time.time())
+    if os.environ.get("CETAS_DESKTOP_MODE") == "1":
+        expiry = 30 * 86400  # 30 jours en mode desktop
+    else:
+        expiry = 86400  # 24 heures en mode web
     payload = {
         "sub": username,
         "role": role,
         "iat": now,
-        "exp": now + 86400  # 24 heures
+        "exp": now + expiry
     }
     return jwt.encode(payload, _get_jwt_secret(), algorithm="HS256")
 
@@ -832,6 +836,47 @@ def delete_all_user_conversations(username: str) -> int:
                 os.unlink(fp)
                 count += 1
     return count
+
+
+_backup_thread = None
+_backup_interval = 3600  # 1 heure
+
+
+def _backup_conversations():
+    """Sauvegarde périodique des conversations dans %APPDATA%/Cetas/backup/."""
+    if not os.environ.get("CETAS_DESKTOP_MODE") == "1":
+        return
+    backup_dir = os.path.join(os.environ.get("APPDATA", ""), "Cetas", "backup")
+    os.makedirs(backup_dir, exist_ok=True)
+    while True:
+        try:
+            time.sleep(_backup_interval)
+            ts = time.strftime("%Y%m%d_%H%M%S")
+            snapshot_dir = os.path.join(backup_dir, f"snapshot_{ts}")
+            os.makedirs(snapshot_dir, exist_ok=True)
+            for user_dir_name in os.listdir(CONV_DIR):
+                user_conv_dir = os.path.join(CONV_DIR, user_dir_name)
+                if os.path.isdir(user_conv_dir):
+                    dest = os.path.join(snapshot_dir, user_dir_name)
+                    import shutil
+                    shutil.copytree(user_conv_dir, dest, dirs_exist_ok=True)
+            snapshots = sorted([d for d in os.listdir(backup_dir) if d.startswith("snapshot_")])
+            while len(snapshots) > 7:
+                oldest = snapshots.pop(0)
+                import shutil
+                shutil.rmtree(os.path.join(backup_dir, oldest), ignore_errors=True)
+        except Exception:
+            pass
+
+
+def _start_backup_thread():
+    global _backup_thread
+    if _backup_thread is not None:
+        return
+    if os.environ.get("CETAS_DESKTOP_MODE") != "1":
+        return
+    _backup_thread = threading.Thread(target=_backup_conversations, daemon=True)
+    _backup_thread.start()
 
 
 def _build_upstream(method: str, provider: str, path: str, body: bytes, content_type: str | None):
@@ -2613,6 +2658,7 @@ def create_server():
     _get_jwt_secret()
     log.info("%d utilisateur(s) chargés, JWT prêt.", len(_users))
     server = ThreadingHTTPServer(("127.0.0.1", port), ProxyHandler)
+    _start_backup_thread()
     log.info("Proxy prêt sur 127.0.0.1:%d", port)
     return server
 

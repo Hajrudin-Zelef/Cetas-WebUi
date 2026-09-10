@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """Cetas Desktop — fenêtre native avec serveur intégré (pywebview + tray icon)."""
+import atexit
+import fcntl
 import os
 import sys
 import threading
+import time
 import traceback
+
+_LOCK_FILE = None
+
 
 def _log_error(e):
     """Écrit l'erreur dans un fichier log à côté de l'exe."""
@@ -13,13 +19,63 @@ def _log_error(e):
         traceback.print_exc(file=f)
         f.write("\n")
 
+
+def _excepthook(exc_type, exc_value, exc_tb):
+    """Handler global pour les exceptions non capturées — log + affiche."""
+    _log_error(exc_value)
+    traceback.print_exception(exc_type, exc_value, exc_tb)
+    sys.__excepthook__(exc_type, exc_value, exc_tb)
+
+
+sys.excepthook = _excepthook
+
+
+def _acquire_instance_lock():
+    """Empêche le lancement de deux instances simultanées (fichier lock)."""
+    global _LOCK_FILE
+    lock_dir = os.environ.get("CETAS_DATA_DIR", "")
+    if not lock_dir:
+        cetas_dir = os.path.join(os.environ.get("APPDATA", ""), "Cetas")
+        lock_dir = os.path.join(cetas_dir, "data")
+    os.makedirs(lock_dir, exist_ok=True)
+    lock_path = os.path.join(lock_dir, ".cetas.lock")
+    try:
+        _LOCK_FILE = open(lock_path, "w")
+        fcntl.flock(_LOCK_FILE, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _LOCK_FILE.write(str(os.getpid()))
+        _LOCK_FILE.flush()
+        return True
+    except OSError:
+        return False
+
+
+def _release_instance_lock():
+    global _LOCK_FILE
+    if _LOCK_FILE:
+        try:
+            fcntl.flock(_LOCK_FILE, fcntl.LOCK_UN)
+            _LOCK_FILE.close()
+        except Exception:
+            pass
+        _LOCK_FILE = None
+
+
+atexit.register(_release_instance_lock)
+
+
 try:
     import webview
 except Exception as e:
     _log_error(e)
     raise
 
-from server.server import apply_frozen_defaults, create_server, vault_exists, load_vault_password, _reinit_data_paths
+from server.server import (
+    apply_frozen_defaults,
+    create_server,
+    vault_exists,
+    load_vault_password,
+    _reinit_data_paths,
+)
 
 
 def _get_icon_path():
@@ -73,10 +129,13 @@ def _is_autostart_enabled():
 
 
 def main():
+    if not _acquire_instance_lock():
+        print("Cetas est déjà en cours d'exécution.", file=sys.stderr)
+        sys.exit(1)
+
     apply_frozen_defaults()
     _reinit_data_paths()
 
-    # Charger le mot de passe vault depuis le fichier local (desktop)
     if not os.environ.get("CETAS_VAULT_PASSWORD"):
         saved = load_vault_password()
         if saved:
@@ -85,11 +144,13 @@ def main():
     if not vault_exists():
         os.environ["CETAS_SETUP_MODE"] = "1"
 
+    os.environ["CETAS_DESKTOP_MODE"] = "1"
+
     server = create_server()
     port = server.server_address[1]
 
-    t = threading.Thread(target=server.serve_forever, daemon=True)
-    t.start()
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
 
     start_url = f"http://127.0.0.1:{port}"
     if not vault_exists():
@@ -117,9 +178,10 @@ def main():
 
     window.events.loaded += _on_loaded
 
-    # ── Tray icon (M5) ──────────────────────────────────────────────
     _tray_icon = None
     _tray_thread = None
+    _server_ref = server
+    _window_ref = window
 
     def _start_tray():
         nonlocal _tray_icon, _tray_thread
@@ -140,6 +202,7 @@ def main():
 
             def on_quit(icon, item):
                 icon.stop()
+                _cleanup()
                 window.destroy()
 
             def on_toggle_autostart(icon, item):
@@ -164,6 +227,19 @@ def main():
         except ImportError:
             pass
 
+    def _cleanup():
+        """Arrêt propre : tray icon + serveur + lock file."""
+        if _tray_icon is not None:
+            try:
+                _tray_icon.stop()
+            except Exception:
+                pass
+        try:
+            _server_ref.shutdown()
+        except Exception:
+            pass
+        _release_instance_lock()
+
     def on_close():
         """Fermeture de la fenêtre → minimiser au tray au lieu de quitter."""
         window.hide()
@@ -172,7 +248,10 @@ def main():
 
     window.events.closing += on_close
 
-    webview.start(debug=False)
+    try:
+        webview.start(debug=False)
+    finally:
+        _cleanup()
 
 
 if __name__ == "__main__":
