@@ -13,6 +13,7 @@ import json
 import time
 import http.client
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 log = logging.getLogger(__name__)
 
@@ -232,18 +233,31 @@ ALL_PROVIDERS = [
 
 
 def search(query, allowed_domains=None, blocked_domains=None, max_results=10):
-    """Try providers in order (auto mode). Return first with results or last result."""
+    """Run providers in parallel (auto mode). Return first with results, preferring earlier providers on tie."""
     errors = []
-    for provider_fn in ALL_PROVIDERS:
-        try:
-            result = provider_fn(query, allowed_domains, blocked_domains, max_results)
-            if result is None:
-                continue
-            if result["hits"]:
-                return result
-            errors.append("%s: 0 results" % result["provider"])
-        except Exception as e:
-            errors.append("%s: %s" % (provider_fn.__name__, e))
+    results_by_idx = {}
+
+    with ThreadPoolExecutor(max_workers=len(ALL_PROVIDERS)) as executor:
+        future_to_idx = {
+            executor.submit(fn, query, allowed_domains, blocked_domains, max_results): idx
+            for idx, fn in enumerate(ALL_PROVIDERS)
+        }
+        for future in as_completed(future_to_idx):
+            idx = future_to_idx[future]
+            try:
+                result = future.result()
+                if result is None:
+                    continue
+                if result["hits"]:
+                    results_by_idx[idx] = result
+                else:
+                    errors.append("%s: 0 results" % result["provider"])
+            except Exception as e:
+                errors.append("%s: %s" % (ALL_PROVIDERS[idx].__name__, e))
+
+    if results_by_idx:
+        best_idx = min(results_by_idx.keys())
+        return results_by_idx[best_idx]
 
     return {
         "hits": [],
