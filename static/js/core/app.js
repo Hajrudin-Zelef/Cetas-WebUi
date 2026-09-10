@@ -1,12 +1,3 @@
-
-if (typeof marked !== "undefined" && !marked.__tableWrapPatched) {
-    const _origParse = marked.parse.bind(marked);
-    marked.parse = function(...args) {
-        const html = _origParse(...args);
-        return html.replace(/<table>/g, '<div class="table-wrap"><table>').replace(/<\/table>/g, '</table></div>');
-    };
-    marked.__tableWrapPatched = true;
-}
 import { STATE, STREAM_ERROR_CONTENT, TEXT_EXTENSIONS, isStreamActive } from "./state.js";
 
 import "./dom.js";
@@ -603,7 +594,7 @@ function _isFriendlyCetasError(e) {
 function showErrorAlert(e, t) {
     if (!e) return _isFriendlyCetasError(t) ? customAlert(t, "error") : customAlert(`Erreur : ${t}`, "error");
     const n = t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    return _showDialog(`<div class="error-alert-header"><strong>Une erreur est survenue</strong><br>Analyse de l'erreur par l'IA :</div><div class="error-alert-body">${"undefined" != typeof marked ? marked.parse(e) : e.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div><details class="error-raw-details"><summary>Voir les détails de l'erreur</summary><pre class="error-raw-pre">${n}</pre></details>`, {
+    return _showDialog(`<div class="error-alert-header"><strong>Une erreur est survenue</strong><br>Analyse de l'erreur par l'IA :</div><div class="error-alert-body">${"undefined" != typeof marked ? window.__wrapTables(marked.parse(e)) : e.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div><details class="error-raw-details"><summary>Voir les détails de l'erreur</summary><pre class="error-raw-pre">${n}</pre></details>`, {
         icon: "error",
         confirm: !1,
         html: !0
@@ -680,7 +671,7 @@ function _rebindStreamToVisibleDOM(e) {
         if (e.sr = createStreamRenderer(t, (() => t.querySelector(".message-text")), e.accumulatedText), 
         e.accumulatedText) {
             const n = t.querySelector(".message-text");
-            n && (n.innerHTML = marked.parse(e.accumulatedText));
+            n && (n.innerHTML = window.__wrapTables(marked.parse(e.accumulatedText)));
         }
         if (e.accumulatedThinking) {
             const n = document.createElement("details");
@@ -704,7 +695,7 @@ function _rebindStreamToVisibleDOM(e) {
                 o.appendChild(_b3);
             })(), n.appendChild(o);
             const a = document.createElement("div");
-            a.className = "thinking-content", a.innerHTML = marked.parse(e.accumulatedThinking), 
+            a.className = "thinking-content", a.innerHTML = window.__wrapTables(marked.parse(e.accumulatedThinking)), 
             n.appendChild(a), t.insertBefore(n, t.firstChild), e.thinkSr = createStreamRenderer(t, (() => t.querySelector(".thinking-content")), e.accumulatedThinking);
         } else e.thinkSr = null;
     } else if ("image" === e.type) {
@@ -925,7 +916,7 @@ function addMessage(e, t, n, o, a, r, s) {
             k.appendChild(_b3);
         })(), I.appendChild(k);
         const b = document.createElement("div");
-        b.className = "thinking-content", b.innerHTML = marked.parse(a), I.appendChild(b), 
+        b.className = "thinking-content", b.innerHTML = window.__wrapTables(marked.parse(a)), I.appendChild(b), 
         i.appendChild(I);
     }
     if (Array.isArray(t)) {
@@ -970,7 +961,7 @@ function addMessage(e, t, n, o, a, r, s) {
     const l = document.createElement("div");
     l.className = "message-text";
     const c = getTextFromContent(t);
-    if ("assistant" === e && c) l.innerHTML = marked.parse(c), addCodeCopyButtons(l); else if ("assistant" !== e || c) l.textContent = c; else if ("string" == typeof t) {
+    if ("assistant" === e && c) l.innerHTML = window.__wrapTables(marked.parse(c)), addCodeCopyButtons(l); else if ("assistant" !== e || c) l.textContent = c; else if ("string" == typeof t) {
         const R = document.createElement("span");
         R.className = "generation-placeholder", R.textContent = "Génération en cours...", 
         l.appendChild(R);
@@ -1369,7 +1360,7 @@ function createStreamRenderer(e, t, n) {
         if (!e) return;
         s = o.length;
         const n = e.textContent.length;
-        e.innerHTML = marked.parse(o), _wrapNewChars(e, e.textContent.length - n), _ensureSpinner(e), 
+        e.innerHTML = window.__wrapTables(marked.parse(o)), _wrapNewChars(e, e.textContent.length - n), _ensureSpinner(e), 
         function(e) {
             if (i) return;
             const t = e.scrollHeight > e.clientHeight ? e : null;
@@ -1445,7 +1436,7 @@ function createStreamRenderer(e, t, n) {
             _stopSpinner();
             o += a, a = "";
             const e = t();
-            e && (e.innerHTML = marked.parse(o), addCodeCopyButtons(e));
+            e && (e.innerHTML = window.__wrapTables(marked.parse(o)), addCodeCopyButtons(e));
         }
     };
 }
@@ -1587,7 +1578,7 @@ async function regenerateLastResponse() {
                     altText: "Image générée"
                 }), o.firstChild);
                 const t = o.querySelector(".message-text");
-                t && e.text ? (t.innerHTML = marked.parse(e.text), addCodeCopyButtons(t)) : t && t.remove();
+                t && e.text ? (t.innerHTML = window.__wrapTables(marked.parse(e.text)), addCodeCopyButtons(t)) : t && t.remove();
             }
             const c = imageResultToContent(e), d = (Date.now() - a) / 1e3, u = e.usage?.output_tokens || 0;
             n.push({
@@ -1849,7 +1840,7 @@ function startEditMessage(e, t) {
                         altText: "Image générée"
                     }), g.firstChild);
                     const t = g.querySelector(".message-text");
-                    t && e.text ? (t.innerHTML = marked.parse(e.text), addCodeCopyButtons(t)) : t && t.remove();
+                    t && e.text ? (t.innerHTML = window.__wrapTables(marked.parse(e.text)), addCodeCopyButtons(t)) : t && t.remove();
                 }
                 const r = imageResultToContent(e), s = (Date.now() - h) / 1e3, i = e.usage?.output_tokens || 0;
                 p.push({
@@ -2176,7 +2167,7 @@ async function sendMessage() {
                     altText: "Image générée"
                 }), r.firstChild);
                 const t = r.querySelector(".message-text");
-                t && e.text ? (t.innerHTML = marked.parse(e.text), addCodeCopyButtons(t)) : t && t.remove();
+                t && e.text ? (t.innerHTML = window.__wrapTables(marked.parse(e.text)), addCodeCopyButtons(t)) : t && t.remove();
             }
             const a = imageResultToContent(e), i = (Date.now() - s) / 1e3, l = e.usage?.output_tokens || 0;
             o.push({
