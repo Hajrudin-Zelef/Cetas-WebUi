@@ -382,11 +382,11 @@ document.addEventListener("mouseover", (e => {
         "function" == typeof pruneLastSelectionsOrphans && pruneLastSelectionsOrphans();
         const e = localStorage.getItem("minou-last-model");
         if (e && MODELS.some((t => t.id === e)) && (modelSelect._customValue = e, modelSelect._activeCategory = "text", 
-        STATE.currentModel = e, updateTriggerDisplay(modelSelect), updateEffortMandatory(e)), 
+        STATE.currentModel = e, updateTriggerDisplay(modelSelect), updateEffortMandatory(e), window.updateThinkingBtn && window.updateThinkingBtn(e)), 
         !STATE.currentModel) {
             const e = MODELS.find((e => "samagent-n4" === e.id && hasProviderKey(e.editeur))) || MODELS.find((e => hasProviderKey(e.editeur)));
             e && (modelSelect._customValue = e.id, modelSelect._activeCategory = "text", STATE.currentModel = e.id, 
-            updateTriggerDisplay(modelSelect), updateEffortMandatory(e.id));
+            updateTriggerDisplay(modelSelect), updateEffortMandatory(e.id), window.updateThinkingBtn && window.updateThinkingBtn(e.id));
         }
         const t = localStorage.getItem("minou-last-image-model");
         updateImageParamsVisibility(getImageModelEditeur(t) || "", t), updateWebSearchBtn(),
@@ -484,9 +484,9 @@ function resetConversation() {
     STATE.pendingFiles = [], cancelAllPendingLoads(), STATE.originalPromptBeforeEnhance = null, 
     STATE.isEnhancing = !1, attachPreview.innerHTML = "", modelSelect.disabled = !1, 
     _switchTab("text", !1), modelSelect._customValue = t ? e : "", updateTriggerDisplay(modelSelect), 
-    updateActiveOption(modelSelect), updateEffortMandatory(t ? e : null), setRightPanelTab("general"), 
+    updateActiveOption(modelSelect), updateEffortMandatory(t ? e : null), window.updateThinkingBtn && window.updateThinkingBtn(t ? e : null), setRightPanelTab("general"), 
     spSelect.disabled = !1, spSelect.value = "", spTextarea.value = "", updateTokenDisplay(), 
-    updateSendButton(), updateWebSearchBtn(), "function" == typeof window.updateThinkingBtn && window.updateThinkingBtn(), window.Canvas && window.Canvas.reset(), 
+    updateSendButton(), updateWebSearchBtn(), "function" == typeof window.updateThinkingBtn && window.updateThinkingBtn(STATE.currentModel), window.Canvas && window.Canvas.reset(), 
     updateCanvasBtn(), updateEnhanceBtn(), highlightActiveConv(), updateExportMdBtn(), 
     updateChatHeader(), updateActiveCatColor(), promptInput.focus();
 }
