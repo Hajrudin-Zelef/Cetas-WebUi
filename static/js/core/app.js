@@ -389,7 +389,8 @@ document.addEventListener("mouseover", (e => {
             updateTriggerDisplay(modelSelect), updateEffortMandatory(e.id));
         }
         const t = localStorage.getItem("minou-last-image-model");
-        updateImageParamsVisibility(getImageModelEditeur(t) || "", t), updateWebSearchBtn(), 
+        updateImageParamsVisibility(getImageModelEditeur(t) || "", t), updateWebSearchBtn(),
+        "function" == typeof window.updateThinkingBtn && window.updateThinkingBtn(),
         "function" == typeof updateCanvasBtn && updateCanvasBtn();
         const n = localStorage.getItem("cetas-last-conv");
         if (n) try {
@@ -485,7 +486,7 @@ function resetConversation() {
     _switchTab("text", !1), modelSelect._customValue = t ? e : "", updateTriggerDisplay(modelSelect), 
     updateActiveOption(modelSelect), updateEffortMandatory(t ? e : null), setRightPanelTab("general"), 
     spSelect.disabled = !1, spSelect.value = "", spTextarea.value = "", updateTokenDisplay(), 
-    updateSendButton(), updateWebSearchBtn(), window.Canvas && window.Canvas.reset(), 
+    updateSendButton(), updateWebSearchBtn(), "function" == typeof window.updateThinkingBtn && window.updateThinkingBtn(), window.Canvas && window.Canvas.reset(), 
     updateCanvasBtn(), updateEnhanceBtn(), highlightActiveConv(), updateExportMdBtn(), 
     updateChatHeader(), updateActiveCatColor(), promptInput.focus();
 }

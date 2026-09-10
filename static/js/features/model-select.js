@@ -395,7 +395,7 @@ export function createModelSelect({
         setRightPanelTab("general"));
         const o = STATE.currentModel || STATE.currentImageModel || STATE.currentSearchModel;
         STATE.conversationStarted && n && o && n !== o && addModelSwitch(n, o), updateTokenDisplay(),
-        updateWebSearchBtn(), "function" == typeof updateCanvasBtn && updateCanvasBtn();
+        updateWebSearchBtn(), "function" == typeof window.updateThinkingBtn && window.updateThinkingBtn(), "function" == typeof updateCanvasBtn && updateCanvasBtn();
     }
 
     function populateUnifiedSelect() {
