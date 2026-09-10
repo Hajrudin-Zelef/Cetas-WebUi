@@ -18,9 +18,25 @@ input:focus{outline:none;border-color:#5b7fff}
 input::placeholder{color:#5a5b63}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
 .provider-row{margin-bottom:2px}
-.btn{width:100%;background:#5b7fff;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
-.btn:hover{background:#6f8fff}
-.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn{width:100%;background:#5b7fff;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;position:relative;overflow:hidden;transition:all .3s cubic-bezier(.4,0,.2,1)}
+.btn:hover{background:#6f8fff;transform:translateY(-1px);box-shadow:0 6px 20px rgba(91,127,255,.35)}
+.btn:active{transform:translateY(0);box-shadow:0 2px 8px rgba(91,127,255,.25)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn .btn-text{position:relative;z-index:2;transition:opacity .3s}
+.btn .btn-spinner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;opacity:0;transition:opacity .3s}
+.btn.loading .btn-text{opacity:0}
+.btn.loading .btn-spinner{opacity:1;animation:spin .7s linear infinite}
+.btn.success{background:#22c55e;pointer-events:none}
+.btn.success .btn-text{opacity:0}
+.btn .btn-check{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);width:24px;height:24px;opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1)}
+.btn.success .btn-check{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.btn .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:ripple-expand .6s ease-out forwards;pointer-events:none}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes ripple-expand{to{transform:scale(4);opacity:0}}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 20px 6px rgba(34,197,94,.3)}}
+.btn.success{animation:pulse-glow .6s ease-in-out}
+.btn .confetti{position:absolute;width:6px;height:6px;border-radius:50%;pointer-events:none;animation:confetti-fly .8s cubic-bezier(.25,.46,.45,.94) forwards}
+@keyframes confetti-fly{0%{opacity:1;transform:translate(0,0) rotate(0deg) scale(1)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(720deg) scale(0)}}
 #status{margin-top:14px;font-size:13px;color:#9a9ba3;display:none}
 #status.error{color:#ff6b6b}
 #status.ok{color:#4caf50}
@@ -48,7 +64,11 @@ input::placeholder{color:#5a5b63}
     <div class="grid" id="websearch-providers"></div>
   </div>
 
-  <button class="btn" id="save-btn">Enregistrer et démarrer</button>
+  <button class="btn" id="save-btn">
+    <span class="btn-text">Enregistrer et démarrer</span>
+    <span class="btn-spinner"></span>
+    <svg class="btn-check" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+  </button>
   <div id="status"></div>
 </div>
 
@@ -94,7 +114,39 @@ WEBSEARCH_PROVIDERS.forEach(p => {
   wsEl.appendChild(row);
 });
 
-document.getElementById('save-btn').addEventListener('click', async () => {
+function createRipple(e, btn) {
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const size = Math.max(rect.width, rect.height) * 2;
+  ripple.style.width = ripple.style.height = size + 'px';
+  ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+  ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+}
+
+function spawnConfetti(btn) {
+  const rect = btn.getBoundingClientRect();
+  const colors = ['#22c55e', '#4ade80', '#86efac', '#ffffff', '#bbf7d0'];
+  for (let i = 0; i < 12; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.left = (rect.width / 2 + (Math.random() - 0.5) * 40) + 'px';
+    c.style.top = (rect.height / 2) + 'px';
+    const angle = (Math.random() * 360) * (Math.PI / 180);
+    const dist = 40 + Math.random() * 60;
+    c.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+    c.style.setProperty('--ty', (Math.sin(angle) * dist - 30) + 'px');
+    btn.appendChild(c);
+    setTimeout(() => c.remove(), 800);
+  }
+}
+
+document.getElementById('save-btn').addEventListener('click', async function(e) {
+  createRipple(e, this);
+
   const password = document.getElementById('vault-password').value.trim();
   if (password.length < 8) {
     showStatus('Mot de passe trop court (minimum 8 caractères).', 'error');
@@ -119,9 +171,9 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     }
   });
 
-  const btn = document.getElementById('save-btn');
+  const btn = this;
   btn.disabled = true;
-  btn.textContent = 'Enregistrement...';
+  btn.classList.add('loading');
 
   try {
     const resp = await fetch('/setup/save', {
@@ -131,17 +183,20 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     });
     const data = await resp.json();
     if (resp.ok && data.ok) {
+      btn.classList.remove('loading');
+      btn.classList.add('success');
+      spawnConfetti(btn);
       showStatus('Configuration enregistrée ! Redémarrage...', 'ok');
-      setTimeout(() => window.location.href = '/', 800);
+      setTimeout(() => window.location.href = '/', 1200);
     } else {
-      showStatus(data.error || 'Erreur lors de la sauvegarde.', 'error');
+      btn.classList.remove('loading');
       btn.disabled = false;
-      btn.textContent = 'Enregistrer et démarrer';
+      showStatus(data.error || 'Erreur lors de la sauvegarde.', 'error');
     }
   } catch (err) {
-    showStatus('Erreur réseau : ' + err.message, 'error');
+    btn.classList.remove('loading');
     btn.disabled = false;
-    btn.textContent = 'Enregistrer et démarrer';
+    showStatus('Erreur réseau : ' + err.message, 'error');
   }
 });
 
