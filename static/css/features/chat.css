@@ -1700,7 +1700,8 @@ body.dark #cost-info {
 
 /* Recherche web intégrée au modèle (Perplexity / OpenAI Search via OpenRouter) :
    bouton affiché actif mais non cliquable. Sélecteur par id pour l'emporter sur
-   `#web-search-btn.custom-select-info { cursor: pointer }`. */
+   `#web-search-btn.custom-select-info,
+#thinking-toggle-btn.custom-select-info { cursor: pointer }`. */
 #web-search-btn.web-search-locked {
     cursor: default;
 }
