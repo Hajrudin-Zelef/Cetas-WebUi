@@ -1505,3 +1505,26 @@ body.auth-locked .kiro-splash {
 }
 .fav-item:hover .fav-item-remove { opacity: 1; }
 
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 16px 0;
+    color: var(--text-secondary, #888);
+    font-size: 0.85rem;
+}
+.login-divider::before,
+.login-divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--border, #333);
+}
+.login-divider span {
+    padding: 0 10px;
+}
+#google-signin-btn {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
