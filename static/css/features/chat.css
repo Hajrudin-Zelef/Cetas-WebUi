@@ -1710,7 +1710,8 @@ body.dark #cost-info {
     filter: none;
 }
 
-#web-search-btn.custom-select-info {
+#web-search-btn.custom-select-info,
+#thinking-toggle-btn.custom-select-info {
     opacity: 1;
     width: 28px;
     height: 28px;
