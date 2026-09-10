@@ -2781,8 +2781,8 @@ const WS_PROVIDERS_CONFIG = [
     { id: "exa", label: "Exa", icon: "Exa.png", color: !0, placeholder: "...", link: "https://dashboard.exa.ai/api-keys", linkLabel: "Obtenir une clé API Exa", envVar: "EXA_API_KEY", hasKey: !0 },
     { id: "brave", label: "Brave Search", icon: "Brave.svg", color: !1, placeholder: "BSA...", link: "https://api-dashboard.search.brave.com/app/keys", linkLabel: "Obtenir une clé API Brave Search", envVar: "BRAVE_API_KEY", hasKey: !0 },
     { id: "jina", label: "Jina", icon: "Jina.webp", color: !0, placeholder: "jina_...", link: "https://jina.ai/api-dashboard/api-keys", linkLabel: "Obtenir une clé API Jina", envVar: "JINA_API_KEY", hasKey: !0 },
-    { id: "searxng", label: "SearXNG", icon: "icons.svg#icon-globe", color: !1, hasKey: !1 },
-    { id: "ddg", label: "DuckDuckGo", icon: "icons.svg#icon-globe", color: !1, hasKey: !1 }
+    { id: "searxng", label: "SearXNG", icon: "SearXNG.png", color: !1, hasKey: !1 },
+    { id: "ddg", label: "DuckDuckGo", icon: "ddg.png", color: !1, hasKey: !1 }
 ];
 
 function _wsEnabledProviders() {
