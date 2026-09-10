@@ -50,8 +50,12 @@
                     <a href="#" id="login-forgot" class="login-forgot">Mot de passe oublié ?</a>
                 </div>
             </form>
+            <div class="login-divider"><span>ou</span></div>
+            <div id="google-signin-btn"></div>
+            <div id="login-google-error" class="login-error" style="display:none"></div>
         </div>
     </div>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <!-- Modale utilisateur (admin) -->
     <div id="user-modal-overlay" class="sp-modal-overlay" style="display:none">

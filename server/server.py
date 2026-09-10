@@ -76,6 +76,20 @@ def _vault_path() -> str:
 
 ENV_PATH = os.environ.get("CETAS_ENV_PATH", os.path.join(BASE_DIR, ".env"))
 
+def _google_verify(token):
+    """Vérifie un id_token Google, retourne le payload ou None."""
+    try:
+        from google.oauth2 import id_token as _gid_token
+        from google.auth.transport import requests as _gauth_requests
+        client_id = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+        if not client_id:
+            return None
+        payload = _gid_token.verify_oauth2_token(token, _gauth_requests.Request(), client_id)
+        return payload
+    except Exception as e:
+        log.warning("Google token verify failed: %s", e)
+        return None
+
 
 def _env_path() -> str:
     """Chemin du .env, lu lazy (après apply_frozen_defaults)."""
@@ -1181,6 +1195,76 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             }
         })
 
+    def _auth_google(self):
+        ip = self.client_address[0]
+        if not _rate_check("login:" + ip, 10, 60):
+            self._respond_json({"error": "Trop de tentatives. Réessayez dans une minute."}, 429)
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        id_tok = data.get("credential", "").strip()
+        if not id_tok:
+            self._respond_json({"error": "Token Google requis."}, 400)
+            return
+        payload = _google_verify(id_tok)
+        if not payload:
+            self._respond_json({"error": "Token Google invalide."}, 401)
+            return
+        email = payload.get("email", "").strip().lower()
+        if not email:
+            self._respond_json({"error": "Email introuvable dans le token Google."}, 400)
+            return
+        if not payload.get("email_verified", False):
+            self._respond_json({"error": "Email Google non vérifié."}, 403)
+            return
+        users = _load_users()
+        uname = None
+        for name, u in users.items():
+            if u.get("email", "").strip().lower() == email:
+                uname = name
+                break
+        with _users_lock:
+            if uname is None:
+                if len(users) == 0:
+                    self._respond_json({"error": "Aucun admin configuré. Lancez setup.py d'abord."}, 403)
+                    return
+                if not REGISTRATION_OPEN:
+                    self._respond_json({"error": "Inscriptions désactivées."}, 403)
+                    return
+                uname = email
+                if uname in _users:
+                    base = uname
+                    i = 2
+                    while uname in _users:
+                        uname = base + str(i)
+                        i += 1
+                _users[uname] = {
+                    "username": uname,
+                    "email": email,
+                    "password_hash": "",
+                    "role": "user",
+                    "auth_provider": "google",
+                    "created_at": datetime.datetime.utcnow().isoformat()
+                }
+                _save_users_locked()
+                log.debug("Utilisateur créé via Google: %s", uname)
+            u = _users[uname]
+        token = _create_jwt(uname, u.get("role", "user"))
+        self._respond_json({
+            "token": token,
+            "user": {
+                "username": u["username"],
+                "email": u.get("email", ""),
+                "role": u.get("role", "user"),
+                "created_at": u.get("created_at", "")
+            }
+        })
+
     def _auth_register(self):
         ip = self.client_address[0]
         if not REGISTRATION_OPEN:
@@ -1510,6 +1594,10 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             filename = path[len("/api/conversations/"):]
             self._conv_get(filename)
             return
+        # Config publique (Google OAuth client id)
+        if path == "/api/auth/config":
+            self._respond_json({"googleClientId": os.environ.get("GOOGLE_CLIENT_ID", "")})
+            return
         # Settings utilisateur
         if path == "/api/settings":
             self._settings_get()
@@ -1618,6 +1706,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/api/auth/login":
             self._auth_login()
+            return
+        if self.path == "/api/auth/google":
+            self._auth_google()
             return
         if self.path == "/api/auth/register":
             self._auth_register()
