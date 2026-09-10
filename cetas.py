@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Cetas Desktop — fenêtre native avec serveur intégré (pywebview + tray icon)."""
 import atexit
-import fcntl
 import os
 import sys
 import threading
 import time
 import traceback
+
+if sys.platform == "win32":
+    import msvcrt
+else:
+    import fcntl
 
 _LOCK_FILE = None
 
@@ -41,7 +45,10 @@ def _acquire_instance_lock():
     lock_path = os.path.join(lock_dir, ".cetas.lock")
     try:
         _LOCK_FILE = open(lock_path, "w")
-        fcntl.flock(_LOCK_FILE, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if sys.platform == "win32":
+            msvcrt.locking(_LOCK_FILE.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            fcntl.flock(_LOCK_FILE, fcntl.LOCK_EX | fcntl.LOCK_NB)
         _LOCK_FILE.write(str(os.getpid()))
         _LOCK_FILE.flush()
         return True
@@ -53,7 +60,10 @@ def _release_instance_lock():
     global _LOCK_FILE
     if _LOCK_FILE:
         try:
-            fcntl.flock(_LOCK_FILE, fcntl.LOCK_UN)
+            if sys.platform == "win32":
+                msvcrt.locking(_LOCK_FILE.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(_LOCK_FILE, fcntl.LOCK_UN)
             _LOCK_FILE.close()
         except Exception:
             pass
