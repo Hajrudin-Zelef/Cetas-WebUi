@@ -912,6 +912,8 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
 
     # Résoudre host/port depuis base_url (config) ou vault (api_keys)
     base_url = config.get("base_url") or api_key.rstrip("/")
+    if not base_url:
+        return 502, {}, b'{"error":"URL non configuree"}', None
     parsed = urlparse(base_url)
     host = parsed.hostname
     port = parsed.port or (443 if parsed.scheme == "https" else 80)
