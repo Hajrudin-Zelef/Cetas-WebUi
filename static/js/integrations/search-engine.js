@@ -3,7 +3,7 @@ var TAVILY_URL="/api/tavily/search",TAVILY_TIMEOUT=8e3;
 function _sanitize(e){return e?e.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,"").replace(/\\x[0-9a-fA-F]?/g,"").replace(/\\u[0-9a-fA-F]{0,3}$/g,"").trim():""}
 
 async function _searchTavily(e){
-  var t=TAVILY_URL+"?q="+encodeURIComponent(e)+"&max_results=10";
+  var t=TAVILY_URL+"?q="+encodeURIComponent(e)+"&max_results=5";
   var h={};
   if(typeof Auth!=="undefined"&&Auth.getToken){var token=Auth.getToken();if(token)h["Authorization"]="Bearer "+token}
   var r=await fetch(t,{signal:AbortSignal.timeout(TAVILY_TIMEOUT),headers:h});
@@ -24,7 +24,7 @@ async function executeWebSearch(e){
   try{
     var h={"Content-Type":"application/json"};
     if(typeof Auth!=="undefined"&&Auth.getToken){var token=Auth.getToken();if(token)h["Authorization"]="Bearer "+token}
-    var r=await fetch("/api/websearch",{method:"POST",headers:h,body:JSON.stringify({query:e,max_results:10,providers:(window.STATE&&window.STATE.enabledProviders)||undefined}),signal:AbortSignal.timeout(10000)});
+    var r=await fetch("/api/websearch",{method:"POST",headers:h,body:JSON.stringify({query:e,max_results:5,providers:(window.STATE&&window.STATE.enabledProviders)||undefined}),signal:AbortSignal.timeout(10000)});
     if(!r.ok)throw new Error("WebSearch returned "+r.status);
     var a=await r.json();
     if(a.warning)console.warn("[search-engine] "+a.warning);

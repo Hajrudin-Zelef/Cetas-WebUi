@@ -13,6 +13,7 @@ import json
 import time
 import http.client
 import logging
+import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 
@@ -84,29 +85,29 @@ def apply_domain_filters(hits, allowed_domains=None, blocked_domains=None):
 
 # ── Providers ────────────────────────────────────────────────────────
 
+_SESSION = requests.Session()
+_SESSION.headers.update({"Content-Type": "application/json"})
+
+
 def _search_tavily(query, allowed_domains=None, blocked_domains=None, max_results=10):
     key = os.environ.get("TAVILY_API_KEY", "").strip()
     if not key:
         return None
     start = time.time()
-    conn = http.client.HTTPSConnection("api.tavily.com", timeout=TAVILY_TIMEOUT)
-    body = json.dumps({"query": query, "max_results": max_results, "include_answer": False})
     try:
-        conn.request("POST", "/search", body=body,
-                     headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
-        resp = conn.getresponse()
-        if resp.status != 200:
-            log.warning("tavily %d", resp.status)
+        resp = _SESSION.post("https://api.tavily.com/search", timeout=TAVILY_TIMEOUT,
+                              json={"query": query, "max_results": max_results, "include_answer": False},
+                              headers={"Authorization": "Bearer " + key})
+        if resp.status_code != 200:
+            log.warning("tavily %d", resp.status_code)
             return None
-        data = json.loads(resp.read())
+        data = resp.json()
         hits = [h for r in data.get("results", []) if (h := normalize_hit(r))]
         return {"hits": apply_domain_filters(hits, allowed_domains, blocked_domains),
                 "provider": "tavily", "duration": time.time() - start}
     except Exception as e:
         log.warning("tavily failed: %s", e)
         return None
-    finally:
-        conn.close()
 
 
 def _search_exa(query, allowed_domains=None, blocked_domains=None, max_results=10):
@@ -114,24 +115,20 @@ def _search_exa(query, allowed_domains=None, blocked_domains=None, max_results=1
     if not key:
         return None
     start = time.time()
-    conn = http.client.HTTPSConnection("api.exa.ai", timeout=EXA_TIMEOUT)
-    body = json.dumps({"query": query, "numResults": max_results, "type": "auto"})
     try:
-        conn.request("POST", "/search", body=body,
-                     headers={"Content-Type": "application/json", "x-api-key": key})
-        resp = conn.getresponse()
-        if resp.status != 200:
-            log.warning("exa %d", resp.status)
+        resp = _SESSION.post("https://api.exa.ai/search", timeout=EXA_TIMEOUT,
+                              json={"query": query, "numResults": max_results, "type": "auto"},
+                              headers={"x-api-key": key})
+        if resp.status_code != 200:
+            log.warning("exa %d", resp.status_code)
             return None
-        data = json.loads(resp.read())
+        data = resp.json()
         hits = [h for r in data.get("results", []) if (h := normalize_hit(r))]
         return {"hits": apply_domain_filters(hits, allowed_domains, blocked_domains),
                 "provider": "exa", "duration": time.time() - start}
     except Exception as e:
         log.warning("exa failed: %s", e)
         return None
-    finally:
-        conn.close()
 
 
 def _search_brave(query, allowed_domains=None, blocked_domains=None, max_results=10):
@@ -139,24 +136,20 @@ def _search_brave(query, allowed_domains=None, blocked_domains=None, max_results
     if not key:
         return None
     start = time.time()
-    conn = http.client.HTTPSConnection("api.search.brave.com", timeout=BRAVE_TIMEOUT)
-    path = "/res/v1/web/search?q=" + query.replace(" ", "+") + "&count=" + str(max_results)
     try:
-        conn.request("GET", path,
-                     headers={"Accept": "application/json", "X-Subscription-Token": key})
-        resp = conn.getresponse()
-        if resp.status != 200:
-            log.warning("brave %d", resp.status)
+        resp = _SESSION.get("https://api.search.brave.com/res/v1/web/search", timeout=BRAVE_TIMEOUT,
+                             params={"q": query, "count": max_results},
+                             headers={"Accept": "application/json", "X-Subscription-Token": key})
+        if resp.status_code != 200:
+            log.warning("brave %d", resp.status_code)
             return None
-        data = json.loads(resp.read())
+        data = resp.json()
         hits = [h for r in data.get("web", {}).get("results", []) if (h := normalize_hit(r))]
         return {"hits": apply_domain_filters(hits, allowed_domains, blocked_domains),
                 "provider": "brave", "duration": time.time() - start}
     except Exception as e:
         log.warning("brave failed: %s", e)
         return None
-    finally:
-        conn.close()
 
 
 def _search_jina(query, allowed_domains=None, blocked_domains=None, max_results=10):
@@ -164,44 +157,36 @@ def _search_jina(query, allowed_domains=None, blocked_domains=None, max_results=
     if not key:
         return None
     start = time.time()
-    conn = http.client.HTTPSConnection("s.jina.ai", timeout=JINA_TIMEOUT)
-    path = "/?q=" + query.replace(" ", "+")
     try:
-        conn.request("GET", path,
-                     headers={"Accept": "application/json", "Authorization": "Bearer " + key})
-        resp = conn.getresponse()
-        if resp.status != 200:
-            log.warning("jina %d", resp.status)
+        resp = _SESSION.get("https://s.jina.ai/", timeout=JINA_TIMEOUT,
+                             params={"q": query},
+                             headers={"Accept": "application/json", "Authorization": "Bearer " + key})
+        if resp.status_code != 200:
+            log.warning("jina %d", resp.status_code)
             return None
-        data = json.loads(resp.read())
+        data = resp.json()
         hits = [h for r in data.get("data", []) if (h := normalize_hit(r))]
         return {"hits": apply_domain_filters(hits[:max_results], allowed_domains, blocked_domains),
                 "provider": "jina", "duration": time.time() - start}
     except Exception as e:
         log.warning("jina failed: %s", e)
         return None
-    finally:
-        conn.close()
 
 
 def _search_searxng(query, allowed_domains=None, blocked_domains=None, max_results=10):
     start = time.time()
-    conn = http.client.HTTPConnection("127.0.0.1", 8904, timeout=SEARXNG_TIMEOUT)
-    path = "/search?format=json&q=" + query.replace(" ", "+") + "&language=en"
     try:
-        conn.request("GET", path)
-        resp = conn.getresponse()
-        if resp.status != 200:
+        resp = _SESSION.get("http://127.0.0.1:8904/search", timeout=SEARXNG_TIMEOUT,
+                             params={"format": "json", "q": query, "language": "en"})
+        if resp.status_code != 200:
             return None
-        data = json.loads(resp.read())
+        data = resp.json()
         hits = [h for r in data.get("results", [])[:max_results] if (h := normalize_hit(r))]
         return {"hits": apply_domain_filters(hits, allowed_domains, blocked_domains),
                 "provider": "searxng", "duration": time.time() - start}
     except Exception as e:
         log.warning("searxng failed: %s", e)
         return None
-    finally:
-        conn.close()
 
 
 def _search_ddg(query, allowed_domains=None, blocked_domains=None, max_results=10):
