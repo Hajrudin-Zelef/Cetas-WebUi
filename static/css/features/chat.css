@@ -111,6 +111,7 @@
 .message-text {
     word-wrap: break-word;
     overflow-wrap: break-word;
+    line-height: 1.6;
 }
 
 /* Placeholder « Génération en cours… » : couleur catégorie active + lumière
@@ -218,17 +219,22 @@ body.dark .message-text code {
 
 .message-text table {
     border-collapse: collapse;
-    margin: 0.5em 0;
+    margin: 0.8em 0;
     font-size: 0.9em;
+    width: 100%;
+    table-layout: auto;
 }
 
 .message-text th, .message-text td {
     border: 1px solid var(--border);
-    padding: 4px 10px;
+    padding: 8px 12px;
+    line-height: 1.5;
+    text-align: left;
 }
 
 .message-text th {
     background: rgba(0,0,0,0.04);
+    font-weight: 600;
 }
 
 body.dark .message-text th {
