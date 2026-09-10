@@ -162,6 +162,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .progress-bar.active{display:block}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#60A5FA);border-radius:2px;transition:width 0.3s;width:0%}
 
+/* Button effects */
+.btn-primary{position:relative;overflow:hidden}
+.btn-primary .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,0.3);transform:scale(0);animation:ripple-expand .6s ease-out forwards;pointer-events:none}
+@keyframes ripple-expand{to{transform:scale(4);opacity:0}}
+.btn-primary.loading{pointer-events:none}
+.btn-primary.loading::after{content:'';position:absolute;top:50%;left:50%;width:20px;height:20px;margin:-10px 0 0 -10px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Rocket effects */
+.rocket-circle{transition:all 0.4s cubic-bezier(.4,0,.2,1)}
+.rocket-circle:hover{transform:scale(1.05) rotate(-3deg)}
+.rocket-circle:active{transform:scale(0.95)}
+.rocket-circle.deploying{animation:pulse-glow 1.5s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{box-shadow:8px 8px 16px rgba(163,177,198,0.5),-8px -8px 16px rgba(255,255,255,0.9),inset 0 0 0 1px rgba(37,99,235,0.15)}50%{box-shadow:0 0 30px rgba(37,99,235,0.3),0 0 60px rgba(37,99,235,0.1),inset 0 0 0 2px rgba(37,99,235,0.4)}}
+.rocket-circle.deploying svg{animation:rocket-shake .3s ease-in-out infinite alternate}
+@keyframes rocket-shake{0%{transform:rotate(-2deg) translateY(0)}100%{transform:rotate(2deg) translateY(-3px)}}
+.rocket-circle.success{background:var(--green);box-shadow:0 0 40px rgba(22,163,74,0.4),0 0 80px rgba(22,163,74,0.15);animation:none}
+.rocket-circle.success svg{animation:rocket-launch .8s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes rocket-launch{0%{transform:translateY(0) scale(1);opacity:1}40%{transform:translateY(-10px) scale(1.1);opacity:1}100%{transform:translateY(-200px) scale(0.3);opacity:0}}
+.rocket-circle.error{background:var(--red);box-shadow:0 0 30px rgba(220,38,38,0.3);animation:none}
+.rocket-circle.error svg{animation:rocket-fail .5s ease}
+@keyframes rocket-fail{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+/* Particles */
+.particles{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;animation:particle-fly 1s ease-out forwards}
+@keyframes particle-fly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}}
+
+/* Confetti */
+.confetti-piece{position:absolute;width:8px;height:8px;animation:confetti-fall 1.2s cubic-bezier(.25,.46,.45,.94) forwards}
+@keyframes confetti-fall{0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}100%{opacity:0;transform:translateY(120px) translateX(var(--drift)) rotate(720deg) scale(0.3)}}
+
+/* Status text transitions */
+.deploy-status{transition:all 0.3s ease}
+.deploy-status.bounce{animation:text-bounce .5s ease}
+@keyframes text-bounce{0%{transform:scale(1)}30%{transform:scale(1.15)}60%{transform:scale(0.95)}100%{transform:scale(1)}}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -344,7 +381,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <option value="">Chargement des branches...</option>
     </select>
     <div style="padding:0 0 24px;margin-top:8px">
-      <button class="btn-primary" onclick="startDeploy()">Exécuter</button>
+      <button class="btn-primary" onclick="createRipple(event,this);startDeploy()">Exécuter</button>
     </div>
   </div>
 </div>
@@ -429,6 +466,61 @@ let isDeploying = false;
 let selectedAction = 'auto';
 let pollTimer = null;
 
+function createRipple(e, el) {
+  const rect = el.getBoundingClientRect();
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const s = Math.max(rect.width, rect.height) * 2;
+  r.style.width = r.style.height = s + 'px';
+  r.style.left = (e.clientX - rect.left - s / 2) + 'px';
+  r.style.top = (e.clientY - rect.top - s / 2) + 'px';
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+function spawnParticles(el) {
+  const colors = ['#5b7fff', '#60A5FA', '#93C5FD', '#BFDBFE', '#fff'];
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('span');
+    p.className = 'particle';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.width = p.style.height = (4 + Math.random() * 6) + 'px';
+    p.style.left = '50%';
+    p.style.top = '50%';
+    const angle = (Math.random() * 360) * (Math.PI / 180);
+    const dist = 50 + Math.random() * 80;
+    p.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--ty', (Math.sin(angle) * dist - 20) + 'px');
+    el.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+function spawnConfetti(el) {
+  const colors = ['#22c55e', '#4ade80', '#86efac', '#fff', '#bbf7d0', '#fbbf24', '#60A5FA'];
+  const rect = el.getBoundingClientRect();
+  const container = el.parentElement;
+  for (let i = 0; i < 20; i++) {
+    const c = document.createElement('span');
+    c.className = 'confetti-piece';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.left = (rect.left - container.getBoundingClientRect().left + rect.width / 2 + (Math.random() - 0.5) * 60) + 'px';
+    c.style.top = (rect.top - container.getBoundingClientRect().top) + 'px';
+    c.style.setProperty('--drift', ((Math.random() - 0.5) * 120) + 'px');
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    container.appendChild(c);
+    setTimeout(() => c.remove(), 1200);
+  }
+}
+
+function bounceStatus(text) {
+  const el = document.getElementById('deployStatus');
+  el.textContent = text;
+  el.classList.remove('bounce');
+  void el.offsetWidth;
+  el.classList.add('bounce');
+}
+
 async function api(path, body) {
   const opts = body ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {};
   const r = await fetch('/api/' + path, opts);
@@ -493,6 +585,8 @@ function updateMainUI() {
 
 async function onRocketClick() {
   if (isDeploying) return;
+  const rocket = document.getElementById('rocketBtn');
+  spawnParticles(rocket);
   if (!config.repo_path || !config.exe_path) { showScreen('setup'); return; }
   await runDetection();
   showScreen('detect');
@@ -551,8 +645,11 @@ async function startDeploy() {
   showLogsFooter('running');
   showScreen('logs');
   setLogsStatus('running', 'En cours...');
-  document.getElementById('rocketBtn').classList.add('deploying');
-  document.getElementById('deployStatus').textContent = 'Déploiement en cours...';
+  const rocket = document.getElementById('rocketBtn');
+  rocket.classList.remove('success', 'error');
+  rocket.classList.add('deploying');
+  spawnParticles(rocket);
+  bounceStatus('Déploiement en cours...');
   document.getElementById('deployError').style.display = 'none';
   document.getElementById('mainProgress').classList.add('active');
   document.getElementById('mainProgressFill').style.width = '0%';
@@ -569,17 +666,20 @@ async function startDeploy() {
       clearInterval(pollTimer);
       pollTimer = null;
       isDeploying = false;
-      document.getElementById('rocketBtn').classList.remove('deploying');
+      rocket.classList.remove('deploying');
       document.getElementById('mainProgress').classList.remove('active');
       if (lr.error) {
         setLogsStatus('error', 'Échec');
-        document.getElementById('deployStatus').textContent = 'Échec du déploiement';
+        rocket.classList.add('error');
+        bounceStatus('Échec du déploiement');
         document.getElementById('deployError').textContent = lr.error;
         document.getElementById('deployError').style.display = '';
         showLogsFooter('error');
       } else {
         setLogsStatus('ok', 'Terminé');
-        document.getElementById('deployStatus').textContent = 'Déploiement terminé';
+        rocket.classList.add('success');
+        spawnConfetti(rocket);
+        bounceStatus('Déploiement terminé');
         config.last_deploy = new Date().toISOString();
         updateMainUI();
         showLogsFooter('ok');
