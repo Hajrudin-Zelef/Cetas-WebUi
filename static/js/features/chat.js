@@ -1,3 +1,12 @@
+
+if (typeof marked !== "undefined" && !marked.__tableWrapPatched) {
+    const _origParse = marked.parse.bind(marked);
+    marked.parse = function(...args) {
+        const html = _origParse(...args);
+        return html.replace(/<table>/g, '<div class="table-wrap"><table>').replace(/<\/table>/g, '</table></div>');
+    };
+    marked.__tableWrapPatched = true;
+}
 import { STATE, STREAM_ERROR_CONTENT, isStreamActive } from "../core/state.js";
 
 

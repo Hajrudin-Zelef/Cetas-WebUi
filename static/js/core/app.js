@@ -1,3 +1,12 @@
+
+if (typeof marked !== "undefined" && !marked.__tableWrapPatched) {
+    const _origParse = marked.parse.bind(marked);
+    marked.parse = function(...args) {
+        const html = _origParse(...args);
+        return html.replace(/<table>/g, '<div class="table-wrap"><table>').replace(/<\/table>/g, '</table></div>');
+    };
+    marked.__tableWrapPatched = true;
+}
 import { STATE, STREAM_ERROR_CONTENT, TEXT_EXTENSIONS, isStreamActive } from "./state.js";
 
 import "./dom.js";
@@ -1361,14 +1370,14 @@ function createStreamRenderer(e, t, n) {
         s = o.length;
         const n = e.textContent.length;
         e.innerHTML = marked.parse(o), _wrapNewChars(e, e.textContent.length - n), _ensureSpinner(e), 
-        scrollToBottom(), function(e) {
+        function(e) {
             if (i) return;
             const t = e.scrollHeight > e.clientHeight ? e : null;
             t && (t.addEventListener("scroll", (() => {
                 const e = window.innerWidth < 768 ? 120 : 12, n = t.scrollHeight - t.scrollTop - t.clientHeight < e;
                 l = !n;
             })), i = !0);
-        }(e), !l && e.scrollHeight > e.clientHeight && (e.scrollTop = e.scrollHeight);
+        }(e), !l && (scrollToBottom(), e.scrollHeight > e.clientHeight && (e.scrollTop = e.scrollHeight));
     }
     function _ensureSpinner(e) {
         if (_spinnerEl && _spinnerEl.parentNode === e) return;
