@@ -14,6 +14,7 @@ import time
 import http.client
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import hashlib
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ TAVILY_TIMEOUT = 8
 EXA_TIMEOUT = 8
 BRAVE_TIMEOUT = 8
 JINA_TIMEOUT = 8
-DDG_TIMEOUT = 15
+DDG_TIMEOUT = 8
 
 
 # ── Shared types ─────────────────────────────────────────────────────
@@ -242,10 +243,24 @@ PROVIDER_KEY_MAP = {
 }
 
 
+_CACHE = {}
+_CACHE_TTL = 300
+
+
+def _cache_key(query, allowed_domains, blocked_domains, max_results, providers):
+    raw = json.dumps([query, allowed_domains, blocked_domains, max_results, providers], sort_keys=True)
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
 def search(query, allowed_domains=None, blocked_domains=None, max_results=10, providers=None):
     """Run providers in parallel (auto mode). Return first with results, preferring earlier providers on tie.
     providers: optional list of provider keys (tavily/exa/brave/jina/searxng/ddg) to restrict to.
     """
+    ckey = _cache_key(query, allowed_domains, blocked_domains, max_results, providers)
+    cached = _CACHE.get(ckey)
+    if cached and time.time() - cached[0] < _CACHE_TTL:
+        return cached[1]
+
     if providers is None:
         active_providers = ALL_PROVIDERS
     else:
@@ -282,7 +297,9 @@ def search(query, allowed_domains=None, blocked_domains=None, max_results=10, pr
 
     if results_by_idx:
         best_idx = min(results_by_idx.keys())
-        return results_by_idx[best_idx]
+        best = results_by_idx[best_idx]
+        _CACHE[ckey] = (time.time(), best)
+        return best
 
     return {
         "hits": [],
