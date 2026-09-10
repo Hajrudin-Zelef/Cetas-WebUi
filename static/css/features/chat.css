@@ -1710,8 +1710,7 @@ body.dark #cost-info {
     filter: none;
 }
 
-#web-search-btn.custom-select-info,
-#thinking-toggle-btn.custom-select-info {
+#web-search-btn.custom-select-info {
     opacity: 1;
     width: 28px;
     height: 28px;
@@ -1721,6 +1720,48 @@ body.dark #cost-info {
     font-size: inherit;
     margin-left: 0;
     cursor: pointer;
+}
+
+#thinking-toggle-btn.custom-select-info {
+    opacity: 1;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+    font-size: inherit;
+    margin-left: 2px;
+    cursor: pointer;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1e90ff, #00bfff, #0077b6);
+    box-shadow: 0 2px 8px rgba(30, 144, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border: none;
+    overflow: hidden;
+}
+
+#thinking-toggle-btn.custom-select-info:hover {
+    transform: scale(1.1);
+    box-shadow: 0 3px 12px rgba(30, 144, 255, 0.5);
+}
+
+#thinking-toggle-btn.custom-select-info:active {
+    transform: scale(0.95);
+}
+
+#thinking-toggle-btn.custom-select-info.active {
+    background: linear-gradient(135deg, #00bfff, #1e90ff, #0077b6);
+    box-shadow: 0 0 12px rgba(30, 144, 255, 0.6), inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+#thinking-toggle-btn.custom-select-info img {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    object-fit: contain;
 }
 
 /* Boutons toolbar dans la ligne 2 */
