@@ -24,7 +24,7 @@ async function executeWebSearch(e){
   try{
     var h={"Content-Type":"application/json"};
     if(typeof Auth!=="undefined"&&Auth.getToken){var token=Auth.getToken();if(token)h["Authorization"]="Bearer "+token}
-    var r=await fetch("/api/websearch",{method:"POST",headers:h,body:JSON.stringify({query:e,max_results:10}),signal:AbortSignal.timeout(15000)});
+    var r=await fetch("/api/websearch",{method:"POST",headers:h,body:JSON.stringify({query:e,max_results:10,providers:(window.STATE&&window.STATE.enabledProviders)||undefined}),signal:AbortSignal.timeout(15000)});
     if(!r.ok)throw new Error("WebSearch returned "+r.status);
     var a=await r.json();
     var results=(a.results||[]).map(function(x){return{title:_sanitize(x.title),url:_sanitize(x.url),snippet:_sanitize(x.description||x.snippet||"")}});

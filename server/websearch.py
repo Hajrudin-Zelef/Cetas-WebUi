@@ -232,15 +232,33 @@ ALL_PROVIDERS = [
 ]
 
 
-def search(query, allowed_domains=None, blocked_domains=None, max_results=10):
-    """Run providers in parallel (auto mode). Return first with results, preferring earlier providers on tie."""
+PROVIDER_KEY_MAP = {
+    "tavily": _search_tavily,
+    "exa": _search_exa,
+    "brave": _search_brave,
+    "jina": _search_jina,
+    "searxng": _search_searxng,
+    "ddg": _search_ddg,
+}
+
+
+def search(query, allowed_domains=None, blocked_domains=None, max_results=10, providers=None):
+    """Run providers in parallel (auto mode). Return first with results, preferring earlier providers on tie.
+    providers: optional list of provider keys (tavily/exa/brave/jina/searxng/ddg) to restrict to.
+    """
+    active_providers = ALL_PROVIDERS
+    if providers:
+        active_providers = [PROVIDER_KEY_MAP[p] for p in providers if p in PROVIDER_KEY_MAP]
+        if not active_providers:
+            active_providers = ALL_PROVIDERS
+
     errors = []
     results_by_idx = {}
 
-    with ThreadPoolExecutor(max_workers=len(ALL_PROVIDERS)) as executor:
+    with ThreadPoolExecutor(max_workers=len(active_providers)) as executor:
         future_to_idx = {
             executor.submit(fn, query, allowed_domains, blocked_domains, max_results): idx
-            for idx, fn in enumerate(ALL_PROVIDERS)
+            for idx, fn in enumerate(active_providers)
         }
         for future in as_completed(future_to_idx):
             idx = future_to_idx[future]
@@ -253,7 +271,7 @@ def search(query, allowed_domains=None, blocked_domains=None, max_results=10):
                 else:
                     errors.append("%s: 0 results" % result["provider"])
             except Exception as e:
-                errors.append("%s: %s" % (ALL_PROVIDERS[idx].__name__, e))
+                errors.append("%s: %s" % (active_providers[idx].__name__, e))
 
     if results_by_idx:
         best_idx = min(results_by_idx.keys())

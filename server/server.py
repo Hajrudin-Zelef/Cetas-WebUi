@@ -1845,7 +1845,8 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         allowed = data.get("allowed_domains")
         blocked = data.get("blocked_domains")
         max_results = min(int(data.get("max_results", 10)), 20)
-        result = websearch_search(query, allowed, blocked, max_results)
+        providers = data.get("providers")
+        result = websearch_search(query, allowed, blocked, max_results, providers=providers)
         hits = [h.to_dict() for h in result.get("hits", [])]
         response = {"results": hits, "provider": result.get("provider", "none"),
                     "duration": round(result.get("duration", 0), 2)}
