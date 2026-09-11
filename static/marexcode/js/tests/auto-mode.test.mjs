@@ -4,6 +4,7 @@ import { AGENT_ROLES, resolveAgent, getToolsForRole } from '../agents.js';
 import { classifyTask } from '../task-classifier.js';
 import { buildProjectIndex, checkCompaction, estimateTokens, COMPACTION_THRESHOLD } from '../context-store.js';
 import { composePrompt } from '../prompt-composer.js';
+import { runAutoMode, AUTO_PHASES } from '../runtime.js';
 
 const VALID_TOOL_NAMES = ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob', 'Ls', 'TodoWrite', 'LSP'];
 
@@ -156,5 +157,80 @@ test('composePrompt: previousPhase absent/null ne plante pas', () => {
   const out = composePrompt(agent, { previousPhase: null });
   assert.ok(!/##\s+.*phase précédente/i.test(out), 'pas de section vide si pas de phase précédente');
 });
+
+test('AUTO_PHASES = plan, code, audit dans cet ordre', () => {
+  assert.deepEqual(AUTO_PHASES, ['plan', 'code', 'audit']);
+});
+
+test('runAutoMode: enchaîne les 3 phases, onPhase appelé avant chacune, onDone à la fin', async () => {
+  const phaseCalls = [];
+  const chunks = [];
+  let doneOutputs = null;
+  let streamCalls = 0;
+
+  const fakeStream = (model, history, onChunk, onDone, onError, tools, hasToolCalls, onThinking, signal) => {
+    streamCalls++;
+    const phase = history[0].content;
+    const label = phase.includes('architecte') ? 'plan' : phase.includes('développeur') ? 'code' : 'audit';
+    onChunk('[' + label + '-res]');
+    onDone({ input_tokens: 1, output_tokens: 2 });
+  };
+
+  await runAutoMode({
+    task: 'construis un module',
+    tree: { files: [{ path: 'a.js', size: 10, type: 'file' }] },
+    signal: undefined,
+    onPhase: (p) => phaseCalls.push(p),
+    onChunk: (c) => chunks.push(c),
+    onDone: (o) => { doneOutputs = o; },
+    onError: (e) => { throw e; },
+    _stream: fakeStream,
+  });
+
+  assert.equal(streamCalls, 3, 'streamModelWithTools appelé une fois par phase');
+  assert.deepEqual(phaseCalls.map(p => p.phase), ['plan', 'code', 'audit']);
+  assert.ok(phaseCalls.every(p => p.agent && p.model), 'onPhase fournit agent + model');
+  assert.ok(doneOutputs && doneOutputs.length === 3, 'onDone reçoit un output par phase');
+  assert.ok(chunks.includes('[plan-res]') && chunks.includes('[code-res]') && chunks.includes('[audit-res]'));
+});
+
+test('runAutoMode: chaque phase reçoit le résultat de la précédente (contextStore.previousPhase)', async () => {
+  const seenPrompts = [];
+  const fakeStream = (model, history, onChunk, onDone) => {
+    seenPrompts.push(history[0].content);
+    onChunk('PLAN-DETAIL');
+    onDone({});
+  };
+  await runAutoMode({
+    task: 't',
+    tree: { files: [] },
+    onPhase: () => {},
+    _stream: fakeStream,
+  });
+  assert.equal(seenPrompts.length, 3);
+  assert.ok(seenPrompts[0].includes('architecte'), 'phase plan: prompt architecte, sans previousPhase');
+  assert.ok(!seenPrompts[0].includes('phase précédente'), 'phase 1 n\'a pas de section phase précédente');
+  assert.ok(seenPrompts[1].includes('PLAN-DETAIL'), 'phase code: contient le résultat du plan');
+  assert.ok(seenPrompts[2].includes('PLAN-DETAIL'), 'phase audit: contient le résultat cumulé');
+});
+
+test('runAutoMode: onError propage une erreur du stream et interrompt la chaîne', async () => {
+  let captured = null;
+  let calls = 0;
+  const fakeStream = (model, history, onChunk, onDone, onError) => {
+    calls++;
+    onError(new Error('boom'));
+  };
+  await runAutoMode({
+    task: 't',
+    tree: { files: [] },
+    onError: (e) => { captured = e; },
+    _stream: fakeStream,
+  });
+  assert.ok(captured instanceof Error, 'la phase d\'erreur doit appeler onError');
+  assert.equal(captured.message, 'boom');
+  assert.equal(calls, 1, 'la chaîne s\'arrête après la première erreur');
+});
+
 
 
