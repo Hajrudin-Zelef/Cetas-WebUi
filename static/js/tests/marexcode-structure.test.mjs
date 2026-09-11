@@ -115,7 +115,7 @@ test('tool-search.js : contenu modèle = data.text (format concis)', () => {
 
 test('system prompts Marexcode + SPA imposent le raisonnement en français', () => {
     const chat = readFileSync(resolve(MX, 'js/chat.js'), 'utf8');
-    assert.match(chat, /REASONING LANGUAGE[\s\S]{0,140}ALWAYS be in French/, 'baseSys Marexcode doit forcer le reasoning en français');
+    assert.match(chat, /baseSys = 'IMPORTANT: your internal reasoning\/thinking must always be written in French/, 'baseSys Marexcode doit ouvrir sur la règle de raisonnement en français (tête de prompt, pas diluée)');
     const pt = readFileSync(resolve(ROOT, 'js/ui/prompt-toolbar.js'), 'utf8');
     assert.match(pt, /REASONING LANGUAGE[\s\S]{0,140}ALWAYS be in French/, 'effectiveSystemPrompt SPA doit forcer le reasoning en français');
 });
