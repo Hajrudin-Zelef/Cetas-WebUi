@@ -472,3 +472,63 @@ test('getEffectiveMaxTokens: fonctionne sur les deux formats', () => {
     delete lsStore['marexcode_auto_models'];
   }
 });
+
+test('resolveAgent: sans config custom, comportement identique (défauts, pas de temperature)', () => {
+  delete lsStore['marexcode_auto_models'];
+  const a = resolveAgent('code');
+  assert.equal(a.systemPrompt, AGENT_ROLES.code.systemPrompt, 'prompt par défaut');
+  assert.equal(a.provider, null, 'provider par défaut null');
+  assert.ok(!('temperature' in a), 'temperature absent si non configuré');
+  assert.ok(a.tools === AGENT_ROLES.code.tools, 'tools par défaut (même référence, copie de surface)');
+});
+
+test('resolveAgent: systemPrompt custom écrase, AGENT_ROLES intact', () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoRoleConfig('code', { systemPrompt: 'CUSTOM SYS PROMPT' });
+  assert.equal(resolveAgent('code').systemPrompt, 'CUSTOM SYS PROMPT');
+  assert.notEqual(AGENT_ROLES.code.systemPrompt, 'CUSTOM SYS PROMPT', 'AGENT_ROLES.code.systemPrompt intact');
+  setAutoRoleConfig('code', { systemPrompt: '   ' });
+  assert.equal(resolveAgent('code').systemPrompt, AGENT_ROLES.code.systemPrompt, 'prompt blanc → défaut');
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('resolveAgent: tools custom remplace sans validation de noms, AGENT_ROLES intact', () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoRoleConfig('audit', { tools: ['Read', 'Outil-Inconnu-XYZ'] });
+  const a = resolveAgent('audit');
+  assert.deepEqual(a.tools, ['Read', 'Outil-Inconnu-XYZ'], 'liste custom passée telle quelle (validation déléguée à la sélection)');
+  assert.deepEqual(AGENT_ROLES.audit.tools, ['Ls', 'Glob', 'Read', 'Grep'], 'AGENT_ROLES.audit.tools intact');
+  setAutoRoleConfig('audit', { tools: [] });
+  assert.ok(resolveAgent('audit').tools === AGENT_ROLES.audit.tools, 'tools vide → défaut');
+  setAutoRoleConfig('audit', { tools: 'not-array' });
+  assert.ok(resolveAgent('audit').tools === AGENT_ROLES.audit.tools, 'tools non-array → défaut');
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('resolveAgent: provider et temperature configurés apparaissent, valeurs invalides ignorées', () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoRoleConfig('plan', { provider: 'opencode-go', temperature: 0.4 });
+  const a = resolveAgent('plan');
+  assert.equal(a.provider, 'opencode-go');
+  assert.equal(a.temperature, 0.4);
+  setAutoRoleConfig('plan', { provider: 42, temperature: 'hot' });
+  const b = resolveAgent('plan');
+  assert.equal(b.provider, null, 'provider non-string → défaut null');
+  assert.ok(!('temperature' in b), 'temperature non-number → absent');
+  setAutoRoleConfig('plan', { temperature: NaN });
+  assert.ok(!('temperature' in resolveAgent('plan')), 'temperature NaN → absent');
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('AGENT_ROLES: provider null ajouté, jamais muté par resolveAgent config', () => {
+  delete lsStore['marexcode_auto_models'];
+  assert.equal(AGENT_ROLES.plan.provider, null);
+  assert.equal(AGENT_ROLES.code.provider, null);
+  assert.equal(AGENT_ROLES.audit.provider, null);
+  setAutoRoleConfig('code', { provider: 'prov-x', temperature: 1, systemPrompt: 's', tools: ['Read'] });
+  resolveAgent('code');
+  assert.equal(AGENT_ROLES.code.provider, null, 'pas de mutation');
+  assert.notEqual(AGENT_ROLES.code.systemPrompt, 's');
+  assert.deepEqual(AGENT_ROLES.code.tools.map(t => t), AGENT_ROLES.code.tools, 'tools intacts');
+  delete lsStore['marexcode_auto_models'];
+});
