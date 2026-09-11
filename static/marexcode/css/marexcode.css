@@ -272,7 +272,7 @@ html,body{
   font-size:12.5px;
   letter-spacing:0;
   text-transform:none;
-  color:var(--text-secondary);
+  color:var(--accent);
   font-weight:500;
 }
 .sb-section-toggle svg{ color:var(--text-tertiary); transition:transform .15s ease; }
@@ -312,7 +312,7 @@ html,body{
   border-radius:8px;
   border:none;
   background:transparent;
-  color:var(--text-secondary);
+  color:var(--text-primary);
   font-size:13.5px;
   cursor:pointer;
   white-space:nowrap;
@@ -411,7 +411,7 @@ html,body{
   border-radius:7px;
   border:none;
   background:transparent;
-  color:var(--text-secondary);
+  color:var(--text-primary);
   font-size:12.5px;
   cursor:pointer;
   font-family:inherit;
