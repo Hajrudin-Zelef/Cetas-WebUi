@@ -1939,6 +1939,9 @@ function boot() {
             const pills = document.getElementById('marex-websearch-pills');
             if (pills) pills.style.display = marexPrefs.webSearch ? 'flex' : 'none';
             localStorage.setItem('marex-web-search', marexPrefs.webSearch ? '1' : '0');
+            updateWebSearchGlobe();
+        });
+    }
     updateWebSearchGlobe();
 
     // Mode Auto — toggle dans le composer (persisté marex-auto-mode)
@@ -1969,9 +1972,6 @@ function boot() {
         });
     }
     updateAutoModeUI();
-        });
-    }
-    updateWebSearchGlobe();
 
     setupSettings(router);
     setupNewSession();
