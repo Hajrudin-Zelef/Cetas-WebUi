@@ -1121,7 +1121,7 @@ html,body{
   max-height:46vh;
   margin-top:20px;
   overflow:hidden;
-  background:var(--bg-elevated);
+  background:#000000;
   border:1px solid var(--border);
   border-radius:14px;
   display:flex;
@@ -1246,7 +1246,7 @@ html,body{
 .side-panel{
   width:0;
   flex-shrink:0;
-  background:var(--bg-sidebar);
+  background:#000000;
   border-left:1px solid var(--border);
   display:flex;
   flex-direction:column;
