@@ -532,3 +532,89 @@ test('AGENT_ROLES: provider null ajouté, jamais muté par resolveAgent config',
   assert.deepEqual(AGENT_ROLES.code.tools.map(t => t), AGENT_ROLES.code.tools, 'tools intacts');
   delete lsStore['marexcode_auto_models'];
 });
+
+test('testModel: connexion réussie → ok + latence mesurée', async () => {
+  const { testModel } = await import('../model-diagnostics.js');
+  const fakeStream = (model, history, onChunk, onDone) => { onChunk('OK'); onDone({}); };
+  const r = await testModel('code', { model: 'm-conn' }, { _stream: fakeStream });
+  assert.equal(r.connection.ok, true);
+  assert.equal(typeof r.connection.latencyMs, 'number');
+  assert.equal(r.connection.error, null);
+});
+
+test('testModel: connexion échoue → error capturé, toolCalling sauté proprement', async () => {
+  const { testModel } = await import('../model-diagnostics.js');
+  let secondCall = false;
+  const fakeStream = (model, history, onChunk, onDone, onError) => {
+    if (history[1].content === 'Réponds OK') onError(new Error('boom 502'));
+    else secondCall = true;
+  };
+  const r = await testModel('code', { model: 'm-conn' }, { _stream: fakeStream });
+  assert.equal(r.connection.ok, false);
+  assert.equal(r.connection.error, 'boom 502');
+  assert.equal(secondCall, false, 'le check tool-calling ne doit pas tenter d\'appel sans connexion');
+  assert.equal(r.toolCalling.ok, false);
+  assert.equal(r.toolCalling.detail, 'Connexion requise');
+});
+
+test('testModel: tool-call détecté via le hook de permission', async () => {
+  const { testModel } = await import('../model-diagnostics.js');
+  globalThis.window = {};
+  try {
+    const fakeStream = (model, history, onChunk, onDone, onError, tools) => {
+      if (Array.isArray(tools) && tools.length && tools[0].function.name === 'Ls') {
+        if (typeof window._marexCheckPermission === 'function') window._marexCheckPermission('Ls', {});
+      }
+      onDone({});
+    };
+    const r = await testModel('code', { model: 'm-tool' }, { _stream: fakeStream });
+    assert.equal(r.connection.ok, true);
+    assert.equal(r.toolCalling.ok, true);
+    assert.ok(r.toolCalling.detail.includes('Ls'), 'le tool vu doit être nommé dans le detail');
+  } finally {
+    delete globalThis.window;
+  }
+});
+
+test('testModel: pas de tool-call (texte seul) → ok false', async () => {
+  const { testModel } = await import('../model-diagnostics.js');
+  globalThis.window = {};
+  try {
+    const fakeStream = (model, history, onChunk, onDone) => { onChunk('je vais lister les fichiers'); onDone({}); };
+    const r = await testModel('code', { model: 'm-tool' }, { _stream: fakeStream });
+    assert.equal(r.toolCalling.ok, false);
+    assert.ok(r.toolCalling.detail.includes('Aucun tool-call'), 'detail explicite');
+  } finally {
+    delete globalThis.window;
+  }
+});
+
+test('testModel: contexte connu → known true + limit', async () => {
+  const { testModel } = await import('../model-diagnostics.js');
+  const { MODEL_CONTEXT_LIMITS } = await import('../auto-mode-config.js');
+  MODEL_CONTEXT_LIMITS['m-ctx'] = 128000;
+  try {
+    const r = await testModel('plan', { model: 'm-ctx' }, { _stream: (m, h, oc, od) => od({}) });
+    assert.equal(r.context.known, true);
+    assert.equal(r.context.limit, 128000);
+  } finally {
+    delete MODEL_CONTEXT_LIMITS['m-ctx'];
+    assert.deepEqual(MODEL_CONTEXT_LIMITS, {}, 'table livrée intacte');
+  }
+});
+
+test('testModel: contexte inconnu → known false + note', async () => {
+  const { testModel } = await import('../model-diagnostics.js');
+  const r = await testModel('plan', { model: 'm-unknown-ctx' }, { _stream: (m, h, oc, od) => od({}) });
+  assert.equal(r.context.known, false);
+  assert.equal(r.context.limit, null);
+  assert.ok(r.context.note.length > 0);
+});
+
+test('testModel: modèle effectif = config.model sinon placeholder du rôle', async () => {
+  const { testModel } = await import('../model-diagnostics.js');
+  const seen = [];
+  const fakeStream = (model, history, onChunk, onDone) => { seen.push(model); onDone({}); };
+  await testModel('plan', {}, { _stream: fakeStream });
+  assert.equal(seen[0], 'model-plan', 'placeholder du rôle si pas de config');
+});
