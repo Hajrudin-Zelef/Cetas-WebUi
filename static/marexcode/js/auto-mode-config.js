@@ -37,3 +37,13 @@ export function getEffectiveModel(role, agent) {
   if (typeof configured === 'string' && configured.trim()) return configured;
   return agent.model;
 }
+
+export const MODEL_CONTEXT_LIMITS = {};
+
+export function getEffectiveMaxTokens(role, agent) {
+  const model = getEffectiveModel(role, agent);
+  if (Object.prototype.hasOwnProperty.call(MODEL_CONTEXT_LIMITS, model)) {
+    return MODEL_CONTEXT_LIMITS[model];
+  }
+  return agent.maxTokens;
+}

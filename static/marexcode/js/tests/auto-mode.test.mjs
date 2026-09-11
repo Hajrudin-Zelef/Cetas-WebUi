@@ -5,7 +5,7 @@ import { classifyTask } from '../task-classifier.js';
 import { buildProjectIndex, checkCompaction, estimateTokens, COMPACTION_THRESHOLD } from '../context-store.js';
 import { composePrompt } from '../prompt-composer.js';
 import { runAutoMode, AUTO_PHASES } from '../runtime.js';
-import { getAutoModelConfig, setAutoModel, getEffectiveModel } from '../auto-mode-config.js';
+import { getAutoModelConfig, setAutoModel, getEffectiveModel, getEffectiveMaxTokens, MODEL_CONTEXT_LIMITS } from '../auto-mode-config.js';
 
 const lsStore = {};
 globalThis.localStorage = {
@@ -307,6 +307,46 @@ test('resolveAgent: .model résolu depuis la config, placeholder comme fallback,
   assert.equal(AGENT_ROLES.code.model, 'model-code', 'AGENT_ROLES garde le placeholder intact (pas de mutation)');
   assert.equal(resolveAgent('inconnu').model, 'kimi-k2.6', 'rôle inconnu → code, donc config code');
   delete lsStore['marexcode_auto_models'];
+});
+
+test('getEffectiveMaxTokens: placeholder quand le modèle effectif est absent de MODEL_CONTEXT_LIMITS', () => {
+  delete lsStore['marexcode_auto_models'];
+  const agent = { id: 'code', model: 'model-code', maxTokens: 32000 };
+  assert.equal(getEffectiveMaxTokens('code', agent), 32000, 'modèle placeholder non borné → agent.maxTokens');
+  setAutoModel('code', 'modele-hors-table');
+  assert.equal(getEffectiveMaxTokens('code', agent), 32000, 'modèle configuré mais absent de la table → fallback');
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('getEffectiveMaxTokens: valeur de la table quand le modèle effectif y figure', () => {
+  delete lsStore['marexcode_auto_models'];
+  MODEL_CONTEXT_LIMITS['glm-test'] = 128000;
+  try {
+    const agent = { id: 'code', model: 'model-code', maxTokens: 32000 };
+    setAutoModel('code', 'glm-test');
+    assert.equal(getEffectiveMaxTokens('code', agent), 128000);
+  } finally {
+    delete MODEL_CONTEXT_LIMITS['glm-test'];
+    assert.deepEqual(MODEL_CONTEXT_LIMITS, {}, 'la table livrée doit rester vide');
+    delete lsStore['marexcode_auto_models'];
+  }
+});
+
+test('resolveAgent: maxTokens résolu en plus de model, AGENT_ROLES non muté', () => {
+  delete lsStore['marexcode_auto_models'];
+  MODEL_CONTEXT_LIMITS['kimi-max'] = 200000;
+  try {
+    setAutoModel('code', 'kimi-max');
+    const agent = resolveAgent('code');
+    assert.equal(agent.model, 'kimi-max');
+    assert.equal(agent.maxTokens, 200000, 'maxTokens suivi depuis la table');
+    assert.equal(AGENT_ROLES.code.maxTokens, 32000, 'AGENT_ROLES.code.maxTokens intact');
+    const plan = resolveAgent('plan');
+    assert.equal(plan.maxTokens, 16000, 'plan non configuré → son placeholder maxTokens');
+  } finally {
+    delete MODEL_CONTEXT_LIMITS['kimi-max'];
+    delete lsStore['marexcode_auto_models'];
+  }
 });
 
 
