@@ -5,7 +5,7 @@ import { classifyTask } from '../task-classifier.js';
 import { buildProjectIndex, checkCompaction, estimateTokens, COMPACTION_THRESHOLD } from '../context-store.js';
 import { composePrompt } from '../prompt-composer.js';
 import { runAutoMode, AUTO_PHASES } from '../runtime.js';
-import { getAutoModelConfig, setAutoModel, getEffectiveModel, getEffectiveMaxTokens, MODEL_CONTEXT_LIMITS } from '../auto-mode-config.js';
+import { getAutoModelConfig, setAutoModel, getEffectiveModel, getEffectiveMaxTokens, MODEL_CONTEXT_LIMITS, getAutoRoleConfig, setAutoRoleConfig } from '../auto-mode-config.js';
 
 const lsStore = {};
 globalThis.localStorage = {
@@ -280,11 +280,11 @@ test('getAutoModelConfig: localStorage vide ou JSON invalide → {} sans excepti
 test('setAutoModel: écrit puis fusionne sans écraser les autres rôles', () => {
   delete lsStore['marexcode_auto_models'];
   setAutoModel('plan', 'glm-9');
-  assert.deepEqual(getAutoModelConfig(), { plan: 'glm-9' });
+  assert.deepEqual(getAutoModelConfig(), { plan: { model: 'glm-9' } });
   setAutoModel('audit', 'deepseek-x');
-  assert.deepEqual(getAutoModelConfig(), { plan: 'glm-9', audit: 'deepseek-x' });
+  assert.deepEqual(getAutoModelConfig(), { plan: { model: 'glm-9' }, audit: { model: 'deepseek-x' } });
   setAutoModel('code', 'kimi-y');
-  assert.deepEqual(getAutoModelConfig(), { plan: 'glm-9', audit: 'deepseek-x', code: 'kimi-y' });
+  assert.deepEqual(getAutoModelConfig(), { plan: { model: 'glm-9' }, audit: { model: 'deepseek-x' }, code: { model: 'kimi-y' } });
   delete lsStore['marexcode_auto_models'];
 });
 
@@ -389,3 +389,86 @@ test('runAutoMode: abort pendant la phase 1 → phase 2 et 3 NON lancées, outpu
 
 
 
+const EMPTY_ROLE = { model: null, provider: null, temperature: null, maxTokens: null, systemPrompt: null, tools: null };
+
+test('getAutoRoleConfig: ancien format string lu comme {model}, rétrocompatibilité silencieuse', () => {
+  delete lsStore['marexcode_auto_models'];
+  lsStore['marexcode_auto_models'] = JSON.stringify({ plan: 'glm-9' });
+  assert.deepEqual(getAutoRoleConfig('plan'), Object.assign({ model: 'glm-9' }, EMPTY_ROLE, { model: 'glm-9' }));
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('getAutoRoleConfig: nouveau format objet, champs manquants remplis à null', () => {
+  delete lsStore['marexcode_auto_models'];
+  lsStore['marexcode_auto_models'] = JSON.stringify({ code: { model: 'kimi', temperature: 0.2 } });
+  assert.deepEqual(getAutoRoleConfig('code'), { model: 'kimi', provider: null, temperature: 0.2, maxTokens: null, systemPrompt: null, tools: null });
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('getAutoRoleConfig: rôle jamais configuré ou valeur invalide → défauts sûrs, sans exception', () => {
+  delete lsStore['marexcode_auto_models'];
+  assert.deepEqual(getAutoRoleConfig('plan'), EMPTY_ROLE);
+  lsStore['marexcode_auto_models'] = JSON.stringify({ audit: 42 });
+  assert.deepEqual(getAutoRoleConfig('audit'), EMPTY_ROLE);
+  lsStore['marexcode_auto_models'] = JSON.stringify({ audit: ['x'] });
+  assert.deepEqual(getAutoRoleConfig('audit'), EMPTY_ROLE);
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('setAutoRoleConfig: merge superficiel, autres champs préservés, autres rôles intacts', () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoRoleConfig('code', { model: 'glm-test', temperature: 0.5 });
+  setAutoRoleConfig('code', { temperature: 0.8 });
+  assert.equal(getAutoModelConfig().code.model, 'glm-test', 'model préservé');
+  assert.equal(getAutoModelConfig().code.temperature, 0.8, 'seul le champ fourni est écrasé');
+  setAutoRoleConfig('plan', { model: 'plan-m' });
+  assert.equal(getAutoModelConfig().plan.model, 'plan-m');
+  assert.equal(getAutoModelConfig().code.temperature, 0.8, 'rôle code intact');
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('setAutoRoleConfig: config invalide ignorée sans exception ni écriture', () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoRoleConfig('code', null);
+  setAutoRoleConfig('code', 'oops');
+  setAutoRoleConfig('code', [1]);
+  assert.deepEqual(getAutoModelConfig(), {}, 'rien ne doit être écrit');
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('setAutoModel: équivaut à setAutoRoleConfig(role, {model})', () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoModel('audit', 'ds-x');
+  assert.deepEqual(getAutoRoleConfig('audit'), Object.assign({}, EMPTY_ROLE, { model: 'ds-x' }));
+  assert.deepEqual(getAutoModelConfig(), { audit: { model: 'ds-x' } });
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('getEffectiveModel: fonctionne sur ancien et nouveau format', () => {
+  delete lsStore['marexcode_auto_models'];
+  const agent = { id: 'code', model: 'model-code', maxTokens: 32000 };
+  lsStore['marexcode_auto_models'] = JSON.stringify({ code: 'legacy-str' });
+  assert.equal(getEffectiveModel('code', agent), 'legacy-str', 'ancien format string');
+  lsStore['marexcode_auto_models'] = JSON.stringify({ code: { model: 'obj-model' } });
+  assert.equal(getEffectiveModel('code', agent), 'obj-model', 'nouveau format objet');
+  lsStore['marexcode_auto_models'] = JSON.stringify({ code: { model: '   ' } });
+  assert.equal(getEffectiveModel('code', agent), 'model-code', 'objet avec model vide → placeholder');
+  lsStore['marexcode_auto_models'] = JSON.stringify({ code: {} });
+  assert.equal(getEffectiveModel('code', agent), 'model-code', 'objet sans model → placeholder');
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('getEffectiveMaxTokens: fonctionne sur les deux formats', () => {
+  delete lsStore['marexcode_auto_models'];
+  MODEL_CONTEXT_LIMITS['tbl-model'] = 150000;
+  try {
+    const agent = { id: 'code', model: 'model-code', maxTokens: 32000 };
+    lsStore['marexcode_auto_models'] = JSON.stringify({ code: { model: 'tbl-model' } });
+    assert.equal(getEffectiveMaxTokens('code', agent), 150000, 'nouveau format');
+    lsStore['marexcode_auto_models'] = JSON.stringify({ code: 'tbl-model' });
+    assert.equal(getEffectiveMaxTokens('code', agent), 150000, 'ancien format');
+  } finally {
+    delete MODEL_CONTEXT_LIMITS['tbl-model'];
+    delete lsStore['marexcode_auto_models'];
+  }
+});
