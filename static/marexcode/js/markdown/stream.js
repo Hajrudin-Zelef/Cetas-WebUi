@@ -101,17 +101,20 @@ export function project(previous, text, live) {
   if (!previous || !text.startsWith(previous.text)) return { text, blocks: stream(text, live) }
   const tail = previous.blocks.at(-1)
   const suffix = text.slice(previous.text.length)
-  if (!suffix || tail?.mode !== "code" || tail.complete || closesFence(tail.raw, suffix))
-    return { text, blocks: stream(text, live) }
-  return {
-    text,
-    blocks: [
-      ...previous.blocks.slice(0, -1),
-      {
-        ...tail,
-        raw: tail.raw + suffix,
-        src: tail.src + suffix,
-      },
-    ],
+  if (!suffix) return { text, blocks: previous.blocks }
+  if (tail?.mode === "code" && !tail.complete && !closesFence(tail.raw, suffix)) {
+    return {
+      text,
+      blocks: [
+        ...previous.blocks.slice(0, -1),
+        {
+          ...tail,
+          raw: tail.raw + suffix,
+          src: tail.src + suffix,
+        },
+      ],
+    }
   }
+  const tailText = (tail ? tail.raw : "") + suffix
+  return { text, blocks: [...previous.blocks.slice(0, -1), ...stream(tailText, live)] }
 }

@@ -1,4 +1,4 @@
-const MAX = 200
+const MAX = 1000
 const cache = new Map()
 
 const config = {

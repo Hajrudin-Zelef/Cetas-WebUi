@@ -102,15 +102,19 @@ function buildBlock(st, block, index) {
       hash: checksum(block.src) + ":" + block.raw.length,
     }
   }
-  const cacheKey = "b:" + index + ":" + block.mode + ":" + checksum(block.src)
-  const cached = getCachedMarkdown(cacheKey)
-  if (cached && cached.raw === block.raw) {
-    touchCachedMarkdown(cacheKey, cached)
-    return { key, mode: block.mode, raw: cached.raw, hash: cached.hash, html: cached.html }
-  }
   const hash = checksum(block.src)
+  if (block.mode !== "live") {
+    const cacheKey = "b:" + index + ":" + block.mode + ":" + hash
+    const cached = getCachedMarkdown(cacheKey)
+    if (cached && cached.raw === block.raw) {
+      touchCachedMarkdown(cacheKey, cached)
+      return { key, mode: block.mode, raw: cached.raw, hash: cached.hash, html: cached.html }
+    }
+    const cachedHtml = sanitizeMarkdown(parseMarkdown(block.src))
+    touchCachedMarkdown(cacheKey, { raw: block.raw, hash, html: cachedHtml })
+    return { key, mode: block.mode, raw: block.raw, hash, html: cachedHtml }
+  }
   const html = sanitizeMarkdown(parseMarkdown(block.src))
-  touchCachedMarkdown(cacheKey, { raw: block.raw, hash, html })
   return { key, mode: block.mode, raw: block.raw, hash, html }
 }
 
