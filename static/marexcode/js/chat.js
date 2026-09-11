@@ -346,10 +346,9 @@ export function createChat(deps) {
         if (!_thinkOpened) {
             _thinkOpened = true;
             ensureThinkBadge();
-            if (mode === 'all') openSidePanel();
+            openSidePanel();
             if (sidePanelSpinner) sidePanelSpinner.style.display = 'block';
         }
-        if (mode !== 'all') return;
         if (!thinkBlockEl && thinkText) {
             thinkBlockEl = document.createElement('div');
             thinkBlockEl.className = 'sp-think-block';
@@ -373,6 +372,10 @@ export function createChat(deps) {
     function onThinking(t) {
         const mode = localStorage.getItem('marex-thinking-mode') || 'all';
         if (mode === 'hidden') return;
+        if (thinkText === '') {           // 1er delta du raisonnement du tour
+            userClosedPanel = false;      // ré-autorise l'ouverture automatique
+            openSidePanel();              // ouvre le panneau immédiatement
+        }
         thinkText += t;
         if (_thinkRaf === null) _thinkRaf = requestAnimationFrame(_flushThinking);
     }
@@ -436,7 +439,7 @@ export function createChat(deps) {
                 thinkBlockEl.className = 'sp-think-block';
                 thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
                 if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
-                if (mode === 'all') openSidePanel();
+                openSidePanel();
             }
             const txt = thinkBlockEl.querySelector('.sp-think-text');
             if (txt) {
@@ -1001,6 +1004,9 @@ export function createChat(deps) {
 
         controller = new AbortController();
         pendingEl = null;
+        thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = '';
+        userClosedPanel = false;
+        _resetThinkStream();
 
         let phaseBodyEl = null;
         let phaseRaw = '';
