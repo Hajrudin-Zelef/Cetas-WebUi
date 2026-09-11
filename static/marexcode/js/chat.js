@@ -14,7 +14,7 @@ export function createChat(deps) {
     let session = null;
     let running = false;
     let pendingEl = null, pendingMd = null, thinkBadgeEl = null, thinkBlockEl = null, thinkText = '';
-    let _thinkRaf = null, _thinkOpened = false, _thinkShown = 0;
+    let _thinkRaf = null, _thinkOpened = false, _thinkTail = '', _thinkRendered = 0;
     let rawAcc = '';
     let controller = null;
     let userClosedPanel = false;
@@ -350,10 +350,28 @@ export function createChat(deps) {
         }
     }
 
-    function _renderThink() {
-        if (!thinkBlockEl) return;
-        const txt = thinkBlockEl.querySelector('.sp-think-text');
-        if (txt) txt.textContent = thinkText.slice(0, _thinkShown);
+    // Rendu incrémental: on n'ajoute QUE le nouveau morceau au nœud texte
+    // (appendData). Jamais de slice/textContent sur tout le texte -> pas de
+    // O(n) par frame quand le raisonnement est long (lecture workspace).
+    function _appendThink(chunk) {
+        if (!chunk || !thinkBlockEl) return;
+        const el = thinkBlockEl.querySelector('.sp-think-text');
+        if (!el) return;
+        let node = el.firstChild;
+        if (!node || node.nodeType !== 3) {
+            el.textContent = '';
+            node = document.createTextNode('');
+            el.appendChild(node);
+        }
+        node.appendData(chunk);
+    }
+
+    function _flushThinkTail() {
+        if (!_thinkTail) return;
+        _ensureThinkBlock();
+        _appendThink(_thinkTail);
+        _thinkRendered += _thinkTail.length;
+        _thinkTail = '';
     }
 
     function _thinkTick() {
@@ -367,29 +385,34 @@ export function createChat(deps) {
             if (sidePanelSpinner) sidePanelSpinner.style.display = 'block';
         }
         _ensureThinkBlock();
-        const total = thinkText.length;
-        if (_thinkShown < total) {
-            // Révélation mot par mot, avec rattrapage si le réseau prend l'avance.
-            const backlog = total - _thinkShown;
-            let words = backlog > 600 ? 8 : backlog > 240 ? 4 : backlog > 80 ? 2 : 1;
-            let idx = _thinkShown;
-            while (words > 0 && idx < total) {
-                const sp = thinkText.indexOf(' ', idx);
-                if (sp === -1) { idx = total; break; }
-                idx = sp + 1;
-                words--;
+        const backlog = _thinkTail.length;
+        if (backlog) {
+            let cut = 0;
+            if (backlog > 2000) {
+                cut = Math.ceil(backlog / 4);     // rattrapage rapide si très en retard
+            } else {
+                // Révélation mot par mot, plus rapide si le réseau prend l'avance.
+                let words = backlog > 600 ? 8 : backlog > 240 ? 4 : backlog > 80 ? 2 : 1;
+                while (words > 0 && cut < backlog) {
+                    const sp = _thinkTail.indexOf(' ', cut);
+                    if (sp === -1) { cut = backlog; break; }
+                    cut = sp + 1;
+                    words--;
+                }
             }
-            _thinkShown = idx;
-            _renderThink();
+            _appendThink(_thinkTail.slice(0, cut));
+            _thinkTail = _thinkTail.slice(cut);
+            _thinkRendered += cut;
         }
         if (sidePanelBody && panelScroll) panelScroll.onContentChange();
-        if (_thinkShown < thinkText.length) _thinkRaf = requestAnimationFrame(_thinkTick);
+        if (_thinkTail) _thinkRaf = requestAnimationFrame(_thinkTick);
     }
 
     function _resetThinkStream() {
         if (_thinkRaf !== null) { cancelAnimationFrame(_thinkRaf); _thinkRaf = null; }
         _thinkOpened = false;
-        _thinkShown = 0;
+        _thinkTail = '';
+        _thinkRendered = 0;
     }
 
     function onThinking(t) {
@@ -400,6 +423,7 @@ export function createChat(deps) {
             openSidePanel();              // ouvre le panneau immédiatement
         }
         thinkText += t;
+        _thinkTail += t;
         if (_thinkRaf === null) _thinkRaf = requestAnimationFrame(_thinkTick);
     }
 
@@ -437,12 +461,9 @@ export function createChat(deps) {
 
     function markThinkingDone() {
         // Termine la phase de raisonnement courante dès qu'un outil démarre :
-        // on flush le texte restant (création du bloc au besoin) puis on
-        // marque le badge done.
+        // flush le reste du buffer (incrémental) puis marque le badge done.
         if (_thinkRaf !== null) { cancelAnimationFrame(_thinkRaf); _thinkRaf = null; }
-        _ensureThinkBlock();
-        _thinkShown = thinkText.length;
-        _renderThink();
+        _flushThinkTail();
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
