@@ -96,6 +96,15 @@ def format_tool_output(tool: str, args: dict, result: dict) -> str:
         if result.get("stderr"):
             out += "\nstderr:\n" + result["stderr"]
         return out
+    if tool == "runscript":
+        out = "Script %s exited with code %s" % (args.get("language", "?"), result.get("code", 0))
+        if result.get("timed_out"):
+            out += " (timeout)"
+        if result.get("stdout"):
+            out += "\n" + result["stdout"]
+        if result.get("stderr"):
+            out += "\nstderr:\n" + result["stderr"]
+        return out
     if tool == "grep":
         return "Found %s matches\n%s" % (result.get("matches", 0), result.get("stdout", ""))
     if tool == "ls":
@@ -588,6 +597,7 @@ class MarexcodeMixin:
                 status = 500
             self._respond_json({"error": result["error"], "language": language}, status)
             return
+        result["text"] = format_tool_output("runscript", {"language": language}, result)
         self._respond_json(result)
 
     def _exec_redo(self):

@@ -19,15 +19,15 @@ export function setPermission(value) {
     try { localStorage.setItem(STORAGE_KEY, value); } catch (e) {}
 }
 
-const TOOLS = ['read', 'grep', 'ls', 'write', 'edit', 'bash'];
+const TOOLS = ['read', 'grep', 'ls', 'write', 'edit', 'bash', 'runscript'];
 const RULES = ['allow', 'ask', 'deny'];
 
 function legacyToDefaults(permission) {
     if (permission === 'Read only')
-        return { read: 'allow', grep: 'allow', ls: 'allow', write: 'deny', edit: 'deny', bash: 'deny' };
+        return { read: 'allow', grep: 'allow', ls: 'allow', write: 'deny', edit: 'deny', bash: 'deny', runscript: 'deny' };
     if (permission === 'Ask permission')
-        return { read: 'allow', grep: 'allow', ls: 'allow', write: 'ask', edit: 'ask', bash: 'ask' };
-    return { read: 'allow', grep: 'allow', ls: 'allow', write: 'allow', edit: 'allow', bash: 'allow' };
+        return { read: 'allow', grep: 'allow', ls: 'allow', write: 'ask', edit: 'ask', bash: 'ask', runscript: 'ask' };
+    return { read: 'allow', grep: 'allow', ls: 'allow', write: 'allow', edit: 'allow', bash: 'allow', runscript: 'allow' };
 }
 
 export function getRules() {
@@ -95,6 +95,9 @@ function describeAction(toolName, args) {
     }
     if (toolName === 'bash') {
         return 'Exécuter la commande : ' + (args.command || '?');
+    }
+    if (toolName === 'runscript') {
+        return 'Exécuter un script ' + (args.language || '?') + ' :\n' + String(args.code || '?').slice(0, 400);
     }
     return toolName + ' — ' + JSON.stringify(args);
 }
