@@ -1137,7 +1137,7 @@ html,body{
 .chat-log::-webkit-scrollbar{ width:6px; }
 .chat-log::-webkit-scrollbar-thumb{ background:#2a2b30; border-radius:3px; }
 .msg{ margin-bottom:14px; max-width:75%; padding:10px 14px; border-radius:12px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; }
-.msg.user{ margin-left:auto; color:var(--text-primary); }
+.msg.user{ margin-left:auto; color:var(--text-primary); border:1px solid var(--border); }
 .msg.assistant{ color:var(--text-primary); border:1px solid var(--border); }
 .msg.error{ background:#3a2222; color:#ffb4b4; border:1px solid #5a3030; }
 .msg-sender{ font-size:11px; color:var(--text-primary); margin-bottom:4px; font-weight:500; letter-spacing:0.3px; }
