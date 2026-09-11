@@ -1136,10 +1136,10 @@ html,body{
 .chat-log::-webkit-scrollbar{ width:6px; }
 .chat-log::-webkit-scrollbar-thumb{ background:#2a2b30; border-radius:3px; }
 .msg{ margin-bottom:14px; max-width:75%; padding:10px 14px; border-radius:12px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; }
-.msg.user{ margin-left:auto; background:#2c3550; color:#dfe6ff; }
-.msg.assistant{ background:#1f2024; color:var(--text-primary); border:1px solid var(--border); }
+.msg.user{ margin-left:auto; color:var(--text-primary); }
+.msg.assistant{ color:var(--text-primary); border:1px solid var(--border); }
 .msg.error{ background:#3a2222; color:#ffb4b4; border:1px solid #5a3030; }
-.msg-sender{ font-size:11px; color:var(--text-tertiary); margin-bottom:4px; font-weight:500; letter-spacing:0.3px; }
+.msg-sender{ font-size:11px; color:var(--text-primary); margin-bottom:4px; font-weight:500; letter-spacing:0.3px; }
 /* Badge "Réflexion" compact dans le fil de chat — le détail va dans le panneau droit */
 .think-badge{
   display:inline-flex;
@@ -1203,16 +1203,16 @@ html,body{
 .msg.assistant .md tr:hover{ background:rgba(255,255,255,0.04); }
 .msg.assistant .md h1, .msg.assistant .md h2, .msg.assistant .md h3{ margin:8px 0 4px; }
 .msg.assistant .md a{ color:var(--accent); }
-.msg.assistant .md blockquote{ border-left:3px solid var(--border); padding-left:10px; color:var(--text-secondary); margin:6px 0; }
+.msg.assistant .md blockquote{ border-left:3px solid var(--border); padding-left:10px; color:var(--text-primary); margin:6px 0; }
 .md h1{ font-size:18px; font-weight:700; color:#58a6ff; margin:14px 0 6px; }
 .md h2{ font-size:16px; font-weight:700; color:#58a6ff; margin:12px 0 6px; }
 .md h3{ font-size:14px; font-weight:600; color:#58a6ff; margin:10px 0 4px; }
 .md strong, .md b{ color:#f0f6fc; font-weight:700; }
-.md p, .md li{ color:#c9d1d9; }
+.md p, .md li{ color:var(--text-primary); }
 .md code{ color:#f0c040; background:rgba(240,192,64,0.1); padding:1px 5px; border-radius:4px; font-family:monospace; }
 .md pre{ background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:12px; overflow-x:auto; }
 .md pre code{ color:#a855f7; background:none; padding:0; }
-.md ul, .md ol{ color:#c9d1d9; padding-left:20px; }
+.md ul, .md ol{ color:var(--text-primary); padding-left:20px; }
 .md a{ color:#58a6ff; }
 
 .tool-block{ margin-bottom:10px; border:1px solid var(--border); border-radius:10px; background:#17181c; padding:8px 12px; font-size:12px; color:var(--text-secondary); max-width:100%; }
@@ -1329,7 +1329,7 @@ html,body{
 .side-panel-body::-webkit-scrollbar-thumb{ background:#2a2b30; border-radius:3px; }
 
 .side-panel-empty{
-  color:var(--text-tertiary);
+  color:var(--text-primary);
   font-size:12.5px;
   padding:20px 4px;
   text-align:center;
@@ -1349,14 +1349,14 @@ html,body{
   font-size:11px;
   font-weight:600;
   letter-spacing:.02em;
-  color:var(--text-tertiary);
+  color:var(--text-primary);
   text-transform:uppercase;
   margin-bottom:8px;
 }
 .sp-think-text{
   font-size:12.5px;
   line-height:1.6;
-  color:var(--text-secondary);
+  color:var(--text-primary);
   white-space:pre-wrap;
   word-wrap:break-word;
 }
