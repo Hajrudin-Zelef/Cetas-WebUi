@@ -246,9 +246,18 @@
         <div class="settings-panel" data-content="automatisation">
           <h1 class="settings-page-title">Automatisation</h1>
           <div class="settings-group-label">Pipeline</div>
+          <div class="settings-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Mode Auto actif</h3><p>Pipeline Plan → Code → Audit depuis le composer. Même état que le bouton éclair.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-mode-active"><span class="settings-toggle-slider"></span></label></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Approbation manuelle après Plan</h3><p>Pause le pipeline après la phase Plan pour validation humaine avant le Code.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-approval"><span class="settings-toggle-slider"></span></label></div>
+          </div>
           <div class="settings-group-label">Rôles</div>
           <div class="settings-group-label">Comportement du flow</div>
           <div class="settings-group-label">Aperçu</div>
+          <div class="settings-card">
+            <div class="settings-row" style="flex-direction:column;gap:6px;">
+              <p id="auto-overview" style="font-size:12px;color:var(--text-secondary);margin:0;">—</p>
+            </div>
+          </div>
         </div>
 
       </div>

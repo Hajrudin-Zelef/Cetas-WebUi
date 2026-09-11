@@ -5,7 +5,8 @@ import { initRouter } from './router.js';
 import { loadProfilePage } from './profile.js';
 import { COMPETENCES } from './skills.js';
 import { getPermission, setPermission, checkToolPermission, getRule, setRule, isAutoAllowWorkspace, setAutoAllowWorkspace } from './marex-permission.js';
-import { getAutoModelConfig, setAutoModel } from './auto-mode-config.js';
+import { getAutoModelConfig, setAutoModel, getAutoRoleConfig } from './auto-mode-config.js';
+import { resolveAgent } from './agents.js';
 
 const $ = id => document.getElementById(id);
 
@@ -761,6 +762,23 @@ function loadGeneralPanel() {
         }
     })();
 
+    // Mode Auto — Pipeline (panneau Automatisation)
+    const autoModeActive = document.getElementById('gen-auto-mode-active');
+    if (autoModeActive) {
+        autoModeActive.checked = localStorage.getItem('marex-auto-mode') === '1';
+        autoModeActive.addEventListener('change', () => {
+            localStorage.setItem('marex-auto-mode', autoModeActive.checked ? '1' : '0');
+            if (typeof window._updateAutoModeUI === 'function') window._updateAutoModeUI();
+        });
+    }
+    const autoApproval = document.getElementById('gen-auto-approval');
+    if (autoApproval) {
+        autoApproval.checked = localStorage.getItem('marex-auto-approval') === '1';
+        autoApproval.addEventListener('change', () => {
+            localStorage.setItem('marex-auto-approval', autoApproval.checked ? '1' : '0');
+        });
+    }
+
     // Global instructions
     const textarea = document.getElementById('gen-global-instructions');
     const saveBtn = document.getElementById('gen-save-instructions');
@@ -1463,6 +1481,16 @@ function setupSettings(router) {
             router.showMain();
         });
     }
+    function refreshAutoOverview() {
+        const el = document.getElementById('auto-overview');
+        if (!el) return;
+        const roles = ['plan', 'code', 'audit'];
+        const names = { plan: 'Plan', code: 'Code', audit: 'Audit' };
+        el.textContent = roles.map(r => {
+            const cfgModel = String(getAutoRoleConfig(r).model || '').trim();
+            return names[r] + ' → ' + (cfgModel ? resolveAgent(r).model : '(non configuré)');
+        }).join(' · ');
+    }
     document.querySelectorAll('.settings-nav-item[data-panel]').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.settings-nav-item[data-panel]').forEach(o => o.classList.remove('active'));
@@ -1471,6 +1499,7 @@ function setupSettings(router) {
             document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
             const panel = document.querySelector('.settings-panel[data-content="' + target + '"]');
             if (panel) panel.classList.add('active');
+            if (target === 'automatisation') refreshAutoOverview();
             refs.settingsContent.scrollTop = 0;
         });
     });
@@ -1675,23 +1704,27 @@ function boot() {
     // Mode Auto — toggle dans le composer (persisté marex-auto-mode)
     function isAutoMode() { return localStorage.getItem('marex-auto-mode') === '1'; }
     function updateAutoModeUI() {
-        const btn = document.getElementById('auto-mode-btn');
-        const ddModel = document.getElementById('dd-model');
         const on = isAutoMode();
+        const btn = document.getElementById('auto-mode-btn');
         if (btn) {
             btn.classList.toggle('on', on);
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
         }
+        const ddModel = document.getElementById('dd-model');
         if (ddModel) {
             ddModel.classList.toggle('auto-locked', on);
             ddModel.title = on ? 'Modèle choisi par rôle (Réglages > Mode Auto)' : '';
         }
+        const settingsToggle = document.getElementById('gen-auto-mode-active');
+        if (settingsToggle) settingsToggle.checked = on;
     }
+    window._updateAutoModeUI = updateAutoModeUI;
     const autoBtn = document.getElementById('auto-mode-btn');
     if (autoBtn) {
         autoBtn.addEventListener('click', () => {
             localStorage.setItem('marex-auto-mode', isAutoMode() ? '0' : '1');
             updateAutoModeUI();
+            window.dispatchEvent(new CustomEvent('marex-auto-mode-changed'));
         });
     }
     updateAutoModeUI();
