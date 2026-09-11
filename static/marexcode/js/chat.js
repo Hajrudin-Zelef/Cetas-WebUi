@@ -453,6 +453,10 @@ export function createChat(deps) {
     function finishThinking() {
         _resetThinkStream();
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
+        // Garantie: aucun badge "Thinking" ne doit rester actif en fin de tour
+        if (chatLog && chatLog.querySelectorAll) {
+            chatLog.querySelectorAll('.think-badge').forEach(function (b) { b.classList.add('done'); });
+        }
         if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
         const raw = thinkText;
@@ -1052,6 +1056,7 @@ export function createChat(deps) {
             verboseLog: localStorage.getItem('marex-auto-verbose-log') === '1',
             approvalEnabled: localStorage.getItem('marex-auto-approval') === '1',
         };
+        try {
         await runAutoMode({
             task: text,
             tree: tree,
@@ -1102,10 +1107,15 @@ export function createChat(deps) {
                 addMsg('error', 'Auto (' + lastPhase + ') : ' + (err && err.message ? err.message : err));
             },
         });
-        finalizePhase();
-        if (onSave) onSave(session);
-        setRunning(false);
-        controller = null;
+        } catch (e) {
+            addMsg('error', 'Auto : ' + (e && e.message ? e.message : e));
+        } finally {
+            finalizePhase();
+            finishThinking();
+            if (onSave) onSave(session);
+            setRunning(false);
+            controller = null;
+        }
     }
 
     window.addEventListener('marexcode-todo', (e) => {
