@@ -766,7 +766,7 @@ html,body{
 .composer{
   width:100%;
   max-width:620px;
-  background:var(--bg-elevated);
+  background:#000000;
   border:1px solid var(--border);
   border-radius:14px;
   padding:0 0 12px 0;
