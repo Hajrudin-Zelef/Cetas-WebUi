@@ -2,6 +2,7 @@ import morphdom from "../../../js/vendor/morphdom.esm.min.js"
 import { project } from "./stream.js"
 import { sanitizeMarkdown, getCachedMarkdown, touchCachedMarkdown, checksum } from "./cache.js"
 import { inlineCodeKind } from "./inline-code-kind.js"
+import { highlightCode, disposeStreamingCode } from "./worker-client.js"
 
 const marked = () => globalThis.marked
 
@@ -35,16 +36,14 @@ function parseMarkdown(text) {
   }
 }
 
-function codeHtml(block) {
+function codeShell(block) {
   const lang = block.language || "text"
   return (
     '<div data-component="markdown-code" data-language="' +
     escapeHtml(lang) +
     '"><pre><code class="language-' +
     escapeHtml(lang) +
-    '">' +
-    escapeHtml(block.src) +
-    '</code></pre><button type="button" data-slot="markdown-copy-button" class="markdown-copy-button" aria-label="Copier">' +
+    '"></code></pre><button type="button" data-slot="markdown-copy-button" class="markdown-copy-button" aria-label="Copier">' +
     COPY_ICON +
     "</button></div>"
   )
@@ -59,32 +58,6 @@ function decorate(root) {
   }
 }
 
-function getState(container) {
-  let st = states.get(container)
-  if (!st) {
-    st = { projection: undefined, text: "", owner: "md" + ++seq, copyCleanup: null, copyTimers: new Map() }
-    states.set(container, st)
-  }
-  return st
-}
-
-function buildBlock(st, block, index) {
-  const key = st.owner + ":" + index + ":" + block.mode
-  if (block.mode === "code") {
-    return { key, mode: "code", raw: block.raw, hash: checksum(block.src) + ":" + block.raw.length, html: codeHtml(block) }
-  }
-  const cacheKey = "b:" + index + ":" + block.mode + ":" + checksum(block.src)
-  const cached = getCachedMarkdown(cacheKey)
-  if (cached && cached.raw === block.raw) {
-    touchCachedMarkdown(cacheKey, cached)
-    return { key, mode: block.mode, raw: cached.raw, hash: cached.hash, html: cached.html }
-  }
-  const hash = checksum(block.src)
-  const html = sanitizeMarkdown(parseMarkdown(block.src))
-  touchCachedMarkdown(cacheKey, { raw: block.raw, hash, html })
-  return { key, mode: block.mode, raw: block.raw, hash, html }
-}
-
 function selectionIntersects(node) {
   const selection = typeof window !== "undefined" && typeof window.getSelection === "function" ? window.getSelection() : null
   if (!selection || selection.isCollapsed || selection.rangeCount === 0) return false
@@ -96,6 +69,49 @@ function selectionIntersects(node) {
     }
   }
   return false
+}
+
+function getState(container) {
+  let st = states.get(container)
+  if (!st) {
+    st = {
+      projection: undefined,
+      text: "",
+      owner: "md" + ++seq,
+      copyCleanup: null,
+      copyTimers: new Map(),
+      codeHtml: new Map(),
+      codeReq: new Map(),
+      codeKeys: new Set(),
+    }
+    states.set(container, st)
+  }
+  return st
+}
+
+function buildBlock(st, block, index) {
+  const key = st.owner + ":" + index + ":" + block.mode
+  if (block.mode === "code") {
+    return {
+      key,
+      mode: "code",
+      raw: block.raw,
+      src: block.src,
+      language: block.language,
+      complete: !!block.complete,
+      hash: checksum(block.src) + ":" + block.raw.length,
+    }
+  }
+  const cacheKey = "b:" + index + ":" + block.mode + ":" + checksum(block.src)
+  const cached = getCachedMarkdown(cacheKey)
+  if (cached && cached.raw === block.raw) {
+    touchCachedMarkdown(cacheKey, cached)
+    return { key, mode: block.mode, raw: cached.raw, hash: cached.hash, html: cached.html }
+  }
+  const hash = checksum(block.src)
+  const html = sanitizeMarkdown(parseMarkdown(block.src))
+  touchCachedMarkdown(cacheKey, { raw: block.raw, hash, html })
+  return { key, mode: block.mode, raw: block.raw, hash, html }
 }
 
 function updateBlock(container, index, block, guardSelection) {
@@ -124,6 +140,53 @@ function updateBlock(container, index, block, guardSelection) {
     onBeforeElUpdated: (fromEl, toEl) =>
       (!guardSelection || !selectionIntersects(fromEl)) && !fromEl.isEqualNode(toEl),
   })
+}
+
+function requestHighlight(container, index, block, st) {
+  const requestKey = block.src + "\u0000" + (block.complete ? "1" : "0")
+  if (st.codeReq.get(block.key) === requestKey) return
+  st.codeReq.set(block.key, requestKey)
+  highlightCode(block.key, block.src, block.language, block.complete)
+    .then((result) => {
+      st.codeHtml.set(block.key, { src: block.src, html: result.html })
+      const current = container.children[index]
+      if (!(current instanceof HTMLElement) || current.dataset.markdownKey !== block.key) return
+      const code = current.querySelector("code")
+      if (!code) return
+      code.classList.add("hljs")
+      code.innerHTML = result.html
+    })
+    .catch(() => {})
+}
+
+function updateCodeBlock(container, index, block, st) {
+  const current = container.children[index]
+  const existing = current instanceof HTMLElement && current.dataset.markdownKey === block.key ? current : null
+  const next = existing || document.createElement("div")
+  if (!existing) {
+    next.dataset.markdownBlock = ""
+    next.dataset.markdownKey = block.key
+    next.style.display = "contents"
+    next.innerHTML = codeShell(block)
+  }
+  next.dataset.markdownHash = block.hash
+  next.dataset.markdownComplete = block.complete ? "true" : "false"
+
+  const code = next.querySelector("code")
+  if (code) {
+    const highlighted = st.codeHtml.get(block.key)
+    if (highlighted && highlighted.src === block.src) {
+      code.classList.add("hljs")
+      if (code.innerHTML !== highlighted.html) code.innerHTML = highlighted.html
+    } else {
+      code.classList.remove("hljs")
+      if (code.textContent !== block.src) code.textContent = block.src
+    }
+  }
+
+  if (!existing) container.appendChild(next)
+  st.codeKeys.add(block.key)
+  requestHighlight(container, index, block, st)
 }
 
 function setupCodeCopy(container, st) {
@@ -166,11 +229,26 @@ export function createMarkdownRenderer() {
     st.projection = projection
     st.text = value
     const blocks = projection.blocks.map((block, index) => buildBlock(st, block, index))
-    blocks.forEach((block, index) => updateBlock(container, index, block, !!streaming))
+    const seen = new Set()
+    blocks.forEach((block, index) => {
+      if (block.mode === "code") {
+        seen.add(block.key)
+        updateCodeBlock(container, index, block, st)
+      } else {
+        updateBlock(container, index, block, !!streaming)
+      }
+    })
     while (container.children.length > blocks.length) {
       const child = container.lastElementChild
       if (!child) break
       child.remove()
+    }
+    for (const key of st.codeKeys) {
+      if (seen.has(key)) continue
+      st.codeKeys.delete(key)
+      st.codeHtml.delete(key)
+      st.codeReq.delete(key)
+      disposeStreamingCode(key)
     }
     if (!st.copyCleanup) st.copyCleanup = setupCodeCopy(container, st)
   }

@@ -91,10 +91,12 @@ RUN terser /usr/share/nginx/html/static/marexcode/js/model-select.js -o /usr/sha
 RUN terser /usr/share/nginx/html/static/marexcode/js/router.js -o /usr/share/nginx/html/static/marexcode/js/router.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/marex-permission.js -o /usr/share/nginx/html/static/marexcode/js/marex-permission.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/stream.js -o /usr/share/nginx/html/static/marexcode/js/markdown/stream.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/code-state.js -o /usr/share/nginx/html/static/marexcode/js/markdown/code-state.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/inline-code-kind.js -o /usr/share/nginx/html/static/marexcode/js/markdown/inline-code-kind.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/cache.js -o /usr/share/nginx/html/static/marexcode/js/markdown/cache.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/render.js -o /usr/share/nginx/html/static/marexcode/js/markdown/render.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/queue.js -o /usr/share/nginx/html/static/marexcode/js/markdown/queue.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/worker-client.js -o /usr/share/nginx/html/static/marexcode/js/markdown/worker-client.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/worker.js -o /usr/share/nginx/html/static/marexcode/js/markdown/worker.js -c -m --comments false --module
 
 # Minifier le CSS — style.css est un point d'entrée @import, on concatène
 # dans l'ordre de cascade avant minification
