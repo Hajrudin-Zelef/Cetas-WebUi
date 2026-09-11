@@ -85,7 +85,20 @@ function buildBlock(st, block, index) {
   return { key, mode: block.mode, raw: block.raw, hash, html }
 }
 
-function updateBlock(container, index, block) {
+function selectionIntersects(node) {
+  const selection = typeof window !== "undefined" && typeof window.getSelection === "function" ? window.getSelection() : null
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return false
+  for (let i = 0; i < selection.rangeCount; i++) {
+    try {
+      if (selection.getRangeAt(i).intersectsNode(node)) return true
+    } catch {
+      return false
+    }
+  }
+  return false
+}
+
+function updateBlock(container, index, block, guardSelection) {
   const current = container.children[index]
   if (
     current instanceof HTMLElement &&
@@ -108,7 +121,8 @@ function updateBlock(container, index, block) {
   }
 
   morphdom(current, next, {
-    onBeforeElUpdated: (fromEl, toEl) => !fromEl.isEqualNode(toEl),
+    onBeforeElUpdated: (fromEl, toEl) =>
+      (!guardSelection || !selectionIntersects(fromEl)) && !fromEl.isEqualNode(toEl),
   })
 }
 
@@ -152,7 +166,7 @@ export function createMarkdownRenderer() {
     st.projection = projection
     st.text = value
     const blocks = projection.blocks.map((block, index) => buildBlock(st, block, index))
-    blocks.forEach((block, index) => updateBlock(container, index, block))
+    blocks.forEach((block, index) => updateBlock(container, index, block, !!streaming))
     while (container.children.length > blocks.length) {
       const child = container.lastElementChild
       if (!child) break

@@ -1,3 +1,5 @@
+// Câblé en Phase 2 (highlight.js) : utilisé pour reset les tokens stable/unstable
+// d'un bloc code en streaming. Inutilisé en Phase 1 (code rendu en texte brut).
 export function shouldResetCodeTokens(previous, next) {
   return (
     !previous ||
