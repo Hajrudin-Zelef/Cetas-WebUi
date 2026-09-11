@@ -352,7 +352,7 @@ export function createChat(deps) {
             if (sidePanelBody && mode === 'all') sidePanelBody.appendChild(thinkBlockEl);
             const group = ensureToolGroup();
             thinkStepEl = document.createElement('div');
-            thinkStepEl.className = 'chat-step-line';
+            thinkStepEl.className = 'chat-step-line chat-think-line';
             thinkStepEl.innerHTML = '<span class="step-icon">✦</span><span class="step-label">Thought…</span>';
             group.appendChild(thinkStepEl);
             autoScroll.onContentChange();
