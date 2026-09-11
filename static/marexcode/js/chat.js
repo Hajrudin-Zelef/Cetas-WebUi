@@ -3,6 +3,7 @@ export const MAREX_TOOLS = (typeof MAREXCODE_TOOLS !== 'undefined') ? MAREXCODE_
 import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions, trackActivity, getMemory, listTree } from './api.js';
 import { runAutoMode } from './runtime.js';
 import { createMarkdownRenderer } from './markdown/render.js';
+import { createAutoScroll } from './auto-scroll.js';
 
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
@@ -22,6 +23,7 @@ export function createChat(deps) {
     let messageQueue = [];
     let pendingImages = [];
     const md = createMarkdownRenderer();
+    const autoScroll = createAutoScroll(chatLog);
 
     function setupImageDrop() {
         if (!ta) return;
@@ -167,7 +169,7 @@ export function createChat(deps) {
             m.textContent = content;
         }
         chatLog.appendChild(m);
-        chatLog.scrollTop = chatLog.scrollHeight;
+        autoScroll.onContentChange();
         return m;
     }
 
@@ -788,7 +790,7 @@ export function createChat(deps) {
             rawAcc += chunk;
             if (pendingMd) md.update(pendingMd, rawAcc);
             else if (pendingEl) pendingEl.textContent = rawAcc;
-            chatLog.scrollTop = chatLog.scrollHeight;
+            autoScroll.onContentChange();
         };
         const onDone = () => {
             setRunning(false);
