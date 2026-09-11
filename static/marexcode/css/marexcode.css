@@ -838,7 +838,7 @@ html,body{
   padding:2px 16px 10px 16px;
   transition:height 0.05s ease-out;
 }
-.composer textarea::placeholder{ color:var(--text-primary); }
+.composer textarea::placeholder{ color:var(--text-tertiary); }
 .image-preview{ display:flex; gap:8px; padding:8px 16px; flex-wrap:wrap; border-bottom:1px solid var(--border); }
 .image-preview-item{ position:relative; }
 .image-preview-item img{ height:60px; border-radius:6px; border:1px solid var(--border); }
