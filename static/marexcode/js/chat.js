@@ -14,7 +14,7 @@ export function createChat(deps) {
     let session = null;
     let running = false;
     let pendingEl = null, pendingMd = null, thinkBadgeEl = null, thinkBlockEl = null, thinkText = '';
-    let _thinkRaf = null, _thinkOpened = false;
+    let _thinkRaf = null, _thinkOpened = false, _thinkShown = 0;
     let rawAcc = '';
     let controller = null;
     let userClosedPanel = false;
@@ -339,7 +339,24 @@ export function createChat(deps) {
         return b;
     }
 
-    function _flushThinking() {
+    function _ensureThinkBlock() {
+        if (!thinkBlockEl && thinkText) {
+            thinkBlockEl = document.createElement('div');
+            thinkBlockEl.className = 'sp-think-block';
+            thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
+            if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
+        } else if (thinkBlockEl && !thinkBlockEl.isConnected && sidePanelBody) {
+            sidePanelBody.appendChild(thinkBlockEl);
+        }
+    }
+
+    function _renderThink() {
+        if (!thinkBlockEl) return;
+        const txt = thinkBlockEl.querySelector('.sp-think-text');
+        if (txt) txt.textContent = thinkText.slice(0, _thinkShown);
+    }
+
+    function _thinkTick() {
         _thinkRaf = null;
         const mode = localStorage.getItem('marex-thinking-mode') || 'all';
         if (mode === 'hidden') return;
@@ -349,24 +366,30 @@ export function createChat(deps) {
             openSidePanel();
             if (sidePanelSpinner) sidePanelSpinner.style.display = 'block';
         }
-        if (!thinkBlockEl && thinkText) {
-            thinkBlockEl = document.createElement('div');
-            thinkBlockEl.className = 'sp-think-block';
-            thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
-            if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
-        } else if (thinkBlockEl && !thinkBlockEl.isConnected && sidePanelBody) {
-            sidePanelBody.appendChild(thinkBlockEl);
-        }
-        if (thinkBlockEl) {
-            const txt = thinkBlockEl.querySelector('.sp-think-text');
-            if (txt && thinkText) txt.textContent = thinkText;
+        _ensureThinkBlock();
+        const total = thinkText.length;
+        if (_thinkShown < total) {
+            // Révélation mot par mot, avec rattrapage si le réseau prend l'avance.
+            const backlog = total - _thinkShown;
+            let words = backlog > 600 ? 8 : backlog > 240 ? 4 : backlog > 80 ? 2 : 1;
+            let idx = _thinkShown;
+            while (words > 0 && idx < total) {
+                const sp = thinkText.indexOf(' ', idx);
+                if (sp === -1) { idx = total; break; }
+                idx = sp + 1;
+                words--;
+            }
+            _thinkShown = idx;
+            _renderThink();
         }
         if (sidePanelBody && panelScroll) panelScroll.onContentChange();
+        if (_thinkShown < thinkText.length) _thinkRaf = requestAnimationFrame(_thinkTick);
     }
 
     function _resetThinkStream() {
         if (_thinkRaf !== null) { cancelAnimationFrame(_thinkRaf); _thinkRaf = null; }
         _thinkOpened = false;
+        _thinkShown = 0;
     }
 
     function onThinking(t) {
@@ -377,7 +400,7 @@ export function createChat(deps) {
             openSidePanel();              // ouvre le panneau immédiatement
         }
         thinkText += t;
-        if (_thinkRaf === null) _thinkRaf = requestAnimationFrame(_flushThinking);
+        if (_thinkRaf === null) _thinkRaf = requestAnimationFrame(_thinkTick);
     }
 
     function _callOpenRouterFree(model, prompt) {
@@ -413,11 +436,13 @@ export function createChat(deps) {
     }
 
     function markThinkingDone() {
-        // Termine la phase de raisonnement courante dès qu'un outil démarre.
-        // On annule le rAF en attente mais on rend d'abord le texte bufferisé
-        // (crée/remplit le bloc au besoin) pour ne jamais afficher un bloc vide.
+        // Termine la phase de raisonnement courante dès qu'un outil démarre :
+        // on flush le texte restant (création du bloc au besoin) puis on
+        // marque le badge done.
         if (_thinkRaf !== null) { cancelAnimationFrame(_thinkRaf); _thinkRaf = null; }
-        if (thinkText) _flushThinking();
+        _ensureThinkBlock();
+        _thinkShown = thinkText.length;
+        _renderThink();
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
