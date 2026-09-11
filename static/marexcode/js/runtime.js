@@ -64,6 +64,7 @@ export async function runAutoMode(opts) {
   const {
     task, tree, model, signal, onPhase, onChunk, onDone, onError, _stream,
     requireApproval, onApprovalNeeded, maxRetries, continueOnError, maxBudgetTokens,
+    compactPrevious,
   } = opts || {};
   const stream = _stream
     || (typeof streamModelWithTools !== 'undefined' ? streamModelWithTools : null);
@@ -139,7 +140,12 @@ export async function runAutoMode(opts) {
 
     outputs.push({ phase: phase, model: effectiveModel, usage: res.usage, content: res.finalContent });
     tokensUsed += usageTokens(res.usage);
-    contextStore.previousPhase = res.finalContent;
+    // compactPrevious (opt-in) : la compaction tool_calls est impossible sur ce
+    // pipeline (voir limitation ci-dessus) ; le mode agressif borne mécaniquement
+    // le texte transmis à la phase suivante.
+    contextStore.previousPhase = compactPrevious
+      ? res.finalContent.slice(0, 4000)
+      : res.finalContent;
   }
 
   if (onDone) onDone(outputs);

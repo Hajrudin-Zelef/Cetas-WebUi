@@ -306,6 +306,13 @@
             </div>
           </div>
           <div class="settings-group-label">Comportement du flow</div>
+          <div class="settings-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Arrêt sur erreur</h3><p>Interrompt le pipeline dès qu'une phase échoue. Décoché : les phases suivantes tentent quand même.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-stop-on-error" checked><span class="settings-toggle-slider"></span></label></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Tentatives par phase</h3><p>Nombre de relances automatiques d'une phase échouée (0 = aucune).</p></div><input type="number" id="gen-auto-max-retries" min="0" max="5" value="0" class="settings-select" style="width:80px;"></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Compaction agressive du contexte</h3><p>Borne le résultat transmis d'une phase à la suivante (4 000 premiers caractères).</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-compact"><span class="settings-toggle-slider"></span></label></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Budget max (tokens)</h3><p>Stoppe le pipeline avant une phase si le cumul dépasse cette limite. Vide = illimité.</p></div><input type="number" id="gen-auto-budget" min="1000" placeholder="illimité" class="settings-select" style="width:120px;"></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Log détaillé</h3><p>Trace les phases et erreurs du pipeline dans la console du navigateur.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-verbose-log"><span class="settings-toggle-slider"></span></label></div>
+          </div>
           <div class="settings-group-label">Aperçu</div>
           <div class="settings-card">
             <div class="settings-row" style="flex-direction:column;gap:6px;">

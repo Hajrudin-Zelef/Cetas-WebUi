@@ -974,6 +974,46 @@ function loadGeneralPanel() {
         });
     }
 
+    // Mode Auto — Comportement du flow (panneau Automatisation)
+    const stopOnError = document.getElementById('gen-auto-stop-on-error');
+    if (stopOnError) {
+        stopOnError.checked = localStorage.getItem('marex-auto-stop-on-error') !== '0';
+        stopOnError.addEventListener('change', () => {
+            localStorage.setItem('marex-auto-stop-on-error', stopOnError.checked ? '1' : '0');
+        });
+    }
+    const maxRetriesInput = document.getElementById('gen-auto-max-retries');
+    if (maxRetriesInput) {
+        maxRetriesInput.value = localStorage.getItem('marex-auto-max-retries') || '0';
+        maxRetriesInput.addEventListener('change', () => {
+            const n = Math.max(0, Math.min(5, parseInt(maxRetriesInput.value, 10) || 0));
+            maxRetriesInput.value = String(n);
+            localStorage.setItem('marex-auto-max-retries', String(n));
+        });
+    }
+    const compactToggle = document.getElementById('gen-auto-compact');
+    if (compactToggle) {
+        compactToggle.checked = localStorage.getItem('marex-auto-compact') === '1';
+        compactToggle.addEventListener('change', () => {
+            localStorage.setItem('marex-auto-compact', compactToggle.checked ? '1' : '0');
+        });
+    }
+    const budgetInput = document.getElementById('gen-auto-budget');
+    if (budgetInput) {
+        budgetInput.value = localStorage.getItem('marex-auto-budget') || '';
+        budgetInput.addEventListener('change', () => {
+            const n = parseInt(budgetInput.value, 10);
+            localStorage.setItem('marex-auto-budget', (n && n > 0) ? String(n) : '');
+        });
+    }
+    const verboseLog = document.getElementById('gen-auto-verbose-log');
+    if (verboseLog) {
+        verboseLog.checked = localStorage.getItem('marex-auto-verbose-log') === '1';
+        verboseLog.addEventListener('change', () => {
+            localStorage.setItem('marex-auto-verbose-log', verboseLog.checked ? '1' : '0');
+        });
+    }
+
     // Global instructions
     const textarea = document.getElementById('gen-global-instructions');
     const saveBtn = document.getElementById('gen-save-instructions');

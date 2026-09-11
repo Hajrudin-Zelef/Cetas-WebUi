@@ -883,11 +883,23 @@ export function createChat(deps) {
             }
         };
 
+        const flowOpts = {
+            continueOnError: localStorage.getItem('marex-auto-stop-on-error') === '0',
+            maxRetries: Math.max(0, Math.min(5, parseInt(localStorage.getItem('marex-auto-max-retries') || '0', 10) || 0)),
+            compactPrevious: localStorage.getItem('marex-auto-compact') === '1',
+            maxBudgetTokens: parseInt(localStorage.getItem('marex-auto-budget') || '0', 10) || null,
+            verboseLog: localStorage.getItem('marex-auto-verbose-log') === '1',
+        };
         await runAutoMode({
             task: text,
             tree: tree,
             signal: controller.signal,
+            continueOnError: flowOpts.continueOnError,
+            maxRetries: flowOpts.maxRetries,
+            compactPrevious: flowOpts.compactPrevious,
+            maxBudgetTokens: flowOpts.maxBudgetTokens,
             onPhase: (p) => {
+                if (flowOpts.verboseLog) console.debug('[auto] phase', p.phase, 'tentative', p.attempt, '→', p.model);
                 finalizePhase();
                 const wrap = document.createElement('div');
                 wrap.className = 'msg assistant';
@@ -910,6 +922,7 @@ export function createChat(deps) {
                 chatLog.scrollTop = chatLog.scrollHeight;
             },
             onDone: (outputs) => {
+                if (flowOpts.verboseLog) console.debug('[auto] terminé', (outputs || []).map(o => o.phase + (o.failed ? ' (échec)' : '')).join(', '));
                 finalizePhase();
                 const combined = (outputs || [])
                     .filter(o => o.content)
@@ -918,6 +931,7 @@ export function createChat(deps) {
                 if (combined) session.messages.push({ role: 'assistant', content: combined });
             },
             onError: (err) => {
+                if (flowOpts.verboseLog) console.debug('[auto] erreur', lastPhase, err && err.message);
                 finalizePhase();
                 if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
                 addMsg('error', 'Auto (' + lastPhase + ') : ' + (err && err.message ? err.message : err));

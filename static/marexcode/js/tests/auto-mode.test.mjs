@@ -768,3 +768,15 @@ test('runAutoMode: défauts préservent le comportement (pas de pause/retry/cont
   assert.equal(seen.length, 1, 'arrêt immédiat sur erreur, défauts inchangés');
   assert.equal(outputs.length, 0);
 });
+
+test('runAutoMode: compactPrevious tronce le previousPhase de la phase suivante', async () => {
+  const prompts = [];
+  const fakeStream = (m, h, oc, od) => { prompts.push(h[0].content); oc('X'.repeat(9000) + 'MARKER-FIN'); od({}); };
+  await runAutoMode({ task: 't', tree: { files: [] }, _stream: fakeStream, compactPrevious: true });
+  assert.ok(prompts[1].includes('XXXXXXXXXX'), 'début du contenu transmis');
+  assert.ok(!prompts[1].includes('MARKER-FIN'), 'fin tronquée quand compactPrevious');
+  const promptsFull = [];
+  const fakeStream2 = (m, h, oc, od) => { promptsFull.push(h[0].content); oc('Y'.repeat(9000) + 'MARKER-FIN2'); od({}); };
+  await runAutoMode({ task: 't', tree: { files: [] }, _stream: fakeStream2 });
+  assert.ok(promptsFull[1].includes('MARKER-FIN2'), 'contenu intégral sans l option (défaut inchangé)');
+});
