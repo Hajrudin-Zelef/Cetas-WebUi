@@ -1,5 +1,5 @@
 const PLAN_PATTERN = /^(analyse|analys|concevo|conçois|concoi|concept|architect|design|plan|évalu|evalu|compar|review)/;
-const AUDIT_PATTERN = /^(vérifi|verifi|test|audit|sécurit|securit|lint|check|qualit|corriger|correction|bug)/;
+const AUDIT_PATTERN = /^(vérifi|verifi|test|audit|sécurit|securit|lint|check|qualit|corriger|correction)/;
 
 export function classifyTask(message) {
   const lower = String(message || '').toLowerCase();

@@ -41,6 +41,12 @@ test('classifyTask: audit pour vérification/test/sécurité', () => {
   assert.equal(classifyTask('corriger le bug de login'), 'audit');
 });
 
+test('classifyTask: rapport de bug à corriger = code (fix direct), pas audit', () => {
+  assert.equal(classifyTask('Bug: le login casse, corrige-le'), 'code');
+  assert.equal(classifyTask('bug: la sidebar ne charge plus'), 'code');
+  assert.equal(classifyTask("vérifie s'il y a un bug dans auth.js"), 'audit');
+});
+
 test('classifyTask: code par défaut', () => {
   assert.equal(classifyTask('crée un composant sidebar'), 'code');
   assert.equal(classifyTask('implemente la fonction de recherche'), 'code');
