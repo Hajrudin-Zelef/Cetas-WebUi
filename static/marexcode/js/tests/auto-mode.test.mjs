@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { AGENT_ROLES, resolveAgent, getToolsForRole } from '../agents.js';
 import { classifyTask } from '../task-classifier.js';
 import { buildProjectIndex, checkCompaction, estimateTokens, COMPACTION_THRESHOLD } from '../context-store.js';
+import { composePrompt } from '../prompt-composer.js';
 
 const VALID_TOOL_NAMES = ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob', 'Ls', 'TodoWrite', 'LSP'];
 
@@ -117,4 +118,43 @@ test('checkCompaction: seuil dépassé → system + derniers tours intacts, anci
 test('estimateTokens: ~4 caractères par token', () => {
   assert.equal(estimateTokens([{ role: 'user', content: 'x'.repeat(400) }]), 100);
 });
+
+test('composePrompt: inclut le systemPrompt du rôle', () => {
+  const agent = { systemPrompt: 'PROMPT_DU_ROLE_XYZ' };
+  const out = composePrompt(agent, {});
+  assert.ok(out.includes('PROMPT_DU_ROLE_XYZ'));
+  assert.ok(out.indexOf('PROMPT_DU_ROLE_XYZ') < out.length / 2, 'le prompt du rôle doit être en tête');
+});
+
+test('composePrompt: index projet formaté en arbre lisible (paths groupés, pas de dump JSON)', () => {
+  const agent = { systemPrompt: 'S' };
+  const contextStore = { index: [
+    { path: 'src/app.js', size: 100, ext: '.js' },
+    { path: 'src/utils.js', size: 50, ext: '.js' },
+    { path: 'index.html', size: 10, ext: '.html' },
+  ] };
+  const out = composePrompt(agent, contextStore);
+  assert.ok(out.includes('src/app.js'), 'les chemins doivent apparaître');
+  assert.ok(out.includes('src/utils.js'));
+  assert.ok(out.includes('index.html'));
+  assert.ok(!out.includes('"path"'), 'pas de dump JSON brut');
+  assert.ok(!out.includes('{'), 'pas de syntaxe JSON dans le bloc index');
+});
+
+test('composePrompt: previousPhase inclus, clairement délimité', () => {
+  const agent = { systemPrompt: 'S' };
+  const out = composePrompt(agent, { previousPhase: '1. Créer utils.js' });
+  assert.ok(out.includes('1. Créer utils.js'));
+  assert.ok(/##\s+.*phase précédente/i.test(out), 'doit être délimité par un titre de section');
+});
+
+test('composePrompt: previousPhase absent/null ne plante pas', () => {
+  const agent = { systemPrompt: 'S' };
+  composePrompt(agent, {});
+  composePrompt(agent, { previousPhase: null });
+  composePrompt(agent);
+  const out = composePrompt(agent, { previousPhase: null });
+  assert.ok(!/##\s+.*phase précédente/i.test(out), 'pas de section vide si pas de phase précédente');
+});
+
 
