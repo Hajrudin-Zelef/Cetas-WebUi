@@ -642,3 +642,129 @@ test('testModel: tool-call détecté SANS exécution réelle (hook toujours allo
     delete globalThis.window;
   }
 });
+
+test('runAutoMode: temperature/maxTokens configurés passés dans options du stream', async () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoRoleConfig('plan', { temperature: 0.3 });
+  MODEL_CONTEXT_LIMITS['model-plan'] = 8000;
+  try {
+    const seenOptions = [];
+    const fakeStream = (m, h, oc, od, oe, tools, htc, ot, sig, options) => { seenOptions.push(options); od({}); };
+    await runAutoMode({ task: 't', tree: { files: [] }, _stream: fakeStream });
+    assert.deepEqual(seenOptions[0], { temperature: 0.3, maxTokens: 8000 }, 'phase plan : options résolues (temperature config + maxTokens table)');
+    assert.equal(seenOptions[1], null, 'phase code sans config → options null (pas d objet à clés undefined)');
+    assert.equal(seenOptions[2], null);
+  } finally {
+    delete MODEL_CONTEXT_LIMITS['model-plan'];
+    delete lsStore['marexcode_auto_models'];
+  }
+});
+
+test('runAutoMode: requireApproval résout false → arrêt après plan, code/audit jamais lancés', async () => {
+  const seen = [];
+  const fakeStream = (m, h, oc, od) => { seen.push(h[0].content.slice(0, 30)); oc('PLANOUT'); od({}); };
+  const approvals = [];
+  const outputs = await runAutoMode({
+    task: 't', tree: { files: [] }, _stream: fakeStream,
+    requireApproval: true,
+    onApprovalNeeded: (planContent) => { approvals.push(planContent); return Promise.resolve(false); },
+  });
+  assert.equal(seen.length, 1, 'seul plan exécuté');
+  assert.equal(approvals.length, 1);
+  assert.ok(approvals[0].includes('PLANOUT'), 'onApprovalNeeded reçoit le contenu du plan');
+  assert.equal(outputs.length, 1);
+});
+
+test('runAutoMode: requireApproval résout true → chaîne complète', async () => {
+  const seen = [];
+  const fakeStream = (m, h, oc, od) => { seen.push(1); od({}); };
+  const outputs = await runAutoMode({
+    task: 't', tree: { files: [] }, _stream: fakeStream,
+    requireApproval: true,
+    onApprovalNeeded: () => Promise.resolve(true),
+  });
+  assert.equal(seen.length, 3);
+  assert.equal(outputs.length, 3);
+});
+
+test('runAutoMode: requireApproval sans onApprovalNeeded → arrêt propre', async () => {
+  const seen = [];
+  const fakeStream = (m, h, oc, od) => { seen.push(1); od({}); };
+  const outputs = await runAutoMode({ task: 't', tree: { files: [] }, _stream: fakeStream, requireApproval: true });
+  assert.equal(seen.length, 1);
+  assert.equal(outputs.length, 1);
+});
+
+test('runAutoMode: maxRetries relance la phase échouée puis abandonne', async () => {
+  const attempts = [];
+  const fakeStream = (m, h, oc, od, oe) => { attempts.push(1); oe(new Error('fail-phase')); };
+  const errs = [];
+  const outputs = await runAutoMode({
+    task: 't', tree: { files: [] }, _stream: fakeStream,
+    maxRetries: 2, onError: (e) => errs.push(e),
+  });
+  assert.equal(attempts.length, 3, '1 tentative + 2 retries, puis abandon');
+  assert.equal(errs.length, 1, 'onError une seule fois après épuisement');
+  assert.equal(outputs.length, 0);
+});
+
+test('runAutoMode: retry réussit à la tentative 2 → chaîne continue, attempt signalé', async () => {
+  const attempts = [];
+  const fakeStream = (m, h, oc, od, oe) => {
+    attempts.push(h[0].content.includes('architecte') ? 'plan' : 'autre');
+    if (attempts.length === 1) oe(new Error('transient'));
+    else od({});
+  };
+  const phases = [];
+  const outputs = await runAutoMode({
+    task: 't', tree: { files: [] }, _stream: fakeStream,
+    maxRetries: 2, onPhase: (p) => phases.push(p),
+  });
+  assert.equal(attempts.length, 4, 'plan x2 puis code + audit');
+  assert.equal(outputs.length, 3);
+  const planAttempts = phases.filter(p => p.phase === 'plan').map(p => p.attempt);
+  assert.deepEqual(planAttempts, [1, 2], 'attempt exposé dans onPhase');
+});
+
+test('runAutoMode: continueOnError=true → la chaîne continue avec entrée failed', async () => {
+  const seen = [];
+  const fakeStream = (m, h, oc, od, oe) => {
+    seen.push(h[0].content.includes('architecte') ? 'plan' : 'autre');
+    if (h[0].content.includes('architecte')) oe(new Error('plan-ko'));
+    else od({});
+  };
+  const errs = [];
+  const outputs = await runAutoMode({
+    task: 't', tree: { files: [] }, _stream: fakeStream,
+    continueOnError: true, onError: (e) => errs.push(e),
+  });
+  assert.equal(seen.length, 3, 'code et audit lancés malgré l échec du plan');
+  assert.equal(errs.length, 1);
+  assert.equal(outputs[0].failed, true);
+  assert.equal(outputs[0].error, 'plan-ko');
+  assert.equal(outputs.length, 3);
+  assert.ok(outputs[1].content !== undefined, 'la suite produit du contenu');
+});
+
+test('runAutoMode: maxBudgetTokens dépassé → phase suivante non lancée', async () => {
+  const seen = [];
+  const fakeStream = (m, h, oc, od) => { seen.push(1); od({ input_tokens: 30000, output_tokens: 10000 }); };
+  const outputs = await runAutoMode({
+    task: 't', tree: { files: [] }, _stream: fakeStream,
+    maxBudgetTokens: 50000,
+  });
+  assert.equal(seen.length, 2, 'plan (40k) + code (80k cumulé) lancés, audit bloqué');
+  assert.equal(outputs.length, 2);
+});
+
+test('runAutoMode: défauts préservent le comportement (pas de pause/retry/continue/budget)', async () => {
+  const seen = [];
+  const fakeStream = (m, h, oc, od, oe, tools, htc, ot, sig, options) => {
+    seen.push(options);
+    if (seen.length === 1) oe(new Error('x'));
+    else od({});
+  };
+  const outputs = await runAutoMode({ task: 't', tree: { files: [] }, _stream: fakeStream });
+  assert.equal(seen.length, 1, 'arrêt immédiat sur erreur, défauts inchangés');
+  assert.equal(outputs.length, 0);
+});
