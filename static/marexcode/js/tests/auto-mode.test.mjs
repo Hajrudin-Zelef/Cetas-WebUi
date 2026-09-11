@@ -780,3 +780,31 @@ test('runAutoMode: compactPrevious tronce le previousPhase de la phase suivante'
   await runAutoMode({ task: 't', tree: { files: [] }, _stream: fakeStream2 });
   assert.ok(promptsFull[1].includes('MARKER-FIN2'), 'contenu intégral sans l option (défaut inchangé)');
 });
+
+test('getEffectiveMaxTokens: cfg.maxTokens custom prioritaire, puis table, puis placeholder', () => {
+  delete lsStore['marexcode_auto_models'];
+  MODEL_CONTEXT_LIMITS['model-code'] = 100000;
+  try {
+    const agent = { id: 'code', model: 'model-code', maxTokens: 32000 };
+    assert.equal(getEffectiveMaxTokens('code', agent), 100000, 'table avant placeholder');
+    setAutoRoleConfig('code', { maxTokens: 8000 });
+    assert.equal(getEffectiveMaxTokens('code', agent), 8000, 'custom explicite prioritaire sur la table');
+    setAutoRoleConfig('code', { maxTokens: null });
+    assert.equal(getEffectiveMaxTokens('code', agent), 100000, 'retrait du custom → retour table');
+    setAutoRoleConfig('code', { maxTokens: -5 });
+    assert.equal(getEffectiveMaxTokens('code', agent), 100000, 'custom invalide ignoré');
+    setAutoRoleConfig('code', { maxTokens: 0 });
+    assert.equal(getEffectiveMaxTokens('code', agent), 100000, 'custom 0 ignoré');
+  } finally {
+    delete MODEL_CONTEXT_LIMITS['model-code'];
+    delete lsStore['marexcode_auto_models'];
+  }
+});
+
+test('getEffectiveMaxTokens: custom sans table ni modèle connu → custom quand même', () => {
+  delete lsStore['marexcode_auto_models'];
+  const agent = { id: 'audit', model: 'model-audit', maxTokens: 16000 };
+  setAutoRoleConfig('audit', { maxTokens: 4000 });
+  assert.equal(getEffectiveMaxTokens('audit', agent), 4000, 'custom gagne même sans table');
+  delete lsStore['marexcode_auto_models'];
+});

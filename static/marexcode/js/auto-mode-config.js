@@ -67,6 +67,11 @@ export function getEffectiveModel(role, agent) {
 export const MODEL_CONTEXT_LIMITS = {};
 
 export function getEffectiveMaxTokens(role, agent) {
+  // Priorité : maxTokens custom explicite (config du rôle) > MODEL_CONTEXT_LIMITS
+  // (fenêtre déclarée du modèle) > placeholder agent.maxTokens.
+  const value = normalizeRoleValue(readStore()[role]);
+  const custom = value ? value.maxTokens : null;
+  if (typeof custom === 'number' && isFinite(custom) && custom > 0) return custom;
   const model = getEffectiveModel(role, agent);
   if (Object.prototype.hasOwnProperty.call(MODEL_CONTEXT_LIMITS, model)) {
     return MODEL_CONTEXT_LIMITS[model];
