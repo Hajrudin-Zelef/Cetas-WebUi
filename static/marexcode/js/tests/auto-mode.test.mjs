@@ -349,5 +349,43 @@ test('resolveAgent: maxTokens résolu en plus de model, AGENT_ROLES non muté', 
   }
 });
 
+test('runAutoMode: signal déjà aborted → aucune phase lancée, sortie propre', async () => {
+  let calls = 0;
+  let doneCalled = false;
+  const fakeStream = () => { calls++; };
+  const outputs = await runAutoMode({
+    task: 't',
+    tree: { files: [] },
+    signal: { aborted: true },
+    _stream: fakeStream,
+    onDone: () => { doneCalled = true; },
+  });
+  assert.equal(calls, 0, 'aucun stream ne doit être appelé après abort');
+  assert.deepEqual(outputs, [], 'aucune sortie');
+  assert.equal(doneCalled, false, 'onDone (succès complet) ne doit pas être appelé sur abort');
+});
+
+test('runAutoMode: abort pendant la phase 1 → phase 2 et 3 NON lancées, outputs partiels conservés', async () => {
+  const sig = { aborted: false };
+  let calls = 0;
+  const fakeStream = (model, history, onChunk, onDone) => {
+    calls++;
+    if (calls === 1) {
+      onChunk('partial-plan');
+      sig.aborted = true;
+    }
+    onDone(null, []);
+  };
+  const outputs = await runAutoMode({
+    task: 't',
+    tree: { files: [] },
+    signal: sig,
+    _stream: fakeStream,
+  });
+  assert.equal(calls, 1, 'la chaîne doit s\'arrêter après l\'abort, sans rappeler le stream');
+  assert.equal(outputs.length, 1, 'la phase 1 déjà terminée reste dans les sorties');
+  assert.equal(outputs[0].phase, 'plan');
+});
+
 
 

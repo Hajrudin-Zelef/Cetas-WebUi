@@ -51,6 +51,10 @@ export async function runAutoMode(opts) {
   const outputs = [];
 
   for (const phase of AUTO_PHASES) {
+    // Stop (abort du signal) vérifié AVANT chaque phase : après un AbortError en
+    // cours de phase, streamModelWithTools résout via onDone(null, []) — sans ce
+    // garde, la chaîne enchaînerait les phases suivantes avec du contenu vide.
+    if (signal && signal.aborted) return outputs;
     const agent = resolveAgent(phase);
     const effectiveModel = model || agent.model;
     const sys = composePrompt(agent, contextStore);
