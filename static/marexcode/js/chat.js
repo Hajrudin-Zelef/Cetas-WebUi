@@ -350,14 +350,18 @@ export function createChat(deps) {
             if (sidePanelSpinner) sidePanelSpinner.style.display = 'block';
         }
         if (mode !== 'all') return;
-        if (!thinkBlockEl) {
+        if (!thinkBlockEl && thinkText) {
             thinkBlockEl = document.createElement('div');
             thinkBlockEl.className = 'sp-think-block';
             thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
             if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
+        } else if (thinkBlockEl && !thinkBlockEl.isConnected && sidePanelBody) {
+            sidePanelBody.appendChild(thinkBlockEl);
         }
-        const txt = thinkBlockEl.querySelector('.sp-think-text');
-        if (txt) txt.textContent = thinkText;
+        if (thinkBlockEl) {
+            const txt = thinkBlockEl.querySelector('.sp-think-text');
+            if (txt && thinkText) txt.textContent = thinkText;
+        }
         if (sidePanelBody && panelScroll) panelScroll.onContentChange();
     }
 
@@ -407,14 +411,10 @@ export function createChat(deps) {
 
     function markThinkingDone() {
         // Termine la phase de raisonnement courante dès qu'un outil démarre.
-        // Flush le texte en attente (évite qu'un rAF tardif recrée un badge)
-        // puis libère badge/état pour qu'une nouvelle phase de raisonnement
-        // (itération suivante) puisse recréer un badge "Thinking" propre.
+        // On annule le rAF en attente mais on rend d'abord le texte bufferisé
+        // (crée/remplit le bloc au besoin) pour ne jamais afficher un bloc vide.
         if (_thinkRaf !== null) { cancelAnimationFrame(_thinkRaf); _thinkRaf = null; }
-        if (thinkBlockEl) {
-            const txt = thinkBlockEl.querySelector('.sp-think-text');
-            if (txt) txt.textContent = thinkText;
-        }
+        if (thinkText) _flushThinking();
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
@@ -427,11 +427,18 @@ export function createChat(deps) {
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
-        const block = thinkBlockEl;
         const raw = thinkText;
         thinkText = '';
-        if (block && raw) {
-            const txt = block.querySelector('.sp-think-text');
+        const mode = localStorage.getItem('marex-thinking-mode') || 'all';
+        if (raw && mode !== 'hidden') {
+            if (!thinkBlockEl) {
+                thinkBlockEl = document.createElement('div');
+                thinkBlockEl.className = 'sp-think-block';
+                thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
+                if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
+                if (mode === 'all') openSidePanel();
+            }
+            const txt = thinkBlockEl.querySelector('.sp-think-text');
             if (txt) {
                 txt.textContent = raw;
                 translateReasoning(raw).then((fr) => { if (fr) txt.textContent = fr; });
@@ -852,6 +859,7 @@ export function createChat(deps) {
         const sys = (skill ? skill + '\n\n' : '') + baseSys + instructionsBlock + skillsPrompt + outputInstruction;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
         pendingEl = null; pendingMd = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
+        userClosedPanel = false;
         _resetThinkStream();
         todoBlockEl = null; statusEl = null;
         currentToolGroupEl = null;
