@@ -1,0 +1,611 @@
+/* Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius. */
+/* ============================================================================
+ * Canvas — panneau artefact multi-fichiers + modal preview
+ * ========================================================================= */
+
+/* Bouton "ouvrir le canvas" dans la toolbar, à côté du toggle */
+.canvas-open-btn .canvas-open-count {
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-left: 2px;
+    opacity: 0.8;
+}
+
+/* Panneau canvas — volet latéral droit, remplace le panneau de réglages */
+.canvas-panel {
+    --canvas-width: 480px;
+    width: var(--canvas-width);
+    min-width: 320px;
+    max-width: 90vw;
+    height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-left: 1px solid var(--border);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Poignée de redimensionnement sur le bord gauche */
+.canvas-resize-handle {
+    position: absolute;
+    top: 0;
+    left: -4px;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 20;
+    background: transparent;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Petit bouton visuel (grip) centré verticalement pour indiquer qu'on peut
+   redimensionner le volet. Utilise ::before pour ne pas toucher au DOM. */
+.canvas-resize-handle::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 42px;
+    border-radius: 3px;
+    background: var(--border);
+    box-shadow:
+        inset 1px 0 0 rgba(255, 255, 255, 0.12),
+        0 1px 3px rgba(0, 0, 0, 0.18);
+    transition: background 0.15s, height 0.15s, width 0.15s;
+    pointer-events: none;
+}
+
+.canvas-resize-handle:hover::before,
+body.canvas-resizing .canvas-resize-handle::before {
+    background: var(--accent);
+    height: 56px;
+    width: 5px;
+}
+
+.canvas-resize-handle:hover,
+body.canvas-resizing .canvas-resize-handle {
+    background: transparent;
+}
+
+/* Pendant le drag : on désactive la sélection de texte globalement */
+body.canvas-resizing,
+body.canvas-resizing * {
+    user-select: none !important;
+    cursor: col-resize !important;
+}
+
+/* Pendant le drag : l'iframe preview ne capte plus la souris */
+body.canvas-resizing .canvas-preview-iframe {
+    pointer-events: none;
+}
+
+/* Quand le canvas est ouvert, on masque le panneau de réglages (la toolbar
+   latérale reste visible pour pouvoir basculer entre les deux volets). */
+body.canvas-active .right-panel {
+    display: none !important;
+}
+
+/* Onglets Code / Prévisualiser — style pill inspiré de .faq-tabs,
+   placés dans le header à côté du titre */
+.canvas-tabs {
+    display: flex;
+    background: var(--bg-hover);
+    border-radius: 9px;
+    padding: 3px;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.canvas-tab {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.canvas-tab:hover {
+    color: var(--text);
+}
+
+.canvas-tab.active {
+    background: var(--bg);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Vues d'onglet */
+.canvas-tab-view {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
+.canvas-tab-view.active {
+    display: flex;
+}
+
+.canvas-preview-view {
+    flex-direction: column;
+    background: #fff;
+}
+
+.canvas-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.canvas-header-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text);
+    flex-shrink: 0;
+}
+
+.canvas-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Sur des largeurs réduites, on masque le libellé "Canvas" — l'icône suffit */
+@media (max-width: 560px) {
+    .canvas-header-title span {
+        display: none;
+    }
+}
+
+.canvas-header-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.canvas-header-btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text);
+}
+
+.canvas-header-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.canvas-header-btn-danger:hover:not(:disabled) {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+/* Corps : sidebar fichiers + viewer + empty state
+   (display/flex sont gérés par .canvas-tab-view, pas redéfinis ici) */
+.canvas-body {
+    min-height: 0;
+    position: relative;
+}
+
+.canvas-sidebar {
+    width: 220px;
+    min-width: 180px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-sidebar);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.canvas-sidebar-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    padding: 10px 12px 6px;
+}
+
+.canvas-file-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 6px 8px;
+}
+
+.canvas-file-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 0.82rem;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text);
+    transition: background 0.1s;
+    user-select: none;
+}
+
+.canvas-file-item:hover {
+    background: var(--bg-hover);
+}
+
+.canvas-file-item.selected {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.canvas-file-item.entrypoint .canvas-file-name {
+    font-weight: 600;
+}
+
+/* Fichier en cours de génération par l'IA : fond animé type "shimmer" pour
+   signaler visuellement l'écriture en temps réel. */
+.canvas-file-item.streaming .canvas-file-name {
+    background-image: linear-gradient(
+        90deg,
+        rgba(59, 130, 246, 0.18) 0%,
+        rgba(59, 130, 246, 0.55) 50%,
+        rgba(59, 130, 246, 0.18) 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    background-position: 100% 0;
+    animation: canvas-streaming-shimmer 1.4s linear infinite;
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: -2px -6px;
+    color: var(--text);
+}
+
+.canvas-file-item.streaming .canvas-file-size::after {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #3b82f6;
+    margin-left: 6px;
+    vertical-align: middle;
+    animation: canvas-streaming-pulse 1s ease-in-out infinite;
+}
+
+@keyframes canvas-streaming-shimmer {
+    from { background-position: 100% 0; }
+    to   { background-position: -100% 0; }
+}
+
+@keyframes canvas-streaming-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.35; transform: scale(0.7); }
+}
+
+/* Variante sombre : on renforce légèrement l'opacité pour contraster */
+body.dark .canvas-file-item.streaming .canvas-file-name {
+    background-image: linear-gradient(
+        90deg,
+        rgba(96, 165, 250, 0.22) 0%,
+        rgba(96, 165, 250, 0.65) 50%,
+        rgba(96, 165, 250, 0.22) 100%
+    );
+}
+
+.canvas-file-icon {
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.canvas-file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.canvas-file-size {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.canvas-viewer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.canvas-viewer-title {
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 30px;
+}
+
+.canvas-viewer-title-name {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.canvas-diff-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.canvas-diff-toggle:hover {
+    color: var(--text);
+}
+
+.canvas-diff-toggle input[type="checkbox"] {
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Lignes de diff dans le viewer */
+.canvas-diff-line {
+    display: block;
+}
+
+/* --- Badge inline "Modification/Création/Suppression de {fichier}" --- */
+/* Émis par le parser canvas à la position exacte où l'IA modifie un fichier,
+   affiché dans le flux du message IA comme une petite pastille. */
+.canvas-inline-op {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    margin: 6px 0;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-hover);
+    font-size: 0.82em;
+    line-height: 1.4;
+    color: var(--text);
+    vertical-align: middle;
+    user-select: none;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.08s;
+}
+
+.canvas-inline-op:hover {
+    background: var(--accent-light, rgba(59, 130, 246, 0.1));
+    border-color: var(--accent, #3b82f6);
+}
+
+.canvas-inline-op:active {
+    transform: scale(0.97);
+}
+
+.canvas-inline-op-missing {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.canvas-inline-op-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.canvas-inline-op-create .canvas-inline-op-icon { color: #16a34a; }
+.canvas-inline-op-edit   .canvas-inline-op-icon { color: var(--accent, #3b82f6); }
+.canvas-inline-op-delete .canvas-inline-op-icon { color: #dc2626; }
+
+.canvas-inline-op-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 420px;
+}
+
+body.dark .canvas-inline-op {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.canvas-diff-line.added {
+    background: rgba(34, 197, 94, 0.18);
+}
+
+.canvas-diff-line.removed {
+    background: rgba(239, 68, 68, 0.18);
+    color: var(--text);
+}
+
+body.dark .canvas-diff-line.added {
+    background: rgba(34, 197, 94, 0.22);
+}
+
+body.dark .canvas-diff-line.removed {
+    background: rgba(239, 68, 68, 0.22);
+}
+
+.canvas-diff-marker {
+    display: inline-block;
+    width: 1em;
+    text-align: center;
+    user-select: none;
+    opacity: 0.7;
+    margin-right: 4px;
+}
+
+.canvas-diff-line.added .canvas-diff-marker {
+    color: #16a34a;
+}
+
+.canvas-diff-line.removed .canvas-diff-marker {
+    color: #dc2626;
+}
+
+.canvas-viewer-content {
+    flex: 1;
+    margin: 0;
+    padding: 12px 14px;
+    overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    white-space: pre;
+    tab-size: 4;
+}
+
+.canvas-line-num {
+    display: inline-block;
+    width: 3em;
+    margin-right: 12px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    text-align: right;
+    user-select: none;
+}
+
+.canvas-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 40px;
+    pointer-events: none;
+}
+
+.canvas-empty p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.6;
+}
+
+.canvas-empty em {
+    color: var(--text);
+    font-style: italic;
+    opacity: 0.75;
+}
+
+/* Footer : status */
+.canvas-footer {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-sidebar);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+}
+
+.canvas-status.error {
+    color: var(--danger);
+}
+
+/* Scrollbar fine pour le viewer et la liste */
+.canvas-viewer-content::-webkit-scrollbar,
+.canvas-file-list::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.canvas-viewer-content::-webkit-scrollbar-thumb,
+.canvas-file-list::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+.canvas-viewer-content::-webkit-scrollbar-thumb:hover,
+.canvas-file-list::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+/* ---- Iframe de prévisualisation (dans l'onglet Prévisualiser) ---- */
+.canvas-preview-iframe {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #fff;
+    display: block;
+}
+
+/* Responsive : sur petit écran, le canvas passe en overlay plein écran */
+@media (max-width: 900px) {
+    .canvas-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        width: 100vw !important;
+        min-width: 0;
+        max-width: none;
+        height: 100vh;
+        z-index: 9200;
+        border-left: none;
+    }
+    .canvas-resize-handle {
+        display: none;
+    }
+    #canvas-code-view {
+        flex-direction: column;
+    }
+    .canvas-sidebar {
+        width: 100%;
+        min-width: 0;
+        max-height: 35%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+    .canvas-header-btn span {
+        display: none;
+    }
+}
+

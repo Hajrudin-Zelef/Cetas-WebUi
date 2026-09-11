@@ -1,7 +1,51 @@
-core/
+# Secrets
+.env
+.env.docker
+.docker-env
+.vault/
+*.pem
+*.key
+*.crt
+secrets.txt
+
+# Confidentiel
+PriveDoc.md
+FIREWALL_PVE_PLAN.md
+index.md
+memory_session.md
+CLAUDE.md
+INSTRUCTIONS.md
+SECURITY_AUDIT.md
+cetas-page-snapshot.yml
+
+# Backend prive
+/core/
 setup.py
 setup.py.bak
 setup.py.or
-.vault/
+server/server.py.back
+server/encrypt_keys.py
+server/cloudflare-worker.js
+server/wrangler.toml
+tools/
+
+# Backups
+*.bak
+*.bak-*
+*.bak2
+
+# Dossiers internes
+Docs/
+Rapport/
+RAPPORT/
+TAF/
 __pycache__/
-PriveDoc.md
+searxng-data/
+node_modules/
+skills-lock.json
+*.22
+*.tar.gz
+apply_fix.sh
+*22
+.opencode/
+index.md

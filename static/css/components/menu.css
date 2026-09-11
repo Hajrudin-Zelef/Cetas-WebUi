@@ -1,0 +1,462 @@
+/* Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius. */
+/* ============================================================
+   Menu "+" (Plus d'options) — dropdown au-dessus de la saisie
+   ============================================================ */
+
+/* Bouton "+" */
+#plus-menu-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border-input);
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+#plus-menu-btn:hover {
+    color: var(--text);
+    border-color: var(--text-secondary);
+    background: var(--bg-hover);
+}
+#plus-menu-btn:active {
+    transform: scale(0.9);
+}
+#plus-menu-btn.open {
+    background: var(--active-cat-color, var(--accent));
+    color: #fff;
+    border-color: transparent;
+    transform: rotate(45deg);
+}
+
+body.dark .plus-menu-dropdown {
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+
+/* Items */
+.plus-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: background 0.1s;
+}
+.plus-menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.plus-menu-item-icon {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.plus-menu-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.plus-menu-item-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+.plus-menu-item-desc {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+}
+
+/* Séparateur */
+.plus-menu-sep {
+    height: 1px;
+    background: var(--border-light);
+    margin: 4px 0;
+}
+
+/* Section */
+.plus-menu-section {
+    padding: 6px 14px;
+}
+.plus-menu-section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+/* Row avec label + toggle */
+.plus-menu-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.plus-menu-row-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+}
+.plus-menu-row-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+}
+
+/* Toggle switch (style budget-toggle) */
+.plus-menu-toggle {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.plus-menu-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+.plus-menu-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--border-input);
+    border-radius: 20px;
+    transition: background 0.2s;
+}
+.plus-menu-toggle-slider::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+.plus-menu-toggle input:checked + .plus-menu-toggle-slider {
+    background: var(--accent);
+}
+.plus-menu-toggle input:checked + .plus-menu-toggle-slider::before {
+    transform: translateX(16px);
+}
+
+/* Pilules (Effort, Web search depth) */
+.plus-menu-pills {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+.plus-menu-pills-tight {
+    margin-top: 6px;
+}
+.plus-menu-pill {
+    flex: 1;
+    padding: 6px 0;
+    border: 1px solid var(--border-input);
+    border-radius: 18px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.74rem;
+    font-family: inherit;
+    font-weight: 500;
+    text-align: center;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+.plus-menu-pill:hover {
+    border-color: var(--text-secondary);
+    color: var(--text);
+}
+.plus-menu-pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.plus-menu-pill-hint {
+    font-size: 0.6rem;
+    font-weight: 400;
+    opacity: 0.65;
+}
+.plus-menu-pill.active .plus-menu-pill-hint {
+    opacity: 0.85;
+}
+
+/* Liste providers */
+.plus-menu-providers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.plus-menu-provider-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    background: var(--bg-sidebar);
+}
+.plus-menu-provider-badge img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.plus-menu-provider-badge .plus-provider-count {
+    opacity: 0.5;
+    font-size: 0.62rem;
+}
+
+/* Liste compétences */
+.plus-menu-skills {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.plus-menu-skill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.78rem;
+    border-radius: 6px;
+    text-align: left;
+    transition: background 0.1s;
+}
+.plus-menu-skill:hover {
+    background: var(--bg-hover);
+}
+.plus-menu-skill-icon {
+    flex-shrink: 0;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+}
+
+/* ── Rendu compact façon Claude ── */
+.message-text p {
+    margin: 0 0 0.5em 0;
+}
+
+.message-text ul, .message-text ol {
+    margin: 0.3em 0;
+    padding-left: 1.6em;
+}
+
+.message-text ul {
+    list-style: none;
+}
+
+.message-text ul li {
+    position: relative;
+    margin-bottom: 0.15em;
+}
+
+.message-text ul li::before {
+    content: "○";
+    position: absolute;
+    left: -1.3em;
+    font-size: 0.7em;
+    top: 0.35em;
+    color: var(--text-secondary);
+}
+
+.message-text ol li {
+    margin-bottom: 0.5em;
+}
+
+.message-text h1, .message-text h2, .message-text h3 {
+    margin: 1em 0 0.4em 0;
+    font-size: 1em;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.message-text strong {
+    font-weight: 700;
+}
+
+/* ===================================================================
+   FIX MOBILE : modale "API et Modèles" (.apikeys-modal) débordait
+   du viewport car sa largeur/hauteur desktop (840x640px) était en
+   !important et gagnait contre la règle mobile 95vw. De plus le menu
+   latéral (.apikeys-tabs) restait en colonne fixe de 150px au lieu
+   de passer au-dessus du contenu, et la barre de fournisseurs
+   (.providers-tabs) débordait horizontalement sans wrap ni scroll.
+   =================================================================== */
+@media (max-width: 768px) {
+    .apikeys-modal {
+        flex-direction: column !important;
+        width: 95vw !important;
+        max-width: 95vw !important;
+        height: 88vh !important;
+        max-height: 88vh !important;
+    }
+
+    /* Le menu de gauche (API et Modèles, Fonctionnalités, Budget...)
+       passe en barre horizontale scrollable au-dessus du contenu. */
+    .apikeys-tabs {
+        flex-direction: row;
+        width: 100%;
+        flex-shrink: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        border-right: none;
+        border-bottom: 1px solid var(--border-input);
+        border-radius: 12px 12px 0 0;
+        padding: 8px 8px;
+        gap: 4px;
+    }
+
+    .apikeys-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .apikeys-tab {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .apikeys-tabs-spacer {
+        display: none;
+    }
+
+    /* Barre de fournisseurs (OpenRouter, OpenAI, etc.) : scroll
+       horizontal au lieu de déborder du panneau. */
+    .providers-tabs {
+        overflow-x: auto;
+        overflow-y: hidden;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .providers-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .provider-tab {
+        flex-shrink: 0;
+    }
+
+    .apikeys-panel-body {
+        max-width: 100%;
+        overflow-x: hidden;
+        padding: 14px 14px 12px;
+    }
+
+    .provider-content {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .provider-section {
+        min-width: 0;
+    }
+
+    .apikeys-panel > h3 {
+        padding: 14px 44px 14px 16px;
+    }
+
+    .apikeys-panel:has(.apikey-intro) > h3 {
+        padding: 12px 44px 0 16px;
+    }
+}
+
+/* ===================================================================
+   FIX : différencier visuellement les onglets de la modale
+   Configuration (API et Modèles, Fonctionnalités, Budget, Apparence,
+   Stockage, Utilisateurs, Conversation, FAQ, Statistiques, Partager)
+   avec la couleur accent du thème.
+   =================================================================== */
+.apikeys-tab {
+    font-weight: 500;
+    color: var(--accent);
+}
+
+.apikeys-tab:hover {
+    color: var(--accent);
+    background: var(--bg-hover);
+}
+
+.apikeys-tab.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+}
+
+.apikeys-tab.active:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ===================================================================
+   FIX : le bouton sidebar-toggle (≡) était invisible en mobile car
+   sa position "left: 224px" héritée du desktop n'était jamais
+   réajustée pour la sidebar mobile en overlay.
+   =================================================================== */
+@media (max-width: 768px) {
+    .sidebar-toggle {
+        left: 8px !important;
+    }
+}
+
+/* ===================================================================
+   FIX : le bouton sidebar-toggle (≡) restait visible/cliquable
+   par-dessus la modale Configuration une fois celle-ci ouverte.
+   :has() teste l'attribut style de l'overlay, peu importe sa
+   position dans le DOM par rapport au bouton.
+   =================================================================== */
+@media (max-width: 768px) {
+    body:has(#apikeys-modal-overlay[style*="display: flex"]) .sidebar-toggle,
+    body:has(#apikeys-modal-overlay[style*="display:flex"]) .sidebar-toggle,
+    body:has(#apikeys-modal-overlay[style="display: flex;"]) .sidebar-toggle {
+        display: none !important;
+    }
+}
+
+
+/* FIX : remonter le champ de saisie sur l'écran d'accueil (aucune
+   conversation active) pour un rendu plus confortable en mobile.
+   #empty-chat-placeholder n'existe dans le DOM que sur cet écran ;
+   dès qu'une conversation démarre, il disparaît et le champ revient
+   à sa position normale en bas automatiquement. */
+@media (max-width: 768px) {
+    body:has(#empty-chat-placeholder) .input-area {
+        margin-bottom: 15dvh;
+    }
+}

@@ -1,0 +1,49 @@
+# Cetas + SearXNG — © Marexsoft Corporation. Fondateur Kouassi Marius.
+# Usage : docker compose up -d
+# Remplace le docker run manuel. SearXNG fournit la recherche web gratuite.
+
+services:
+  cetas:
+    build: .
+    ports:
+      - "8901:80"
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    volumes:
+      - ./.vault:/usr/share/nginx/html/.vault
+      - ./.env:/usr/share/nginx/html/.env
+      - ./.opencode/skills:/usr/share/nginx/html/.opencode/skills:ro
+      - cetas-data:/usr/share/nginx/html/conversations
+      - cetas-data:/app/data
+    networks:
+      - default
+
+  searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8904:8080"
+    env_file:
+      - .env.docker
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8904/
+    volumes:
+      - ./searxng-data:/etc/searxng
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1300
+
+volumes:
+  cetas-data:

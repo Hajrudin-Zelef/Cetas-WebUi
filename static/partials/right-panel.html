@@ -1,0 +1,238 @@
+    <aside class="right-panel" id="right-panel" style="display:none" hidden>
+        <div class="rp-panel-title">
+            Réglages de la conversation
+        </div>
+        <div class="rp-tabs">
+            <button class="rp-tab active" data-rp-tab="general">Général</button>
+            <button class="rp-tab" data-rp-tab="image">Image</button>
+        </div>
+        <div class="rp-tab-content active" id="rp-tab-general">
+
+            <div class="right-panel-section" id="rp-role-section">
+            <div class="right-panel-header">
+                <span class="right-panel-title">Rôle</span>
+                <input type="file" id="sp-import-file" accept=".json" hidden>
+        </div>
+        <div class="right-panel-select-row">
+            <select id="sp-select" class="model-select">
+                <option value="">Sélectionner un rôle enregistré</option>
+            </select>
+        </div>
+        <textarea id="sp-textarea" class="sp-textarea" placeholder="Sélectionnez un rôle (prompt system) ou renseignez-en un ici."></textarea>
+        <div class="right-panel-role-actions" id="rp-role-actions" style="display:none">
+            <button id="sp-edit-btn" class="rp-role-btn" title="Enregistrer les modifications" style="display:none">
+                <svg width="13" height="13" viewBox="0 0 24 24"><use href="images/icons.svg#icon-save"/></svg>
+                Enregistrer les modifications
+            </button>
+        </div>
+            </div>
+            <div class="right-panel-section" id="rp-max-history-images-section">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Nombre d'images à renvoyer</span><span class="rp-hint-btn custom-select-info" data-tooltip="À chaque message envoyé, Cetas renvoie aussi à l'IA les images des tours précédents pour qu'elle garde le contexte visuel. Renvoyer toutes les images d'une longue conversation peut être coûteux et lent : ce réglage limite leur nombre aux N plus récentes. Les images jointes au message en cours sont toujours envoyées intégralement, ce réglage ne concerne que les images des messages précédents. Mettez 0 pour ne renvoyer aucune image antérieure.">?</span></span>
+                    <span class="rp-range-value" id="rp-max-history-images-value">4</span>
+                </div>
+                <input type="range" id="rp-max-history-images-range" class="rp-range" min="0" max="12" step="1" value="4">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-effort-section" data-or-param="reasoning">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-effort-toggle"><span class="right-panel-title">Effort de raisonnement</span><span class="rp-hint-btn custom-select-info" data-tooltip="Contrôle la profondeur de réflexion sur les modèles avec raisonnement. Plus élevé = meilleure qualité mais plus lent et coûteux">?</span></span>
+                </div>
+                <select id="rp-effort-select" class="model-select rp-cat-select">
+                    <option value="minimal">Minimal</option>
+                    <option value="low">Faible</option>
+                    <option value="medium" selected>Moyen</option>
+                    <option value="high">Élevé</option>
+                </select>
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-temperature-section" data-or-param="temperature">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-temperature-toggle"><span class="right-panel-title">Température</span><span class="rp-hint-btn custom-select-info" data-tooltip="Basse = précis et déterministe, haute = créatif et varié">?</span></span>
+                    <span class="rp-range-value" id="rp-temperature-value">0.7</span>
+                </div>
+                <input type="range" id="rp-temperature-range" class="rp-range" min="0" max="2" step="0.1" value="0.7">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-top-p-section" data-or-param="top_p">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-top-p-toggle"><span class="right-panel-title">Top P</span><span class="rp-hint-btn custom-select-info" data-tooltip="Restreint les tokens aux plus probables. Valeur basse = vocabulaire plus prévisible">?</span></span>
+                    <span class="rp-range-value" id="rp-top-p-value">1.0</span>
+                </div>
+                <input type="range" id="rp-top-p-range" class="rp-range" min="0" max="1" step="0.05" value="1">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-max-tokens-section" data-or-param="max_tokens">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-max-tokens-toggle"><span class="right-panel-title">Tokens max</span><span class="rp-hint-btn custom-select-info" data-tooltip="Longueur maximale de la réponse générée">?</span></span>
+                    <span class="rp-range-value" id="rp-max-tokens-value">4096</span>
+                </div>
+                <input type="range" id="rp-max-tokens-range" class="rp-range" min="256" max="16384" step="256" value="4096">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-frequency-penalty-section" data-or-param="frequency_penalty">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-freq-penalty-toggle"><span class="right-panel-title">Pénalité de fréquence</span><span class="rp-hint-btn custom-select-info" data-tooltip="Pénalise les tokens déjà utilisés. Réduit les répétitions">?</span></span>
+                    <span class="rp-range-value" id="rp-freq-penalty-value">0.0</span>
+                </div>
+                <input type="range" id="rp-freq-penalty-range" class="rp-range" min="0" max="2" step="0.1" value="0">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-presence-penalty-section" data-or-param="presence_penalty">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-presence-penalty-toggle"><span class="right-panel-title">Pénalité de présence</span><span class="rp-hint-btn custom-select-info" data-tooltip="Encourage l'introduction de nouveaux sujets dans la réponse">?</span></span>
+                    <span class="rp-range-value" id="rp-presence-penalty-value">0.0</span>
+                </div>
+                <input type="range" id="rp-presence-penalty-range" class="rp-range" min="0" max="2" step="0.1" value="0">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-top-k-section" data-or-param="top_k" data-or-only="true" style="display:none">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-top-k-toggle"><span class="right-panel-title">Top K</span><span class="rp-hint-btn custom-select-info" data-tooltip="Limite à K tokens les plus probables. 0 = désactivé">?</span></span>
+                    <span class="rp-range-value" id="rp-top-k-value">0</span>
+                </div>
+                <input type="range" id="rp-top-k-range" class="rp-range" min="0" max="100" step="1" value="0">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-min-p-section" data-or-param="min_p" data-or-only="true" style="display:none">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-min-p-toggle"><span class="right-panel-title">Min P</span><span class="rp-hint-btn custom-select-info" data-tooltip="Probabilité minimale d'un token (relative au plus probable). 0 = désactivé">?</span></span>
+                    <span class="rp-range-value" id="rp-min-p-value">0</span>
+                </div>
+                <input type="range" id="rp-min-p-range" class="rp-range" min="0" max="1" step="0.01" value="0">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-top-a-section" data-or-param="top_a" data-or-only="true" style="display:none">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-top-a-toggle"><span class="right-panel-title">Top A</span><span class="rp-hint-btn custom-select-info" data-tooltip="Filtrage adaptatif basé sur le carré de la probabilité du token le plus probable">?</span></span>
+                    <span class="rp-range-value" id="rp-top-a-value">0</span>
+                </div>
+                <input type="range" id="rp-top-a-range" class="rp-range" min="0" max="1" step="0.01" value="0">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-rep-penalty-section" data-or-param="repetition_penalty" data-or-only="true" style="display:none">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-rep-penalty-toggle"><span class="right-panel-title">Répétition</span><span class="rp-hint-btn custom-select-info" data-tooltip="Pénalise la réutilisation des mêmes tokens. 1.0 = neutre, &gt;1 = pénalité">?</span></span>
+                    <span class="rp-range-value" id="rp-rep-penalty-value">1.0</span>
+                </div>
+                <input type="range" id="rp-rep-penalty-range" class="rp-range" min="1" max="2" step="0.05" value="1">
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-seed-section" data-or-param="seed" data-or-only="true" style="display:none">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-seed-toggle"><span class="right-panel-title">Seed</span><span class="rp-hint-btn custom-select-info" data-tooltip="Fixe la graine du générateur aléatoire pour obtenir des réponses reproductibles à paramètres identiques. Laissez vide pour une génération aléatoire.">?</span></span>
+                </div>
+                <input type="number" id="rp-seed-input" class="rp-text-input" placeholder="ex. 42" min="0" step="1">
+            </div>
+            <button id="rp-params-reset-btn" class="rp-role-btn" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24"><use href="images/icons.svg#icon-refresh"/></svg>
+                Réinitialiser les paramètres
+            </button>
+        </div>
+        <div class="rp-tab-content" id="rp-tab-image">
+            <div class="right-panel-section" id="rp-image-format-section">
+                <div class="right-panel-header">
+                    <span class="right-panel-title">Format d'image</span>
+                </div>
+                <div class="image-format-options">
+                    <button type="button" class="image-format-btn active" data-format="square" title="Carré (1:1)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                        <span>Carré</span>
+                    </button>
+                    <button type="button" class="image-format-btn" data-format="vertical" title="Portrait (9:16)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/></svg>
+                        <span>Portrait</span>
+                    </button>
+                    <button type="button" class="image-format-btn" data-format="horizontal" title="Paysage (16:9)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+                        <span>Paysage</span>
+                    </button>
+                </div>
+                <select id="rp-gemini-ratio-select" class="model-select rp-cat-select rp-inline-providers" data-providers="google,openrouter" style="margin-top: 8px;">
+                    <option value="" selected>Sélectionner un ratio précis</option>
+                    <option value="1:1">1:1</option>
+                    <option value="2:3">2:3</option>
+                    <option value="3:2">3:2</option>
+                    <option value="3:4">3:4</option>
+                    <option value="4:3">4:3</option>
+                    <option value="4:5">4:5</option>
+                    <option value="5:4">5:4</option>
+                    <option value="9:16">9:16</option>
+                    <option value="16:9">16:9</option>
+                    <option value="21:9">21:9</option>
+                </select>
+            </div>
+            <div class="right-panel-section" id="rp-quality-section" data-providers="openai">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Qualité</span><span class="rp-hint-btn custom-select-info" data-tooltip="Niveau de qualité du rendu. High est plus détaillé mais plus lent">?</span></span>
+                </div>
+                <select id="rp-quality-select" class="model-select rp-cat-select">
+                    <option value="auto">Auto</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high" selected>High</option>
+                </select>
+            </div>
+            <div class="right-panel-section" id="rp-openai-n-section" data-providers="openai">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Nombre d'images</span><span class="rp-hint-btn custom-select-info" data-tooltip="Nombre d'images à générer par requête">?</span></span>
+                    <span class="rp-range-value" id="rp-openai-n-value">1</span>
+                </div>
+                <input type="range" id="rp-openai-n-range" class="rp-range" min="1" max="4" step="1" value="1">
+            </div>
+            <div class="right-panel-section" id="rp-openai-background-section" data-providers="openai">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Fond</span><span class="rp-hint-btn custom-select-info" data-tooltip="Rendre le fond transparent, opaque ou laisser le modèle décider">?</span></span>
+                </div>
+                <select id="rp-openai-background-select" class="model-select rp-cat-select">
+                    <option value="auto" selected>Auto</option>
+                    <option value="opaque">Opaque</option>
+                    <option value="transparent">Transparent</option>
+                </select>
+            </div>
+            <div class="right-panel-section" id="rp-openai-format-section" data-providers="openai">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Format de sortie</span><span class="rp-hint-btn custom-select-info" data-tooltip="Format du fichier image généré">?</span></span>
+                </div>
+                <select id="rp-openai-format-select" class="model-select rp-cat-select">
+                    <option value="png" selected>PNG</option>
+                    <option value="jpeg">JPEG</option>
+                    <option value="webp">WebP</option>
+                </select>
+            </div>
+            <div class="right-panel-section" id="rp-openai-compression-section" data-providers="openai">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Compression</span><span class="rp-hint-btn custom-select-info" data-tooltip="Qualité JPEG/WebP (0 = plus compressé, 100 = moins compressé). Sans effet en PNG.">?</span></span>
+                    <span class="rp-range-value" id="rp-openai-compression-value">100</span>
+                </div>
+                <input type="range" id="rp-openai-compression-range" class="rp-range" min="0" max="100" step="1" value="100">
+            </div>
+            <div class="right-panel-section" id="rp-openai-moderation-section" data-providers="openai">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Modération</span><span class="rp-hint-btn custom-select-info" data-tooltip="Niveau de filtrage des contenus sensibles">?</span></span>
+                </div>
+                <select id="rp-openai-moderation-select" class="model-select rp-cat-select">
+                    <option value="auto" selected>Auto</option>
+                    <option value="low">Faible</option>
+                </select>
+            </div>
+            <div class="right-panel-section" id="rp-gemini-size-section" data-providers="google,openrouter">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Taille</span><span class="rp-hint-btn custom-select-info" data-tooltip="Résolution de l'image générée (1K, 2K, 4K)">?</span></span>
+                </div>
+                <select id="rp-gemini-size-select" class="model-select rp-cat-select">
+                    <option value="1K" selected>1K</option>
+                    <option value="2K">2K</option>
+                    <option value="4K">4K</option>
+                </select>
+            </div>
+            <div class="right-panel-section" id="rp-gemini-thinking-section" data-providers="google">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><span class="right-panel-title">Raisonnement</span><span class="rp-hint-btn custom-select-info" data-tooltip="Niveau de réflexion du modèle. Élevé donne une meilleure qualité mais est plus lent et coûteux">?</span></span>
+                </div>
+                <select id="rp-gemini-thinking-select" class="model-select rp-cat-select">
+                    <option value="minimal" selected>Minimal</option>
+                    <option value="high">Élevé</option>
+                </select>
+            </div>
+            <div class="right-panel-section rp-param-disabled" id="rp-img-seed-section" data-providers="openrouter" data-or-img-param="seed" style="display:none">
+                <div class="right-panel-header">
+                    <span class="rp-title-group"><input type="checkbox" class="rp-param-toggle" id="rp-img-seed-toggle"><span class="right-panel-title">Seed</span><span class="rp-hint-btn custom-select-info" data-tooltip="Fixe la graine du générateur aléatoire pour reproduire exactement la même image à paramètres identiques. Laissez vide pour une génération aléatoire.">?</span></span>
+                </div>
+                <input type="number" id="rp-img-seed-input" class="rp-text-input" placeholder="ex. 42" min="0" step="1">
+            </div>
+            <button id="rp-image-params-reset-btn" class="rp-role-btn" type="button">
+                <svg width="13" height="13" viewBox="0 0 24 24"><use href="images/icons.svg#icon-refresh"/></svg>
+                Réinitialiser les paramètres
+            </button>
+        </div>
+    </aside>

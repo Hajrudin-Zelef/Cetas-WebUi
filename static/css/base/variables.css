@@ -1,0 +1,302 @@
+/* Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius. */
+/* --- Splash de bienvenue ---
+   N'utilise QUE des propriétés compositées (opacity, transform) pour rester
+   fluide même quand le main thread est occupé (chargement des conversations,
+   parsing JSON, etc.). Le fond reprend var(--bg) du thème actif (déjà posé
+   par le script de thème en tête de body), donc pas de flash de fond clair
+   en mode sombre. */
+.kiro-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: var(--bg);
+    pointer-events: none;
+}
+/* Fade-out déclenché par JS quand la durée minimale (1.4s) ET le chargement
+   de la base sont tous deux satisfaits. */
+.kiro-splash.fading-out {
+    animation: kiro-splash-out 0.5s ease-in forwards;
+}
+.kiro-splash-logo {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+    will-change: transform, opacity;
+    animation: kiro-splash-logo-in 0.7s cubic-bezier(0.2, 0.8, 0.3, 1.1) both;
+}
+.kiro-splash-text {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.01em;
+    will-change: transform, opacity;
+    animation: kiro-splash-text-in 0.7s cubic-bezier(0.2, 0.8, 0.3, 1.1) 0.2s both;
+}
+/* Spinner : tourne en continu (transform), reste invisible par défaut.
+   Apparaît en fondu UNIQUEMENT si le splash reçoit `show-spinner` (posée
+   par JS quand la BD met plus de 1.5s à charger). transform + opacity =
+   propriétés compositées = animation fluide même sous charge JS. */
+.kiro-splash-spinner {
+    width: 26px;
+    height: 26px;
+    border: 2.5px solid color-mix(in srgb, var(--text) 18%, transparent);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: kiro-splash-spin 0.9s linear infinite;
+}
+.kiro-splash.show-spinner .kiro-splash-spinner {
+    animation:
+        kiro-splash-spin 0.9s linear infinite,
+        kiro-splash-spinner-in 0.4s ease-out forwards;
+}
+@keyframes kiro-splash-logo-in {
+    from { opacity: 0; transform: scale(0.6); }
+    to   { opacity: 1; transform: scale(1); }
+}
+@keyframes kiro-splash-text-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kiro-splash-spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes kiro-splash-spinner-in {
+    to { opacity: 0.85; }
+}
+@keyframes kiro-splash-out {
+    from { opacity: 1; }
+    to   { opacity: 0; visibility: hidden; }
+}
+
+/* --- Variables de thème --- */
+:root {
+    accent-color: #3B87CE;
+    /* Hauteur effective du toggle .catalog-type-btns (boutons + padding + bordure).
+       Sert aussi à dimensionner .catalog-section-header pour que les sections
+       sans toggle gardent la même hauteur visuelle. */
+    --catalog-toggle-h: 32px;
+    --bg: #ffffff;
+    --bg-sidebar: #fafafa;
+    --bg-msg-user: #f0f0f0;
+    --bg-msg-assistant: #f9f9f9;
+    --text: #1a1a1a;
+    --text-secondary: #888;
+    --border: #eaeaea;
+    --bg-input: #fff;
+    --bg-hover: #f0f0f0;
+    --bg-active: #e8e8e8;
+    --btn-bg: #1a1a1a;
+    --btn-text: #fff;
+    --border-light: #f0f0f0;
+    --border-input: #ddd;
+    --sp-title-color: #555;
+    --scrollbar-thumb: rgba(0,0,0,0.13);
+    --scrollbar-thumb-hover: rgba(0,0,0,0.25);
+    --tooltip-bg: #1f1f1f;
+    --tooltip-text: #f0f0f0;
+    --conv-delete-color: #999;
+    --link: #2563eb;
+    --link-hover: #1d4ed8;
+    --accent: #3B87CE;
+    --accent-dark: #2a6da3;
+    --accent-light: rgba(59, 135, 206, 0.08);
+    --accent-gradient: var(--accent-gradient);
+    --accent-gradient-active: var(--accent-gradient-active);
+    --danger: #dc2626;
+    --danger-dark: #b91c1c;
+    --danger-light: rgba(220, 38, 38, 0.1);
+    --bg-thinking: #fdfdfd;
+
+}
+
+body.dark {
+    --bg: #1a1a1a;
+    --bg-sidebar: #212121;
+    --bg-msg-user: #2a2a2a;
+    --bg-msg-assistant: #323232;
+    --text: #e0e0e0;
+    --text-secondary: #999;
+    --border: #2e2e2e;
+    --bg-input: #2a2a2a;
+    --bg-hover: #2e2e2e;
+    --bg-active: #3a3a3a;
+    --btn-bg: #e0e0e0;
+    --btn-text: #1a1a1a;
+    --border-light: #2e2e2e;
+    --border-input: #444;
+    --sp-title-color: #aaa;
+    --scrollbar-thumb: rgba(255,255,255,0.13);
+    --scrollbar-thumb-hover: rgba(255,255,255,0.28);
+    --tooltip-bg: #2a2a2a;
+    --tooltip-text: #e8e8e8;
+    --conv-delete-color: #777;
+    --link: #60a5fa;
+    --link-hover: #93bbfd;
+    --accent: #3B87CE;
+    --accent-dark: #2a6da3;
+    --accent-light: rgba(59, 135, 206, 0.12);
+    --accent-gradient: var(--accent-gradient);
+    --accent-gradient-active: var(--accent-gradient-active);
+    --danger: #dc2626;
+    --danger-dark: #b91c1c;
+    --danger-light: rgba(220, 38, 38, 0.15);
+    --bg-thinking: #1e1e1e;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.theme-auto {
+        --bg: #1a1a1a;
+        --bg-sidebar: #212121;
+        --bg-msg-user: #2a2a2a;
+        --bg-msg-assistant: #323232;
+        --text: #e0e0e0;
+        --text-secondary: #999;
+        --border: #2e2e2e;
+        --bg-input: #2a2a2a;
+        --bg-hover: #2e2e2e;
+        --bg-active: #3a3a3a;
+        --btn-bg: #e0e0e0;
+        --btn-text: #1a1a1a;
+        --border-light: #2e2e2e;
+        --border-input: #444;
+        --sp-title-color: #aaa;
+        --scrollbar-thumb: rgba(255,255,255,0.13);
+        --scrollbar-thumb-hover: rgba(255,255,255,0.28);
+        --tooltip-bg: #2a2a2a;
+        --tooltip-text: #e8e8e8;
+        --conv-delete-color: #777;
+        --link: #60a5fa;
+        --link-hover: #93bbfd;
+        --accent: #3B87CE;
+        --accent-dark: #2a6da3;
+        --accent-light: rgba(59, 135, 206, 0.12);
+        --accent-gradient: var(--accent-gradient);
+        --accent-gradient-active: var(--accent-gradient-active);
+        --danger: #dc2626;
+        --danger-dark: #b91c1c;
+        --danger-light: rgba(220, 38, 38, 0.15);
+        --bg-thinking: #1e1e1e;
+    }
+    body.theme-auto .message-text pre {
+        background: rgba(255,255,255,0.08);
+    }
+    body.theme-auto .message-text code {
+        background: rgba(255,255,255,0.1);
+    }
+    body.theme-auto .message-text th {
+        background: rgba(255,255,255,0.06);
+    }
+    body.theme-auto .web-search-toggle.active {
+        color: var(--link);
+        border-color: var(--link);
+        background: rgba(96, 165, 250, 0.12);
+    }
+    body.theme-auto .model-alert {
+        background:
+            linear-gradient(rgba(59, 135, 206, 0.10), rgba(59, 135, 206, 0.10)),
+            var(--bg);
+        color: #e8e8e8;
+        border-color: rgba(59, 135, 206, 0.4);
+    }
+    body.theme-auto #token-info,
+    body.theme-auto #cost-info {
+        background: rgba(30, 30, 30, 0.85);
+    }
+    body.theme-auto .input-wrapper:focus-within {
+        border-color: var(--active-cat-color, #3B87CE);
+    }
+    body.theme-auto .input-action-btn {
+        background: var(--bg-input);
+        border-color: var(--border-input);
+    }
+    body.theme-auto .input-action-btn.active {
+        color: var(--link);
+        border-color: rgba(96, 165, 250, 0.4);
+        background: rgba(96, 165, 250, 0.08);
+        box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.08);
+    }
+    body.theme-auto .input-action-btn.active:hover {
+        background: rgba(96, 165, 250, 0.15);
+    }
+    body.theme-auto .input-action-arrow:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+    body.theme-auto .input-action-btn.active .input-action-arrow {
+        border-left-color: rgba(96, 165, 250, 0.2);
+    }
+    body.theme-auto .faq-answer code {
+        background: rgba(255,255,255,0.08);
+    }
+    body.theme-auto .models-error {
+        background: #3b1111;
+        border-color: #7f1d1d;
+        color: #fca5a5;
+    }
+    body.theme-auto .budget-alert-popup {
+        box-shadow:
+            0 4px 12px rgba(0,0,0,0.2),
+            0 16px 40px rgba(0,0,0,0.4);
+    }
+    body.theme-auto .code-copy-btn {
+        background: rgba(255,255,255,0.2);
+    }
+    body.theme-auto .code-copy-btn:hover {
+        background: rgba(255,255,255,0.35);
+    }
+    .theme-auto .conv-search {
+        background-color: #2a2a2a;
+    }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+html, body {
+    overflow-x: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    touch-action: manipulation;
+    -webkit-overflow-scrolling: touch;
+}
+
