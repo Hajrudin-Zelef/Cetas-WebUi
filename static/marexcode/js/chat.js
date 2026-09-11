@@ -350,19 +350,7 @@ export function createChat(deps) {
             thinkBlockEl.className = 'sp-think-block';
             thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
             if (sidePanelBody && mode === 'all') sidePanelBody.appendChild(thinkBlockEl);
-            const group = ensureToolGroup();
-            thinkStepEl = document.createElement('div');
-            thinkStepEl.className = 'chat-step-line chat-think-line';
-            thinkStepEl.innerHTML = '<span class="step-icon">✦</span><span class="step-label">Thought…</span>';
-            group.appendChild(thinkStepEl);
             autoScroll.onContentChange();
-        }
-        if (!thinkStepEl._timerStart) {
-            thinkStepEl._timerStart = Date.now();
-            thinkStepEl._timerInterval = setInterval(() => {
-                const el = thinkStepEl.querySelector('.step-label');
-                if (el) el.textContent = 'Thought: ' + (Date.now() - thinkStepEl._timerStart) + 'ms';
-            }, 50);
         }
         const txt = thinkBlockEl.querySelector('.sp-think-text');
         if (txt && mode === 'all') txt.textContent += t;
@@ -405,11 +393,6 @@ export function createChat(deps) {
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
-        if (thinkStepEl && thinkStepEl._timerInterval) {
-            clearInterval(thinkStepEl._timerInterval);
-            const el = thinkStepEl.querySelector('.step-label');
-            if (el) el.textContent = 'Thought: ' + (Date.now() - thinkStepEl._timerStart) + 'ms';
-        }
         const block = thinkBlockEl;
         const raw = thinkText;
         thinkText = '';
@@ -1058,7 +1041,8 @@ export function createChat(deps) {
         if (!d || !d.phase) return;
         if (d.phase === 'start') {
             rawAcc = '';
-            addChatToolBlock(d.name, d.args, { pending: true });
+            const _line = addChatToolBlock(d.name, d.args, { pending: true });
+            if (_line) _line._t0 = Date.now();
             const path = d.args && (d.args.path || d.args.file_path || d.args.filePath);
             const actionMap = {
                 Bash: 'Running command' + (d.args && d.args.command ? ': ' + d.args.command.substring(0, 40) : '') + '…',
@@ -1084,6 +1068,16 @@ export function createChat(deps) {
                 const label = getStepLabel(d.name, d.args, d.result);
                 const labelEl = last.querySelector('.step-label');
                 if (labelEl) labelEl.textContent = label;
+                if (last._t0) {
+                    let durEl = last.querySelector('.step-duration');
+                    if (!durEl) {
+                        durEl = document.createElement('span');
+                        durEl.className = 'step-duration';
+                        last.appendChild(durEl);
+                    }
+                    durEl.textContent = (Date.now() - last._t0) + 'ms';
+                    last._t0 = 0;
+                }
             }
         }
     });

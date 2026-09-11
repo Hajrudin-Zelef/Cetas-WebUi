@@ -1222,11 +1222,10 @@ html,body{
 .tool-badge-neutral{ background:var(--bg-input-btn); color:var(--accent); }
 .tool-badge-bash{ background:#2a1f00; color:#f0c040; }
 .chat-steps{ display:flex; flex-direction:column; gap:4px; padding:8px 0; font-family:monospace; font-size:12.5px; }
-.chat-step-line{ display:flex; align-items:center; gap:8px; color:var(--text-secondary); opacity:0.85; }
+.chat-step-line{ display:flex; align-items:center; gap:8px; color:var(--text-tertiary); opacity:0.65; }
 .step-icon{ color:var(--accent); width:14px; text-align:center; flex-shrink:0; }
 .step-label{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.chat-think-line .step-icon,
-.chat-think-line .step-label{ color:var(--sky); opacity:1; }
+.step-duration{ margin-left:auto; padding-left:10px; font-variant-numeric:tabular-nums; opacity:0.85; }
 .chat-todo-block{ font-size:12.5px; line-height:1.45; font-family:monospace; }
 .chat-todo-header,
 .chat-todo-item,
