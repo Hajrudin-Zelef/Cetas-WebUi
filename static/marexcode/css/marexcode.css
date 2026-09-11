@@ -1122,7 +1122,6 @@ html,body{
   max-height:46vh;
   margin-top:20px;
   overflow:hidden;
-  background:#000000;
   border:1px solid var(--border);
   border-radius:14px;
   display:flex;
