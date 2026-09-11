@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { AGENT_ROLES, resolveAgent, getToolsForRole } from '../agents.js';
 import { classifyTask } from '../task-classifier.js';
+import { buildProjectIndex, checkCompaction, estimateTokens, COMPACTION_THRESHOLD } from '../context-store.js';
 
 const VALID_TOOL_NAMES = ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob', 'Ls', 'TodoWrite', 'LSP'];
 
@@ -54,3 +55,66 @@ test('classifyTask: code par défaut', () => {
   assert.equal(classifyTask(null), 'code');
   assert.equal(classifyTask(undefined), 'code');
 });
+
+test('buildProjectIndex: entries {path, size, ext}, jamais de contenu', () => {
+  const tree = { files: [
+    { path: 'src/app.js', type: 'file', size: 1200, content: 'var x = 1;' },
+    { path: 'README.md', type: 'file', size: 40 },
+    { path: 'noext', type: 'file', size: 5 },
+  ] };
+  const index = buildProjectIndex(tree);
+  assert.equal(index.length, 3);
+  assert.deepEqual(index[0], { path: 'src/app.js', size: 1200, ext: '.js' });
+  assert.equal(index[1].ext, '.md');
+  assert.equal(index[2].ext, '');
+  assert.ok(!('content' in index[0]), 'le contenu ne doit pas être dans l\'index');
+  assert.ok(!('type' in index[0]), 'seuls path/size/ext sont exposés');
+});
+
+test('buildProjectIndex: accepte aussi une liste brute', () => {
+  const index = buildProjectIndex([{ path: 'a.py', size: 10 }]);
+  assert.equal(index.length, 1);
+  assert.equal(index[0].ext, '.py');
+});
+
+test('checkCompaction: history sous le seuil = inchangé', () => {
+  const history = [
+    { role: 'system', content: 'SYS' },
+    { role: 'user', content: 'petite question' },
+    { role: 'assistant', content: 'petite réponse' },
+  ];
+  const out = checkCompaction(history);
+  assert.equal(out, history);
+});
+
+test('checkCompaction: seuil dépassé → system + derniers tours intacts, anciens fusionnés en UN résumé', () => {
+  const big = 'x'.repeat(COMPACTION_THRESHOLD * 4 + 100);
+  const history = [
+    { role: 'system', content: 'SYS_PROMPT' },
+    { role: 'user', content: big },
+    { role: 'assistant', content: 'lecture', tool_calls: [
+      { id: '1', type: 'function', function: { name: 'Read', arguments: JSON.stringify({ file_path: 'src/app.js' }) } },
+      { id: '2', type: 'function', function: { name: 'Bash', arguments: JSON.stringify({ command: 'npm test' }) } },
+    ] },
+    { role: 'tool', tool_call_id: '1', content: 'ok' },
+    { role: 'tool', tool_call_id: '2', content: 'ok' },
+  ];
+  for (let i = 0; i < 6; i++) {
+    history.push({ role: i % 2 ? 'assistant' : 'user', content: `recent-${i}` });
+  }
+  assert.ok(estimateTokens(history) > COMPACTION_THRESHOLD, 'précondition: history au-dessus du seuil');
+
+  const out = checkCompaction(history);
+  assert.ok(out.length < history.length, 'la version compactée doit être plus courte');
+  assert.equal(out[0], history[0], 'le system prompt de tête est conservé intact');
+  assert.deepEqual(out.slice(-6), history.slice(-6), 'les 6 derniers tours sont conservés intacts');
+  const summaries = out.filter(m => m !== history[0] && String(m.content || '').includes('[Contexte précédent]'));
+  assert.equal(summaries.length, 1, 'exactement UN message résumé');
+  assert.ok(summaries[0].content.includes('src/app.js'), 'le résumé liste les fichiers lus');
+  assert.ok(summaries[0].content.includes('npm test'), 'le résumé liste les commandes exécutées');
+});
+
+test('estimateTokens: ~4 caractères par token', () => {
+  assert.equal(estimateTokens([{ role: 'user', content: 'x'.repeat(400) }]), 100);
+});
+
