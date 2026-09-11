@@ -5,10 +5,172 @@ import { initRouter } from './router.js';
 import { loadProfilePage } from './profile.js';
 import { COMPETENCES } from './skills.js';
 import { getPermission, setPermission, checkToolPermission, getRule, setRule, isAutoAllowWorkspace, setAutoAllowWorkspace } from './marex-permission.js';
-import { getAutoModelConfig, setAutoModel, getAutoRoleConfig } from './auto-mode-config.js';
-import { resolveAgent } from './agents.js';
+import { getAutoRoleConfig, setAutoRoleConfig, MODEL_CONTEXT_LIMITS } from './auto-mode-config.js';
+import { resolveAgent, AGENT_ROLES } from './agents.js';
+
+const AUTO_ROLE_CARD_FILLERS = {};
 
 const $ = id => document.getElementById(id);
+
+// Mode Auto — carte de rôle (panneau Automatisation) : wiring complet
+// provider/modèle/contexte/température/maxTokens/prompt système/outils.
+function setupAutoRoleCard(role) {
+    const providerSel = document.getElementById('gen-auto-provider-' + role);
+    const modelSel = document.getElementById('gen-auto-model-' + role);
+    const ctxEl = document.getElementById('gen-auto-ctx-' + role);
+    const tempToggle = document.getElementById('gen-auto-ttemp-' + role);
+    const tempRange = document.getElementById('gen-auto-temp-' + role);
+    const tempVal = document.getElementById('gen-auto-tempval-' + role);
+    const maxTokInput = document.getElementById('gen-auto-maxtok-' + role);
+    const sysPromptTa = document.getElementById('gen-auto-sysprompt-' + role);
+    const resetPromptBtn = document.getElementById('gen-auto-resetprompt-' + role);
+    const toolsBox = document.getElementById('gen-auto-tools-' + role);
+    const roleAgent = AGENT_ROLES[role];
+    if (!providerSel || !modelSel || !roleAgent) return;
+
+    const models = (typeof MODELS_DATA !== 'undefined' && MODELS_DATA.text) ? MODELS_DATA.text : [];
+    const providers = [...new Set(models.map(m => m.editeur).filter(Boolean))].sort();
+    const defOpt = document.createElement('option');
+    defOpt.value = '';
+    defOpt.textContent = '(par défaut)';
+    providerSel.appendChild(defOpt);
+    for (const p of providers) {
+        const o = document.createElement('option');
+        o.value = p;
+        o.textContent = p;
+        providerSel.appendChild(o);
+    }
+
+    for (const toolName of roleAgent.tools) {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:12px;';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.toolName = toolName;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(toolName));
+        toolsBox.appendChild(label);
+    }
+
+    let promptTimer = null;
+
+    function populateModels(prov) {
+        modelSel.innerHTML = '';
+        const head = document.createElement('option');
+        head.value = '';
+        head.textContent = '(par défaut placeholder)';
+        modelSel.appendChild(head);
+        const list = prov ? models.filter(m => m.editeur === prov) : models;
+        for (const m of list) {
+            const o = document.createElement('option');
+            o.value = m.id;
+            o.textContent = m.label || m.id;
+            modelSel.appendChild(o);
+        }
+    }
+
+    function updateContextLine() {
+        const m = modelSel.value;
+        if (Object.prototype.hasOwnProperty.call(MODEL_CONTEXT_LIMITS, m)) {
+            const v = MODEL_CONTEXT_LIMITS[m];
+            ctxEl.textContent = 'Contexte : ' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v) + ' tokens';
+        } else {
+            ctxEl.textContent = 'Contexte : non renseigné (plafond par défaut appliqué)';
+        }
+    }
+
+    function refreshSummary() {
+        const s = document.getElementById('gen-auto-summary-' + role);
+        if (!s) return;
+        const cfgModel = String(getAutoRoleConfig(role).model || '').trim();
+        s.textContent = cfgModel ? resolveAgent(role).model : '(non configuré)';
+    }
+
+    function fillFromConfig() {
+        const cfg = getAutoRoleConfig(role);
+        const prov = typeof cfg.provider === 'string' ? cfg.provider : '';
+        providerSel.value = providers.indexOf(prov) !== -1 ? prov : '';
+        populateModels(prov);
+        const modelCfg = typeof cfg.model === 'string' ? cfg.model.trim() : '';
+        modelSel.value = [...modelSel.options].some(o => o.value === modelCfg) ? modelCfg : '';
+        updateContextLine();
+        refreshSummary();
+        const t = (typeof cfg.temperature === 'number' && isFinite(cfg.temperature)) ? cfg.temperature : null;
+        tempToggle.checked = t !== null;
+        tempRange.disabled = t === null;
+        tempRange.value = t !== null ? String(t) : '0.7';
+        tempVal.textContent = t !== null ? String(t) : '—';
+        maxTokInput.value = (typeof cfg.maxTokens === 'number' && cfg.maxTokens > 0) ? String(cfg.maxTokens) : '';
+        sysPromptTa.value = (typeof cfg.systemPrompt === 'string' && cfg.systemPrompt.trim()) ? cfg.systemPrompt : roleAgent.systemPrompt;
+        const toolsCfg = (Array.isArray(cfg.tools) && cfg.tools.length) ? cfg.tools : roleAgent.tools;
+        toolsBox.querySelectorAll('input[type=checkbox]').forEach(cb => {
+            cb.checked = toolsCfg.indexOf(cb.dataset.toolName) !== -1;
+        });
+    }
+
+    providerSel.addEventListener('change', () => {
+        populateModels(providerSel.value);
+        modelSel.value = '';
+        updateContextLine();
+        setAutoRoleConfig(role, { provider: providerSel.value || null });
+        refreshSummary();
+    });
+
+    modelSel.addEventListener('change', () => {
+        updateContextLine();
+        refreshSummary();
+        setAutoRoleConfig(role, { model: modelSel.value || null });
+    });
+
+    tempToggle.addEventListener('change', () => {
+        tempRange.disabled = !tempToggle.checked;
+        if (tempToggle.checked) {
+            const t = parseFloat(tempRange.value);
+            tempVal.textContent = String(t);
+            setAutoRoleConfig(role, { temperature: t });
+        } else {
+            tempVal.textContent = '—';
+            setAutoRoleConfig(role, { temperature: null });
+        }
+    });
+
+    tempRange.addEventListener('input', () => {
+        tempVal.textContent = String(parseFloat(tempRange.value));
+    });
+    tempRange.addEventListener('change', () => {
+        if (tempToggle.checked) setAutoRoleConfig(role, { temperature: parseFloat(tempRange.value) });
+    });
+
+    maxTokInput.addEventListener('change', () => {
+        const n = parseInt(maxTokInput.value, 10);
+        setAutoRoleConfig(role, { maxTokens: (n && n > 0) ? n : null });
+    });
+
+    sysPromptTa.addEventListener('input', () => {
+        clearTimeout(promptTimer);
+        promptTimer = setTimeout(() => {
+            const isDefault = sysPromptTa.value.trim() === roleAgent.systemPrompt.trim();
+            setAutoRoleConfig(role, { systemPrompt: isDefault ? null : sysPromptTa.value });
+        }, 500);
+    });
+
+    resetPromptBtn.addEventListener('click', () => {
+        clearTimeout(promptTimer);
+        sysPromptTa.value = roleAgent.systemPrompt;
+        setAutoRoleConfig(role, { systemPrompt: null });
+    });
+
+    toolsBox.addEventListener('change', (e) => {
+        if (!e.target || e.target.type !== 'checkbox') return;
+        const checked = [...toolsBox.querySelectorAll('input[type=checkbox]')]
+            .filter(cb => cb.checked)
+            .map(cb => cb.dataset.toolName);
+        setAutoRoleConfig(role, { tools: checked });
+    });
+
+    fillFromConfig();
+    AUTO_ROLE_CARD_FILLERS[role] = fillFromConfig;
+}
 
 // Préférences du menu "+" (Réflexion / Recherche web) — visuel pour l'instant,
 // branchement fonctionnel réel à faire une fois streamModelWithTools consulté.
@@ -743,24 +905,8 @@ function loadGeneralPanel() {
         });
     }
 
-    // Mode Auto — modèles par rôle (Réglages > Comportement)
-    (function setupAutoModelSelects() {
-        const roles = [['plan', 'gen-auto-model-plan'], ['code', 'gen-auto-model-code'], ['audit', 'gen-auto-model-audit']];
-        const models = (typeof MODELS_DATA !== 'undefined' && MODELS_DATA.text) ? MODELS_DATA.text : [];
-        const cfg = getAutoModelConfig();
-        for (const [role, id] of roles) {
-            const sel = document.getElementById(id);
-            if (!sel) continue;
-            for (const m of models) {
-                const opt = document.createElement('option');
-                opt.value = m.id;
-                opt.textContent = m.label || m.id;
-                sel.appendChild(opt);
-            }
-            sel.value = typeof cfg[role] === 'string' ? cfg[role] : '';
-            sel.addEventListener('change', () => { setAutoModel(role, sel.value); });
-        }
-    })();
+    // Mode Auto — cartes de rôle (panneau Automatisation)
+    ['plan', 'code', 'audit'].forEach(role => setupAutoRoleCard(role));
 
     // Mode Auto — Pipeline (panneau Automatisation)
     const autoModeActive = document.getElementById('gen-auto-mode-active');
@@ -1499,7 +1645,12 @@ function setupSettings(router) {
             document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
             const panel = document.querySelector('.settings-panel[data-content="' + target + '"]');
             if (panel) panel.classList.add('active');
-            if (target === 'automatisation') refreshAutoOverview();
+            if (target === 'automatisation') {
+                refreshAutoOverview();
+                for (const r of ['plan', 'code', 'audit']) {
+                    if (typeof AUTO_ROLE_CARD_FILLERS[r] === 'function') AUTO_ROLE_CARD_FILLERS[r]();
+                }
+            }
             refs.settingsContent.scrollTop = 0;
         });
     });

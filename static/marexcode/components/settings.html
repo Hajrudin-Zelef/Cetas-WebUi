@@ -166,12 +166,6 @@
             <div class="settings-row"><div class="settings-row-text"><h3>Write</h3><p>Confirmer avant d'écrire/créer des fichiers.</p></div><select id="gen-perm-write" class="settings-select"><option value="allow">Toujours autoriser</option><option value="ask">Demander</option><option value="deny">Toujours bloquer</option></select></div>
             <div class="settings-row"><div class="settings-row-text"><h3>Edit</h3><p>Confirmer avant de modifier des fichiers existants.</p></div><select id="gen-perm-edit" class="settings-select"><option value="allow">Toujours autoriser</option><option value="ask">Demander</option><option value="deny">Toujours bloquer</option></select></div>
           </div>
-          <div class="settings-group-label">Mode Auto</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Plan</h3><p>Modèle utilisé par l'agent Architecte (phase de plan).</p></div><select id="gen-auto-model-plan" class="settings-select"><option value="">(par défaut)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Code</h3><p>Modèle utilisé par l'agent Développeur (phase d'implémentation).</p></div><select id="gen-auto-model-code" class="settings-select"><option value="">(par défaut)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Audit</h3><p>Modèle utilisé par l'agent Auditeur (phase de vérification).</p></div><select id="gen-auto-model-audit" class="settings-select"><option value="">(par défaut)</option></select></div>
-          </div>
           <div class="settings-group-label">Bac à sable</div>
           <div class="settings-card">
             <div class="settings-row"><div class="settings-row-text"><h3>Sandbox strict</h3><p>Restreint l'agent aux seuls fichiers du workspace actif. Désactivé = accès étendu au serveur.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-sandbox-strict" checked><span class="settings-toggle-slider"></span></label></div>
@@ -251,6 +245,54 @@
             <div class="settings-row"><div class="settings-row-text"><h3>Approbation manuelle après Plan</h3><p>Pause le pipeline après la phase Plan pour validation humaine avant le Code.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-approval"><span class="settings-toggle-slider"></span></label></div>
           </div>
           <div class="settings-group-label">Rôles</div>
+          <div class="settings-card auto-role-card" data-auto-role="plan">
+            <div class="settings-row"><div class="settings-row-text"><h3>Plan — Architecte</h3><p>Modèle et réglages de la phase de plan.</p></div><span class="settings-row-value" id="gen-auto-summary-plan">—</span></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Provider</h3></div><select id="gen-auto-provider-plan" class="settings-select"><option value="">(par défaut)</option></select></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Modèle</h3></div><select id="gen-auto-model-plan" class="settings-select"><option value="">(par défaut placeholder)</option></select></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Contexte</h3></div><span class="settings-row-value" id="gen-auto-ctx-plan">—</span></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Température</h3><p>Laisser le provider décider si non définie.</p></div><div style="display:flex;align-items:center;gap:8px;"><label class="settings-toggle"><input type="checkbox" id="gen-auto-ttemp-plan"><span class="settings-toggle-slider"></span></label><input type="range" id="gen-auto-temp-plan" min="0" max="2" step="0.1" disabled style="width:110px;"><span id="gen-auto-tempval-plan" style="min-width:28px;">—</span></div></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>maxTokens custom</h3><p>auto (contexte natif ou plafond par défaut)</p></div><input type="number" id="gen-auto-maxtok-plan" min="1" placeholder="auto" class="settings-select" style="width:110px;"></div>
+            <div class="settings-row" style="flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;"><h3>Prompt système</h3><button class="settings-btn" id="gen-auto-resetprompt-plan">Réinitialiser au défaut</button></div>
+              <textarea id="gen-auto-sysprompt-plan" rows="6" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
+            </div>
+            <div class="settings-row" style="flex-direction:column;gap:6px;">
+              <h3>Outils actifs</h3>
+              <div id="gen-auto-tools-plan" style="display:flex;flex-wrap:wrap;gap:10px 14px;"></div>
+            </div>
+          </div>
+          <div class="settings-card auto-role-card" data-auto-role="code">
+            <div class="settings-row"><div class="settings-row-text"><h3>Code — Développeur</h3><p>Modèle et réglages de la phase d'implémentation.</p></div><span class="settings-row-value" id="gen-auto-summary-code">—</span></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Provider</h3></div><select id="gen-auto-provider-code" class="settings-select"><option value="">(par défaut)</option></select></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Modèle</h3></div><select id="gen-auto-model-code" class="settings-select"><option value="">(par défaut placeholder)</option></select></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Contexte</h3></div><span class="settings-row-value" id="gen-auto-ctx-code">—</span></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Température</h3><p>Laisser le provider décider si non définie.</p></div><div style="display:flex;align-items:center;gap:8px;"><label class="settings-toggle"><input type="checkbox" id="gen-auto-ttemp-code"><span class="settings-toggle-slider"></span></label><input type="range" id="gen-auto-temp-code" min="0" max="2" step="0.1" disabled style="width:110px;"><span id="gen-auto-tempval-code" style="min-width:28px;">—</span></div></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>maxTokens custom</h3><p>auto (contexte natif ou plafond par défaut)</p></div><input type="number" id="gen-auto-maxtok-code" min="1" placeholder="auto" class="settings-select" style="width:110px;"></div>
+            <div class="settings-row" style="flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;"><h3>Prompt système</h3><button class="settings-btn" id="gen-auto-resetprompt-code">Réinitialiser au défaut</button></div>
+              <textarea id="gen-auto-sysprompt-code" rows="6" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
+            </div>
+            <div class="settings-row" style="flex-direction:column;gap:6px;">
+              <h3>Outils actifs</h3>
+              <div id="gen-auto-tools-code" style="display:flex;flex-wrap:wrap;gap:10px 14px;"></div>
+            </div>
+          </div>
+          <div class="settings-card auto-role-card" data-auto-role="audit">
+            <div class="settings-row"><div class="settings-row-text"><h3>Audit — Auditeur</h3><p>Modèle et réglages de la phase de vérification.</p></div><span class="settings-row-value" id="gen-auto-summary-audit">—</span></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Provider</h3></div><select id="gen-auto-provider-audit" class="settings-select"><option value="">(par défaut)</option></select></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Modèle</h3></div><select id="gen-auto-model-audit" class="settings-select"><option value="">(par défaut placeholder)</option></select></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Contexte</h3></div><span class="settings-row-value" id="gen-auto-ctx-audit">—</span></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Température</h3><p>Laisser le provider décider si non définie.</p></div><div style="display:flex;align-items:center;gap:8px;"><label class="settings-toggle"><input type="checkbox" id="gen-auto-ttemp-audit"><span class="settings-toggle-slider"></span></label><input type="range" id="gen-auto-temp-audit" min="0" max="2" step="0.1" disabled style="width:110px;"><span id="gen-auto-tempval-audit" style="min-width:28px;">—</span></div></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>maxTokens custom</h3><p>auto (contexte natif ou plafond par défaut)</p></div><input type="number" id="gen-auto-maxtok-audit" min="1" placeholder="auto" class="settings-select" style="width:110px;"></div>
+            <div class="settings-row" style="flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;"><h3>Prompt système</h3><button class="settings-btn" id="gen-auto-resetprompt-audit">Réinitialiser au défaut</button></div>
+              <textarea id="gen-auto-sysprompt-audit" rows="6" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
+            </div>
+            <div class="settings-row" style="flex-direction:column;gap:6px;">
+              <h3>Outils actifs</h3>
+              <div id="gen-auto-tools-audit" style="display:flex;flex-wrap:wrap;gap:10px 14px;"></div>
+            </div>
+          </div>
           <div class="settings-group-label">Comportement du flow</div>
           <div class="settings-group-label">Aperçu</div>
           <div class="settings-card">
