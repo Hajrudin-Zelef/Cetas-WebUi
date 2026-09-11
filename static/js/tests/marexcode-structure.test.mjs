@@ -125,6 +125,17 @@ test('chat.js : traduction FR du reasoning (OpenRouter free → DeepSeek → ang
     assert.match(mod, /not-french/, 'sortie non-FR doit déclencher le fallback');
 });
 
+test('chat.js : badge Thinking marqué done dès le démarrage d’un outil', () => {
+    const src = readFileSync(resolve(MX, 'js/chat.js'), 'utf8');
+    assert.match(src, /function markThinkingDone\(\)/, 'helper markThinkingDone requis');
+    assert.match(src, /markThinkingDone\(\);[\s\S]{0,40}addChatToolBlock\(/, 'markThinkingDone doit précéder addChatToolBlock dans le handler start');
+    const helper = src.slice(src.indexOf('function markThinkingDone()'), src.indexOf('function finishThinking()'));
+    assert.match(helper, /classList\.add\('done'\)/, 'le badge courant doit passer en done');
+    assert.match(helper, /thinkShimmer\.stop\(\)/, 'le shimmer doit être arrêté');
+    assert.match(helper, /thinkBadgeEl = null;/, 'reset thinkBadgeEl pour recréer un badge propre');
+    assert.match(helper, /_thinkOpened = false;/, 'reset _thinkOpened pour rouvrir le panneau');
+});
+
 test('composer.html : sélecteurs par outil (6)', () => {
     const html = read('components/composer.html');
     for (const t of ['read', 'grep', 'ls', 'write', 'edit', 'bash']) {

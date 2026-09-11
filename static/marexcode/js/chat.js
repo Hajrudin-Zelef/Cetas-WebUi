@@ -405,6 +405,23 @@ export function createChat(deps) {
         });
     }
 
+    function markThinkingDone() {
+        // Termine la phase de raisonnement courante dès qu'un outil démarre.
+        // Flush le texte en attente (évite qu'un rAF tardif recrée un badge)
+        // puis libère badge/état pour qu'une nouvelle phase de raisonnement
+        // (itération suivante) puisse recréer un badge "Thinking" propre.
+        if (_thinkRaf !== null) { cancelAnimationFrame(_thinkRaf); _thinkRaf = null; }
+        if (thinkBlockEl) {
+            const txt = thinkBlockEl.querySelector('.sp-think-text');
+            if (txt) txt.textContent = thinkText;
+        }
+        if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
+        if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
+        if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
+        thinkBadgeEl = null;
+        _thinkOpened = false;
+    }
+
     function finishThinking() {
         _resetThinkStream();
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
@@ -1064,6 +1081,7 @@ export function createChat(deps) {
         if (!d || !d.phase) return;
         if (d.phase === 'start') {
             rawAcc = '';
+            markThinkingDone();
             const _line = addChatToolBlock(d.name, d.args, { pending: true });
             if (_line) _line._t0 = Date.now();
             const path = d.args && (d.args.path || d.args.file_path || d.args.filePath);
