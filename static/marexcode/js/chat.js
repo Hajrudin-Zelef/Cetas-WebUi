@@ -2,13 +2,14 @@ export const MAREX_TOOLS = (typeof MAREXCODE_TOOLS !== 'undefined') ? MAREXCODE_
 
 import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions, trackActivity, getMemory, listTree } from './api.js';
 import { runAutoMode } from './runtime.js';
+import { createMarkdownRenderer } from './markdown/render.js';
 
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
         sidePanel, sidePanelBody, sidePanelEmpty, sidePanelSpinner, sidePanelClose } = deps;
     let session = null;
     let running = false;
-    let pendingEl = null, thinkBadgeEl = null, thinkBlockEl = null, thinkText = '';
+    let pendingEl = null, pendingMd = null, thinkBadgeEl = null, thinkBlockEl = null, thinkText = '';
     let rawAcc = '';
     let controller = null;
     let userClosedPanel = false;
@@ -20,6 +21,7 @@ export function createChat(deps) {
     let cachedInstructions = { global: '', workspace: '', memory: '' };
     let messageQueue = [];
     let pendingImages = [];
+    const md = createMarkdownRenderer();
 
     function setupImageDrop() {
         if (!ta) return;
@@ -136,7 +138,7 @@ export function createChat(deps) {
             if (useMarkdown && cls === 'assistant' && textParts) {
                 const inner = document.createElement('div');
                 inner.className = 'md';
-                inner.innerHTML = renderMarkdown(textParts);
+                md.render(inner, textParts);
                 m.appendChild(inner);
             } else if (textParts) {
                 m.textContent = textParts;
@@ -159,7 +161,7 @@ export function createChat(deps) {
         } else if (useMarkdown && cls === 'assistant') {
             const inner = document.createElement('div');
             inner.className = 'md';
-            inner.innerHTML = renderMarkdown(content || '');
+            md.render(inner, content || '');
             m.appendChild(inner);
         } else {
             m.textContent = content;
@@ -393,9 +395,10 @@ export function createChat(deps) {
             setRunning(false);
             finishThinking();
             if (pendingEl) {
-                pendingEl.innerHTML = '<div class="md">' + renderMarkdown(rawAcc) + '</div>';
+                if (pendingMd) md.finalize(pendingMd, rawAcc);
                 session.messages.push({ role: 'assistant', content: rawAcc });
                 pendingEl = null;
+                pendingMd = null;
             }
             if (onSave) onSave(session);
         }
@@ -404,6 +407,7 @@ export function createChat(deps) {
     function setSession(s) {
         session = s;
         thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null;
+        pendingMd = null;
         resetSidePanel();
         renderHistory();
         setChatVisible((session.messages || []).length > 0);
@@ -418,7 +422,7 @@ export function createChat(deps) {
         chatLog.innerHTML = '';
         fileContents = {};
         setChatVisible(false);
-        pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = '';
+        pendingEl = null; pendingMd = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = '';
         todoBlockEl = null; statusEl = null;
         resetSidePanel();
         return session;
@@ -770,16 +774,20 @@ export function createChat(deps) {
 
         const sys = (skill ? skill + '\n\n' : '') + baseSys + instructionsBlock + skillsPrompt + outputInstruction;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
-        pendingEl = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
+        pendingEl = null; pendingMd = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
         todoBlockEl = null; statusEl = null;
         currentToolGroupEl = null;
         pendingEl = addMsg('assistant', '', false);
+        pendingMd = document.createElement('div');
+        pendingMd.className = 'md';
+        pendingEl.appendChild(pendingMd);
         ensureStatusLine();
         updateStatus('Generating…');
 
         const onChunk = (chunk) => {
             rawAcc += chunk;
-            if (pendingEl) pendingEl.textContent = rawAcc;
+            if (pendingMd) md.update(pendingMd, rawAcc);
+            else if (pendingEl) pendingEl.textContent = rawAcc;
             chatLog.scrollTop = chatLog.scrollHeight;
         };
         const onDone = () => {
@@ -788,10 +796,10 @@ export function createChat(deps) {
             updateStatus('Done');
             updateQueueIndicator();
             if (pendingEl) {
-                const rendered = renderMarkdown(rawAcc);
-                pendingEl.innerHTML = '<div class="md">' + rendered + '</div>';
+                if (pendingMd) md.finalize(pendingMd, rawAcc);
                 session.messages.push({ role: 'assistant', content: rawAcc });
                 pendingEl = null;
+                pendingMd = null;
             }
             if (onSave) onSave(session);
             // Process queue
@@ -806,9 +814,10 @@ export function createChat(deps) {
             setRunning(false);
             finishThinking();
             if (pendingEl) {
-                pendingEl.innerHTML = '<div class="md">' + renderMarkdown(rawAcc) + '</div>';
+                if (pendingMd) md.finalize(pendingMd, rawAcc);
                 if (rawAcc) session.messages.push({ role: 'assistant', content: rawAcc });
                 pendingEl = null;
+                pendingMd = null;
             }
             if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
             addMsg('error', 'Error: ' + (err && err.message ? err.message : err));
@@ -835,9 +844,10 @@ export function createChat(deps) {
             setRunning(false);
             finishThinking();
             if (pendingEl) {
-                pendingEl.innerHTML = '<div class="md">' + renderMarkdown(rawAcc) + '</div>';
+                if (pendingMd) md.finalize(pendingMd, rawAcc);
                 if (rawAcc) session.messages.push({ role: 'assistant', content: rawAcc });
                 pendingEl = null;
+                pendingMd = null;
             }
             if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
             addMsg('error', 'Error: ' + (err && err.message ? err.message : err));

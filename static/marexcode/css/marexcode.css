@@ -1703,3 +1703,9 @@ html,body{
 #dd-model.auto-locked{ opacity:0.45; pointer-events:none; }
 .auto-phase-badge{ font-size:11px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
 .auto-phase-content{ white-space:pre-wrap; word-break:break-word; }
+[data-component="markdown-code"]{ position:relative; }
+.markdown-copy-button{ position:absolute; top:8px; right:8px; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; padding:0; border:1px solid var(--border); border-radius:6px; background:var(--bg-input-btn); color:var(--text-secondary); cursor:pointer; opacity:0; transition:opacity .15s, color .15s, border-color .15s; }
+[data-component="markdown-code"]:hover .markdown-copy-button{ opacity:1; }
+.markdown-copy-button:hover{ color:var(--text-primary); }
+.markdown-copy-button[data-copied="true"]{ color:var(--accent); border-color:var(--accent); opacity:1; }
+@media (hover:none){ .markdown-copy-button{ opacity:1; } }
