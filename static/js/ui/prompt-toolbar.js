@@ -21,7 +21,6 @@ export function createPromptToolbar({
         let t = e || "";
         return 0 === (STATE.currentModel || STATE.currentSearchModel || "").indexOf("samagent-") && (t = (t ? t + "\n\n" : "") + samAgentBoostPrompt),
         window.Canvas && window.Canvas.isActive() && (t = (t ? t + "\n\n" : "") + window.Canvas.buildSystemPromptSuffix()),
-        t = (t ? t + "\n\n" : "") + "REASONING LANGUAGE: your internal reasoning and any thinking/chain-of-thought output must ALWAYS be in French, even when the user writes in English. The final answer still follows the user's language.",
         t;
     }
 

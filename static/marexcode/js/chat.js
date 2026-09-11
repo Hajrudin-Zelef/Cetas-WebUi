@@ -6,6 +6,7 @@ import { createMarkdownRenderer } from './markdown/render.js';
 import { createAutoScroll } from './auto-scroll.js';
 import { createTextShimmer } from './text-shimmer.js';
 import { createTextReveal } from './text-reveal.js';
+import { translateReasoning as translateReasoningText } from './reasoning-translate.js';
 
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
@@ -340,6 +341,7 @@ export function createChat(deps) {
     function onThinking(t) {
         const mode = localStorage.getItem('marex-thinking-mode') || 'all';
         if (mode === 'hidden') return;
+        thinkText += t;
         ensureThinkBadge();
         if (mode === 'all') openSidePanel();
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'block';
@@ -367,6 +369,38 @@ export function createChat(deps) {
         if (sidePanelBody && mode === 'all' && panelScroll) panelScroll.onContentChange();
     }
 
+    function _callOpenRouterFree(model, prompt) {
+        if (typeof proxyUrl !== 'function' || typeof proxyHeaders !== 'function') {
+            throw new Error('proxy helpers indisponibles');
+        }
+        const url = proxyUrl('openrouter', 'https://openrouter.ai/api/v1/chat/completions');
+        const headers = Object.assign({ 'Content-Type': 'application/json' }, proxyHeaders('openrouter', {}));
+        return fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ model: model, messages: [{ role: 'user', content: prompt }], stream: false }),
+        }).then(function (res) {
+            if (!res.ok) { const err = new Error('HTTP ' + res.status); err.status = res.status; throw err; }
+            return res.json();
+        }).then(function (data) {
+            const choice = data && data.choices && data.choices[0];
+            const msg = choice && choice.message;
+            return { text: (msg && msg.content) || '' };
+        });
+    }
+
+    function _callTranslationModel(step, prompt) {
+        if (step && step.provider === 'openrouter') return _callOpenRouterFree(step.model, prompt);
+        if (typeof streamText !== 'function') throw new Error('streamText indisponible');
+        return streamText(step.model, prompt);
+    }
+
+    async function translateReasoning(raw) {
+        return translateReasoningText(raw, _callTranslationModel, function (info) {
+            console.debug('[reasoning-translate] ' + info.provider + ' → ' + info.reason + (info.sample ? ' | ' + info.sample : ''));
+        });
+    }
+
     function finishThinking() {
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
@@ -375,6 +409,13 @@ export function createChat(deps) {
             clearInterval(thinkStepEl._timerInterval);
             const el = thinkStepEl.querySelector('.step-label');
             if (el) el.textContent = 'Thought: ' + (Date.now() - thinkStepEl._timerStart) + 'ms';
+        }
+        const block = thinkBlockEl;
+        const raw = thinkText;
+        thinkText = '';
+        if (block && raw) {
+            const txt = block.querySelector('.sp-think-text');
+            if (txt) translateReasoning(raw).then((fr) => { if (fr) txt.textContent = fr; });
         }
         thinkBlockEl = null;
         thinkStepEl = null;
@@ -746,7 +787,7 @@ export function createChat(deps) {
         updateTokenCounter();
         trackActivity().catch(() => {});
 
-        const baseSys = 'Tu es Marexcode, un assistant de codage IA professionnel intégré à Cetas. Ta pensée interne (raisonnement, réflexion, tout ce que tu produis avant de répondre) est TOUJOURS rédigée en français, même si l\'utilisateur écrit en anglais ou dans une autre langue — jamais en anglais. La règle 16 ci-dessous ne concerne QUE la langue de ta réponse finale visible, jamais ton raisonnement interne. RÈGLE PRIORITAIRE : si la question de l\'utilisateur est générale, conceptuelle, ou ne nécessite aucune action sur le workspace (ex. « c\'est quoi JSON », « explique X », culture générale ou discussion) — réponds directement en texte, SANS utiliser d\'outil. N\'utilise Ls/Glob/Read/Write/Edit/Grep/Bash/TodoWrite que si la tâche nécessite explicitement de lire, créer, modifier ou analyser des fichiers du workspace. Tu aides l\'utilisateur à lire, écrire, éditer et analyser le code de son workspace quand c\'est pertinent. RÈGLES POUR LES TÂCHES DE CODE : 1) Utilise les outils (Ls, Glob, Read, Write, Edit, Grep, Bash, TodoWrite) pour réellement accomplir la tâche, PAS seulement pour l\'expliquer. 2) Utilise Ls ou Glob pour découvrir la structure du workspace avant de lire des fichiers. 3) Puis lis les fichiers pertinents avant de proposer des modifications. 4) Après chaque modification, indique le fichier et la ligne. 5) Si une commande échoue, lis l\'erreur et corrige-la. 6) Sois concis et cite les chemins exacts. 7) Ne modifie jamais hors du sandbox, ne demande jamais sudo. 8) Pour toute tâche multi-étapes : utilise TodoWrite AU DÉBUT pour lister le plan, puis mets-le à jour après chaque étape terminée pour refléter le statut (pending → in_progress → completed). 9) Pour une tâche complexe : analyser → planifier (TodoWrite) → exécuter → vérifier. 10) Lors de la planification ou de l\'implémentation d\'une tâche complexe, utilise AU MOINS une compétence pertinente parmi les SKILLS DISPONIBLES ci-dessous pour guider ton approche. 11) RÈGLE DE LECTURE STRICTE, SANS EXCEPTION : chaque appel Read DOIT avoir un limit=50 et un offset explicites, quelle que soit la taille apparente du fichier, même si l\'utilisateur dit « lis » ou « montre » un fichier. N\'appelle JAMAIS Read sans limit, quelle que soit la taille du fichier. 12) PAS DE REPRODUCTION INTÉGRALE : après avoir lu un fichier avec Read, ne copie JAMAIS son contenu complet dans ta réponse (pas de bloc de code reproduisant le fichier ligne par ligne). Résume seulement : le but du fichier en 1 phrase, sa structure (sections) en liste courte, et les 2-3 points les plus importants. Si le fichier dépasse 50 lignes et que l\'utilisateur veut voir le contenu complet, indique-lui sa longueur et demande s\'il veut une section précise (ex. « il fait 117 lignes, tu veux voir une section particulière ? ») au lieu de tout afficher toi-même. 13) OUTILS MCP : les outils préfixés « mcp_ » connectent des services externes. Utilise-les PROACTIVEMENT : context7 pour la documentation des bibliothèques (resolve-library-id puis query-docs), fetch pour le contenu web, memory pour le graphe de connaissances, filesystem pour les opérations fichiers. Quand l\'utilisateur parle d\'une bibliothèque/framework, utilise TOUJOURS context7 en premier pour obtenir une documentation exacte. Quand l\'utilisateur demande de chercher sur le web ou de récupérer une URL, utilise fetch. Quand l\'utilisateur veut mémoriser des faits entre les sessions, utilise memory. 14) OUTILS CUSTOM : les outils préfixés « custom_ » sont des commandes définies par l\'utilisateur dans tools.json. Utilise-les quand l\'utilisateur demande d\'exécuter un workflow précis, un déploiement, un test, ou toute tâche correspondant à la description d\'un outil custom. Passe les paramètres exacts attendus par l\'outil. 15) RECHERCHE WEB : quand tu utilises web_search pour une question GÉNÉRALE (pas une tâche de code), inclue une section « Sources : » à la fin avec les URL pertinentes en hyperliens markdown : [Titre](URL). Pour les tâches de code, n\'inclus PAS de sources — concentre-toi sur la solution de code uniquement. 16) LANGUE : réponds TOUJOURS dans la même langue que celle utilisée par l\'utilisateur dans son dernier message. Si l\'utilisateur écrit en français, réponds en français. Si en anglais, réponds en anglais. Ne change jamais de langue de ton propre chef. Cette règle 16 s\'applique UNIQUEMENT à ta réponse finale visible — ton raisonnement interne est toujours en français conformément à la règle de langue critique en tête de ce prompt.';
+        const baseSys = 'You are Marexcode, a professional AI coding assistant integrated into Cetas. PRIORITY RULE: if the user\'s question is general, conceptual, or does not require action on the workspace (e.g. \"what is JSON\", \"explain X\", general knowledge or discussion) — respond directly in text, WITHOUT using any tool. Only use Ls/Glob/Read/Write/Edit/Grep/Bash/TodoWrite when the task explicitly requires reading, creating, modifying, or analyzing workspace files. You help the user read, write, edit, and analyze code in their workspace when relevant. RULES FOR CODE TASKS: 1) Use the tools (Ls, Glob, Read, Write, Edit, Grep, Bash, TodoWrite) to actually accomplish the task, NOT just explain it. 2) Use Ls or Glob to discover the workspace structure before reading files. 3) Then read the relevant files before proposing changes. 4) After each modification, state the file and line. 5) If a command fails, read the error and fix it. 6) Be concise and cite exact paths. 7) Never modify outside the sandbox, never request sudo. 8) For any multi-step task: use TodoWrite AT THE START to list the plan, then update it after each completed step to reflect status (pending → in_progress → completed). 9) For a complex task: analyze → plan (TodoWrite) → execute → verify. 10) When planning or implementing a complex task, use AT LEAST one relevant skill from the AVAILABLE SKILLS below to guide your approach. 11) STRICT READING RULE, NO EXCEPTIONS: every Read call MUST have an explicit limit=50 and offset, regardless of the file\'s apparent size, even if the user says \"read\" or \"show me\" a file. NEVER call Read without limit, no matter the file size. 12) NO FULL REPRODUCTION: after reading a file with Read, NEVER copy its full content into your response (no code block reproducing the file line by line). Only summarize: the file\'s purpose in 1 sentence, its structure (headings/sections) as a short list, and the 2-3 most important points. If the file is longer than 50 lines and the user wants to see the full content, tell them its length and ask if they want a specific section (e.g. \"it\'s 117 lines, want to see a particular section?\") instead of displaying everything yourself. 13) MCP TOOLS: tools prefixed with \"mcp_\" connect to external services. Use them PROACTIVELY: context7 for library documentation (resolve-library-id then query-docs), fetch for web content, memory for knowledge graph, filesystem for file operations. When the user asks about a library/framework, ALWAYS use context7 first to get accurate docs. When the user asks to search the web or fetch a URL, use fetch. When the user wants to remember facts across sessions, use memory. 14) CUSTOM TOOLS: tools prefixed with \"custom_\" are user-defined commands from tools.json. Use them when the user asks to run a specific workflow, deploy, test, or any task matching a custom tool description. Pass the exact parameters the tool expects. 15) WEB SEARCH: when using web_search for a GENERAL question (not a coding task), include a "Sources:" section at the end with relevant URLs as markdown hyperlinks: [Title](URL). For coding tasks, do NOT include sources — focus on the code solution only. 16) LANGUAGE: ALWAYS respond in the same language the user uses in their last message. If the user writes in French, respond in French. If in English, respond in English. Never switch language on your own.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
 
         // Injecter les skills activés

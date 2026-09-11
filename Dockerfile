@@ -87,6 +87,7 @@ RUN terser /usr/share/nginx/html/static/js/data/models.js -o /usr/share/nginx/ht
 RUN terser /usr/share/nginx/html/static/marexcode/js/app.js -o /usr/share/nginx/html/static/marexcode/js/app.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/api.js -o /usr/share/nginx/html/static/marexcode/js/api.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/chat.js -o /usr/share/nginx/html/static/marexcode/js/chat.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/static/marexcode/js/reasoning-translate.js -o /usr/share/nginx/html/static/marexcode/js/reasoning-translate.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/model-select.js -o /usr/share/nginx/html/static/marexcode/js/model-select.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/router.js -o /usr/share/nginx/html/static/marexcode/js/router.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/marex-permission.js -o /usr/share/nginx/html/static/marexcode/js/marex-permission.js -c -m --comments false --module

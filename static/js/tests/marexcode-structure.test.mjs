@@ -113,12 +113,14 @@ test('tool-search.js : contenu modèle = data.text (format concis)', () => {
     assert.match(src, /result:\s*\(data\s*&&\s*data\.text\)/);
 });
 
-test('system prompts Marexcode + SPA imposent le raisonnement en français', () => {
-    const chat = readFileSync(resolve(MX, 'js/chat.js'), 'utf8');
-    assert.match(chat, /baseSys = 'Tu es Marexcode/, 'baseSys Marexcode doit être en français (langue dominante = levier réel du reasoning)');
-    assert.match(chat, /pensée interne[^']*TOUJOURS rédigée en français/, 'la règle de reasoning français doit être dans baseSys');
-    const pt = readFileSync(resolve(ROOT, 'js/ui/prompt-toolbar.js'), 'utf8');
-    assert.match(pt, /REASONING LANGUAGE[\s\S]{0,140}ALWAYS be in French/, 'effectiveSystemPrompt SPA doit forcer le reasoning en français');
+test('chat.js : traduction FR du reasoning (OpenRouter free → DeepSeek → anglais)', () => {
+    const src = readFileSync(resolve(MX, 'js/chat.js'), 'utf8');
+    assert.match(src, /thinkText \+= t/, 'le reasoning brut doit être accumulé pour traduction');
+    assert.match(src, /translateReasoning\(raw\)\.then/, 'la traduction doit remplacer le texte affiché en fin de tour');
+    assert.match(src, /reasoning-translate\.js/, 'le module de traduction doit être importé');
+    const mod = readFileSync(resolve(MX, 'js/reasoning-translate.js'), 'utf8');
+    assert.match(mod, /provider:\s*'openrouter'[\s\S]{0,140}model:\s*'openrouter\/free'/, 'OpenRouter free en primaire');
+    assert.match(mod, /provider:\s*'deepseek'[\s\S]{0,140}model:\s*'deepseek-chat'/, 'DeepSeek en second recours');
 });
 
 test('composer.html : sélecteurs par outil (6)', () => {
