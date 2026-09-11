@@ -844,6 +844,40 @@ export function createChat(deps) {
         }
     }
 
+    // Pause d'approbation (mode Auto) : bannière inline après la phase Plan,
+    // résolue par les boutons Continuer/Annuler — Promise<boolean> consommée
+    // par runAutoMode (requireApproval/onApprovalNeeded, A3).
+    function requestApproval(planContent) {
+        return new Promise((resolve) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'msg assistant';
+            const label = document.createElement('div');
+            label.className = 'auto-phase-badge';
+            label.textContent = 'Approbation requise — Plan terminé';
+            const preview = document.createElement('div');
+            preview.className = 'auto-phase-content';
+            preview.textContent = planContent ? String(planContent).slice(0, 2000) : '(plan indisponible)';
+            const bar = document.createElement('div');
+            bar.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
+            const ok = document.createElement('button');
+            ok.className = 'settings-btn';
+            ok.textContent = 'Continuer';
+            const no = document.createElement('button');
+            no.className = 'settings-btn danger';
+            no.textContent = 'Annuler';
+            const done = (v) => { wrap.remove(); resolve(v); };
+            ok.addEventListener('click', () => done(true));
+            no.addEventListener('click', () => done(false));
+            bar.appendChild(ok);
+            bar.appendChild(no);
+            wrap.appendChild(label);
+            wrap.appendChild(preview);
+            wrap.appendChild(bar);
+            chatLog.appendChild(wrap);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        });
+    }
+
     async function sendAuto() {
         const text = ta.value.trim();
         if (!text) return;
@@ -889,6 +923,7 @@ export function createChat(deps) {
             compactPrevious: localStorage.getItem('marex-auto-compact') === '1',
             maxBudgetTokens: parseInt(localStorage.getItem('marex-auto-budget') || '0', 10) || null,
             verboseLog: localStorage.getItem('marex-auto-verbose-log') === '1',
+            approvalEnabled: localStorage.getItem('marex-auto-approval') === '1',
         };
         await runAutoMode({
             task: text,
@@ -898,6 +933,8 @@ export function createChat(deps) {
             maxRetries: flowOpts.maxRetries,
             compactPrevious: flowOpts.compactPrevious,
             maxBudgetTokens: flowOpts.maxBudgetTokens,
+            requireApproval: flowOpts.approvalEnabled || undefined,
+            onApprovalNeeded: flowOpts.approvalEnabled ? requestApproval : undefined,
             onPhase: (p) => {
                 if (flowOpts.verboseLog) console.debug('[auto] phase', p.phase, 'tentative', p.attempt, '→', p.model);
                 finalizePhase();
