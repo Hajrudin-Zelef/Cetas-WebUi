@@ -1,6 +1,7 @@
 export const MAREX_TOOLS = (typeof MAREXCODE_TOOLS !== 'undefined') ? MAREXCODE_TOOLS : [];
 
-import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions, trackActivity, getMemory } from './api.js';
+import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions, trackActivity, getMemory, listTree } from './api.js';
+import { runAutoMode } from './runtime.js';
 
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
@@ -843,6 +844,91 @@ export function createChat(deps) {
         }
     }
 
+    async function sendAuto() {
+        const text = ta.value.trim();
+        if (!text) return;
+        if (text.startsWith('/')) {
+            const handled = await handleSlashCommand(text);
+            if (handled) { ta.value = ''; ta.dispatchEvent(new Event('input')); return; }
+        }
+        if (running) return;
+        setRunning(true);
+        ta.value = '';
+        ta.dispatchEvent(new Event('input'));
+        ta.style.height = '44px';
+        setChatVisible(true);
+        session.model = 'auto';
+        session.project = getActiveProject ? getActiveProject() : session.project;
+        if (!session.title || session.title === 'Nouvelle conversation') {
+            session.title = text.length > 40 ? text.substring(0, 40) + '…' : text;
+        }
+        session.messages.push({ role: 'user', content: text });
+        addMsg('user', text);
+        trackActivity().catch(() => {});
+
+        let tree = { files: [] };
+        try { tree = await listTree(); } catch (e) { /* index optionnel */ }
+
+        controller = new AbortController();
+        pendingEl = null;
+
+        let phaseBodyEl = null;
+        let phaseRaw = '';
+        let lastPhase = '';
+
+        const finalizePhase = () => {
+            if (phaseBodyEl) {
+                phaseBodyEl.innerHTML = '<div class="md">' + renderMarkdown(phaseRaw) + '</div>';
+                phaseBodyEl = null;
+            }
+        };
+
+        await runAutoMode({
+            task: text,
+            tree: tree,
+            signal: controller.signal,
+            onPhase: (p) => {
+                finalizePhase();
+                const wrap = document.createElement('div');
+                wrap.className = 'msg assistant';
+                const badge = document.createElement('div');
+                badge.className = 'auto-phase-badge';
+                badge.textContent = 'Phase ' + p.phase + ' — ' + p.agent + ' (' + p.model + ')';
+                const body = document.createElement('div');
+                body.className = 'auto-phase-content';
+                wrap.appendChild(badge);
+                wrap.appendChild(body);
+                chatLog.appendChild(wrap);
+                chatLog.scrollTop = chatLog.scrollHeight;
+                phaseBodyEl = body;
+                phaseRaw = '';
+                lastPhase = p.phase;
+            },
+            onChunk: (c) => {
+                phaseRaw += c;
+                if (phaseBodyEl) phaseBodyEl.textContent = phaseRaw;
+                chatLog.scrollTop = chatLog.scrollHeight;
+            },
+            onDone: (outputs) => {
+                finalizePhase();
+                const combined = (outputs || [])
+                    .filter(o => o.content)
+                    .map(o => '### ' + o.phase + '\n' + o.content)
+                    .join('\n\n');
+                if (combined) session.messages.push({ role: 'assistant', content: combined });
+            },
+            onError: (err) => {
+                finalizePhase();
+                if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
+                addMsg('error', 'Auto (' + lastPhase + ') : ' + (err && err.message ? err.message : err));
+            },
+        });
+        finalizePhase();
+        if (onSave) onSave(session);
+        setRunning(false);
+        controller = null;
+    }
+
     window.addEventListener('marexcode-todo', (e) => {
         const d = e.detail;
         if (d && Array.isArray(d.todos)) {
@@ -1038,6 +1124,7 @@ export function createChat(deps) {
 
     return {
         send,
+        sendAuto,
         stop,
         setSession,
         getSession,

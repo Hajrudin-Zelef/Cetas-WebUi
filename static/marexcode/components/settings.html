@@ -162,6 +162,12 @@
             <div class="settings-row"><div class="settings-row-text"><h3>Write</h3><p>Confirmer avant d'écrire/créer des fichiers.</p></div><select id="gen-perm-write" class="settings-select"><option value="allow">Toujours autoriser</option><option value="ask">Demander</option><option value="deny">Toujours bloquer</option></select></div>
             <div class="settings-row"><div class="settings-row-text"><h3>Edit</h3><p>Confirmer avant de modifier des fichiers existants.</p></div><select id="gen-perm-edit" class="settings-select"><option value="allow">Toujours autoriser</option><option value="ask">Demander</option><option value="deny">Toujours bloquer</option></select></div>
           </div>
+          <div class="settings-group-label">Mode Auto</div>
+          <div class="settings-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Plan</h3><p>Modèle utilisé par l'agent Architecte (phase de plan).</p></div><select id="gen-auto-model-plan" class="settings-select"><option value="">(par défaut)</option></select></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Code</h3><p>Modèle utilisé par l'agent Développeur (phase d'implémentation).</p></div><select id="gen-auto-model-code" class="settings-select"><option value="">(par défaut)</option></select></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Audit</h3><p>Modèle utilisé par l'agent Auditeur (phase de vérification).</p></div><select id="gen-auto-model-audit" class="settings-select"><option value="">(par défaut)</option></select></div>
+          </div>
           <div class="settings-group-label">Bac à sable</div>
           <div class="settings-card">
             <div class="settings-row"><div class="settings-row-text"><h3>Sandbox strict</h3><p>Restreint l'agent aux seuls fichiers du workspace actif. Désactivé = accès étendu au serveur.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-sandbox-strict" checked><span class="settings-toggle-slider"></span></label></div>

@@ -1693,3 +1693,10 @@ html,body{
   .chat-panel{ max-height:46vh; }
   .settings-nav{ max-height:30%; }
 }
+/* ── Mode Auto (toggle composer + badges de phase) ── */
+.auto-mode-btn{ color:var(--text-tertiary); transition:color .2s ease, opacity .2s ease; }
+.auto-mode-btn.on{ color:var(--accent); opacity:1; }
+.auto-mode-btn:not(.on){ opacity:0.4; }
+#dd-model.auto-locked{ opacity:0.45; pointer-events:none; }
+.auto-phase-badge{ font-size:11px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:var(--accent); margin-bottom:6px; }
+.auto-phase-content{ white-space:pre-wrap; word-break:break-word; }

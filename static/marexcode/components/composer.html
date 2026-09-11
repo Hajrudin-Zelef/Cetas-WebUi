@@ -76,6 +76,9 @@
               <button class="icon-btn web-globe-btn" id="web-globe-btn" title="Recherche web" style="display:none">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
               </button>
+              <button class="icon-btn auto-mode-btn" id="auto-mode-btn" title="Mode Auto : pipeline Plan → Code → Audit" aria-pressed="false">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </button>
               <span class="skill-chip" id="skill-chip" style="display:none"><span id="skill-chip-name"></span><span class="skill-chip-x" id="skill-chip-clear" title="Retirer">✕</span></span>
 
               <!-- SÉLECTEUR PERMISSIONS -->
@@ -130,6 +133,8 @@
                     <label class="tool-perm-row"><span>Edit</span><select class="tool-perm-select" data-tool="edit">
                       <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
                     <label class="tool-perm-row"><span>Bash</span><select class="tool-perm-select" data-tool="bash">
+                      <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
+                    <label class="tool-perm-row"><span>RunScript</span><select class="tool-perm-select" data-tool="runscript">
                       <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
                   </div>
                 </div>

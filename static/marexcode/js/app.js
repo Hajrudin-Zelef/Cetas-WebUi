@@ -5,6 +5,7 @@ import { initRouter } from './router.js';
 import { loadProfilePage } from './profile.js';
 import { COMPETENCES } from './skills.js';
 import { getPermission, setPermission, checkToolPermission, getRule, setRule, isAutoAllowWorkspace, setAutoAllowWorkspace } from './marex-permission.js';
+import { getAutoModelConfig, setAutoModel } from './auto-mode-config.js';
 
 const $ = id => document.getElementById(id);
 
@@ -740,6 +741,25 @@ function loadGeneralPanel() {
             localStorage.setItem('marex-thinking-mode', thinkingMode.value);
         });
     }
+
+    // Mode Auto — modèles par rôle (Réglages > Comportement)
+    (function setupAutoModelSelects() {
+        const roles = [['plan', 'gen-auto-model-plan'], ['code', 'gen-auto-model-code'], ['audit', 'gen-auto-model-audit']];
+        const models = (typeof MODELS_DATA !== 'undefined' && MODELS_DATA.text) ? MODELS_DATA.text : [];
+        const cfg = getAutoModelConfig();
+        for (const [role, id] of roles) {
+            const sel = document.getElementById(id);
+            if (!sel) continue;
+            for (const m of models) {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.label || m.id;
+                sel.appendChild(opt);
+            }
+            sel.value = typeof cfg[role] === 'string' ? cfg[role] : '';
+            sel.addEventListener('change', () => { setAutoModel(role, sel.value); });
+        }
+    })();
 
     // Global instructions
     const textarea = document.getElementById('gen-global-instructions');
@@ -1531,7 +1551,10 @@ function setupChat() {
     // Preload instructions at boot
     chat.preloadInstructions();
 
-    refs.sendBtn.addEventListener('click', () => chat.send());
+    refs.sendBtn.addEventListener('click', () => {
+        if (localStorage.getItem('marex-auto-mode') === '1') chat.sendAuto();
+        else chat.send();
+    });
     refs.stopBtn.addEventListener('click', () => chat.stop());
     refs.ta.addEventListener('keydown', (e) => {
         const sendMode = localStorage.getItem('marex-send-mode') || 'enter';
@@ -1539,7 +1562,8 @@ function setupChat() {
             if (sendMode === 'ctrl' && !e.ctrlKey) return;
             if (sendMode === 'enter' && (e.shiftKey || e.ctrlKey)) return;
             e.preventDefault();
-            chat.send();
+            if (localStorage.getItem('marex-auto-mode') === '1') chat.sendAuto();
+            else chat.send();
         }
     });
     const TA_MAX_HEIGHT = 200;
@@ -1646,7 +1670,31 @@ function boot() {
             const pills = document.getElementById('marex-websearch-pills');
             if (pills) pills.style.display = marexPrefs.webSearch ? 'flex' : 'none';
             localStorage.setItem('marex-web-search', marexPrefs.webSearch ? '1' : '0');
-            updateWebSearchGlobe();
+    updateWebSearchGlobe();
+
+    // Mode Auto — toggle dans le composer (persisté marex-auto-mode)
+    function isAutoMode() { return localStorage.getItem('marex-auto-mode') === '1'; }
+    function updateAutoModeUI() {
+        const btn = document.getElementById('auto-mode-btn');
+        const ddModel = document.getElementById('dd-model');
+        const on = isAutoMode();
+        if (btn) {
+            btn.classList.toggle('on', on);
+            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        }
+        if (ddModel) {
+            ddModel.classList.toggle('auto-locked', on);
+            ddModel.title = on ? 'Modèle choisi par rôle (Réglages > Mode Auto)' : '';
+        }
+    }
+    const autoBtn = document.getElementById('auto-mode-btn');
+    if (autoBtn) {
+        autoBtn.addEventListener('click', () => {
+            localStorage.setItem('marex-auto-mode', isAutoMode() ? '0' : '1');
+            updateAutoModeUI();
+        });
+    }
+    updateAutoModeUI();
         });
     }
     updateWebSearchGlobe();
