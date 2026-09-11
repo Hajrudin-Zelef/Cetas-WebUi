@@ -1,0 +1,84 @@
+/* ============================================================
+   Thème « Profondeurs marines » — effets décoratifs (Marexcode)
+   Le cachalot (Cetas) plonge : plancton + rayons sous-marins.
+   Purement décoratif, en arrière-plan. Animations transform/opacity
+   uniquement (aucun reflow), pointer-events:none.
+   Zone : .main (donc fond chat + accueil), jamais la sidebar.
+   ============================================================ */
+
+/* Le décor est enfant de .main, sous le contenu (.hero). */
+.ocean-fx{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.ocean-fx *{ pointer-events:none; }
+.hero{ position:relative; z-index:1; }
+
+/* ---- 1) Particules flottantes (plancton / bulles) ---- */
+.ocean-particles{ position:absolute; inset:0; overflow:hidden; }
+.ocean-particle{
+  position:absolute;
+  bottom:-8px;
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(170,205,255,.95) 0%, rgba(140,185,255,0) 72%);
+  opacity:.12;
+  will-change:transform;
+  animation:ocean-rise linear infinite;
+}
+@keyframes ocean-rise{
+  0%{ transform:translate3d(0,0,0); }
+  25%{ transform:translate3d(8px,-25vh,0); }
+  50%{ transform:translate3d(0,-50vh,0); }
+  75%{ transform:translate3d(-8px,-75vh,0); }
+  100%{ transform:translate3d(0,-100vh,0); }
+}
+.ocean-particle:nth-child(1){ left:6%;  width:2px; height:2px; opacity:.10; animation-duration:26s; animation-delay:-4s; }
+.ocean-particle:nth-child(2){ left:16%; width:3px; height:3px; opacity:.14; animation-duration:19s; animation-delay:-11s; }
+.ocean-particle:nth-child(3){ left:26%; width:2px; height:2px; opacity:.10; animation-duration:30s; animation-delay:-2s; }
+.ocean-particle:nth-child(4){ left:37%; width:4px; height:4px; opacity:.13; animation-duration:23s; animation-delay:-16s; }
+.ocean-particle:nth-child(5){ left:47%; width:2px; height:2px; opacity:.12; animation-duration:27s; animation-delay:-7s; }
+.ocean-particle:nth-child(6){ left:56%; width:3px; height:3px; opacity:.15; animation-duration:21s; animation-delay:-19s; }
+.ocean-particle:nth-child(7){ left:66%; width:2px; height:2px; opacity:.10; animation-duration:29s; animation-delay:-9s; }
+.ocean-particle:nth-child(8){ left:76%; width:4px; height:4px; opacity:.12; animation-duration:17s; animation-delay:-13s; }
+.ocean-particle:nth-child(9){ left:86%; width:3px; height:3px; opacity:.14; animation-duration:25s; animation-delay:-5s; }
+.ocean-particle:nth-child(10){ left:94%; width:2px; height:2px; opacity:.11; animation-duration:30s; animation-delay:-22s; }
+
+/* ---- 2) Rayons de lumière sous-marine (god rays) ---- */
+.ocean-rays{ position:absolute; inset:0; overflow:hidden; }
+.ocean-ray{
+  --tilt:15deg;
+  position:absolute;
+  top:-30%;
+  left:18%;
+  width:160px;
+  height:170%;
+  background:linear-gradient(to bottom,
+    rgba(150,190,255,.06) 0%,
+    rgba(130,175,255,.035) 45%,
+    rgba(120,165,255,0) 82%);
+  transform-origin:top center;
+  opacity:.55;
+  animation:ocean-ray-drift 34s ease-in-out infinite alternate;
+}
+.ocean-ray:last-child{
+  --tilt:22deg;
+  left:60%;
+  width:210px;
+  opacity:.45;
+  animation-duration:44s;
+  animation-delay:-14s;
+}
+@keyframes ocean-ray-drift{
+  0%{ transform:rotate(var(--tilt)) translate3d(-40px,0,0); opacity:.4; }
+  100%{ transform:rotate(var(--tilt)) translate3d(70px,0,0); opacity:.7; }
+}
+
+/* Respecte les préférences d'accessibilité */
+@media (prefers-reduced-motion: reduce){
+  .ocean-fx{ display:none; }
+}
