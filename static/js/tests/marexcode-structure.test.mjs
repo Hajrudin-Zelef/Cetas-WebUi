@@ -113,6 +113,13 @@ test('tool-search.js : contenu modèle = data.text (format concis)', () => {
     assert.match(src, /result:\s*\(data\s*&&\s*data\.text\)/);
 });
 
+test('system prompts Marexcode + SPA imposent le raisonnement en français', () => {
+    const chat = readFileSync(resolve(MX, 'js/chat.js'), 'utf8');
+    assert.match(chat, /REASONING LANGUAGE[\s\S]{0,140}ALWAYS be in French/, 'baseSys Marexcode doit forcer le reasoning en français');
+    const pt = readFileSync(resolve(ROOT, 'js/ui/prompt-toolbar.js'), 'utf8');
+    assert.match(pt, /REASONING LANGUAGE[\s\S]{0,140}ALWAYS be in French/, 'effectiveSystemPrompt SPA doit forcer le reasoning en français');
+});
+
 test('composer.html : sélecteurs par outil (6)', () => {
     const html = read('components/composer.html');
     for (const t of ['read', 'grep', 'ls', 'write', 'edit', 'bash']) {
