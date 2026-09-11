@@ -1,6 +1,7 @@
 /* ============================================================
-   Thème « Profondeurs marines » — effets décoratifs (Marexcode)
-   Le cachalot (Cetas) plonge : plancton + rayons sous-marins.
+   Thème « Profondeurs marines » — effet décoratif (Marexcode)
+   Le cachalot (Cetas) chasse à 2 km : plus de lumière, seulement
+   du plancton bioluminescent qui dérive.
    Purement décoratif, en arrière-plan. Animations transform/opacity
    uniquement (aucun reflow), pointer-events:none.
    Zone : .main (donc fond chat + accueil), jamais la sidebar.
@@ -17,7 +18,7 @@
 .ocean-fx *{ pointer-events:none; }
 .hero{ position:relative; z-index:1; }
 
-/* ---- 1) Particules flottantes (plancton / bulles) ---- */
+/* ---- 1) Particules flottantes (plancton bioluminescent) ---- */
 .ocean-particles{ position:absolute; inset:0; overflow:hidden; }
 .ocean-particle{
   position:absolute;
@@ -48,39 +49,8 @@
 .ocean-particle:nth-child(9){ left:86%; width:4px; height:4px; opacity:.46; animation-duration:25s; animation-delay:-5s; }
 .ocean-particle:nth-child(10){ left:94%; width:3px; height:3px; opacity:.36; animation-duration:30s; animation-delay:-22s; }
 
-/* ---- 2) Rayons de lumière sous-marine (god rays) ---- */
-.ocean-rays{ position:absolute; inset:0; overflow:hidden; }
-.ocean-ray{
-  --tilt:15deg;
-  position:absolute;
-  top:-30%;
-  left:18%;
-  width:180px;
-  height:170%;
-  background:linear-gradient(to bottom,
-    rgba(150,190,255,.14) 0%,
-    rgba(130,175,255,.08) 45%,
-    rgba(120,165,255,0) 85%);
-  transform-origin:top center;
-  opacity:.85;
-  animation:ocean-ray-drift 34s ease-in-out infinite alternate;
-}
-.ocean-ray:last-child{
-  --tilt:22deg;
-  left:60%;
-  width:240px;
-  opacity:.7;
-  animation-duration:44s;
-  animation-delay:-14s;
-}
-@keyframes ocean-ray-drift{
-  0%{ transform:rotate(var(--tilt)) translate3d(-40px,0,0); opacity:.6; }
-  100%{ transform:rotate(var(--tilt)) translate3d(70px,0,0); opacity:.95; }
-}
-
 /* Mouvement réduit : on fige le décor au lieu de le masquer, pour qu'il
    reste visible sans animation. */
 @media (prefers-reduced-motion: reduce){
   .ocean-particle{ animation:none; transform:translate3d(0,-50vh,0); }
-  .ocean-ray{ animation:none; }
 }
