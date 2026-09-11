@@ -1211,6 +1211,7 @@ html,body{
 .chat-step-line{ display:flex; align-items:center; gap:8px; color:var(--text-secondary); opacity:0.85; }
 .step-icon{ color:var(--accent); width:14px; text-align:center; flex-shrink:0; }
 .step-label{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.chat-todo-block{ font-size:12.5px; line-height:1.45; }
 .chat-todo-header,
 .chat-todo-item,
 .chat-todo-item .todo-icon,
