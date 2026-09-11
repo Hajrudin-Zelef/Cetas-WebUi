@@ -1949,6 +1949,7 @@ function boot() {
         if (btn) {
             btn.classList.toggle('on', on);
             btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+            btn.title = on ? 'Mode Auto : activé — cliquez pour désactiver' : 'Mode Auto : désactivé — cliquez pour activer';
         }
         const ddModel = document.getElementById('dd-model');
         if (ddModel) {
