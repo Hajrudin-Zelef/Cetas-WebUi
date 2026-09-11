@@ -214,6 +214,23 @@ test('runAutoMode: chaque phase reçoit le résultat de la précédente (context
   assert.ok(seenPrompts[2].includes('PLAN-DETAIL'), 'phase audit: contient le résultat cumulé');
 });
 
+test('runAutoMode: limitation documentée - le contexte inter-phases est du texte final uniquement, pas de tool_calls reconstitués', async () => {
+  const historiesSeen = [];
+  const fakeStream = (model, history, onChunk, onDone) => {
+    historiesSeen.push(history.map(m => m.role).join(','));
+    onChunk('phase-output');
+    onDone({});
+  };
+  await runAutoMode({
+    task: 't',
+    tree: { files: [] },
+    _stream: fakeStream,
+  });
+  for (const shape of historiesSeen) {
+    assert.equal(shape, 'system,user', 'streamModelWithTools ne rend pas l\'historique enrichi de tool_calls : aucune reconstitution ne doit être injectée entre les phases');
+  }
+});
+
 test('runAutoMode: onError propage une erreur du stream et interrompt la chaîne', async () => {
   let captured = null;
   let calls = 0;
