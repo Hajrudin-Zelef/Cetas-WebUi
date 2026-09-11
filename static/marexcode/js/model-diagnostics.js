@@ -43,9 +43,12 @@ function runStreamProbe(stream, model, prompt, tools, signal) {
 
 // Installe un capteur sur le hook de permission (appelé par _execMarexcodeTool
 // avant chaque exécution de tool) le temps de la sonde, puis restaure l'état
-// initial. Pendant la sonde, l'exécution est forcée à allowed:true : le
-// diagnostic est une action explicite de l'utilisateur et le tool est Ls
-// (lecture seule).
+// initial. Le capteur répond TOUJOURS allowed:false avec une raison explicite :
+// le diagnostic mesure l'INTENTION de tool-call du modèle, pas son effet —
+// aucun outil ne s'exécute réellement pendant la sonde (pas même Ls, lecture
+// seule ; comportement assumé, pas un oubli). Cela bloque aussi tout autre
+// tool que le modèle tenterait pendant la sonde, et ne contourne jamais une
+// décision deny de l'utilisateur : le hook est remplacé, pas délégué.
 function withToolSensor(fn) {
   const hadWindow = typeof window !== 'undefined';
   const original = hadWindow ? window._marexCheckPermission : undefined;
@@ -53,7 +56,7 @@ function withToolSensor(fn) {
   if (hadWindow) {
     window._marexCheckPermission = function (tool, args) {
       seen.push(String(tool || ''));
-      return { allowed: true };
+      return { allowed: false, reason: 'Diagnostic — exécution réelle non nécessaire' };
     };
   }
   return Promise.resolve(fn()).then(

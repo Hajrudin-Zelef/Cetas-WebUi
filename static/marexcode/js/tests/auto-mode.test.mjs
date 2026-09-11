@@ -618,3 +618,27 @@ test('testModel: modèle effectif = config.model sinon placeholder du rôle', as
   await testModel('plan', {}, { _stream: fakeStream });
   assert.equal(seen[0], 'model-plan', 'placeholder du rôle si pas de config');
 });
+
+test('testModel: tool-call détecté SANS exécution réelle (hook toujours allowed:false)', async () => {
+  const { testModel } = await import('../model-diagnostics.js');
+  globalThis.window = {};
+  try {
+    const responses = [];
+    const fakeStream = (model, history, onChunk, onDone, onError, tools) => {
+      if (Array.isArray(tools) && tools.length && tools[0].function.name === 'Ls') {
+        const check = window._marexCheckPermission('Ls', {});
+        responses.push(check);
+        if (check.allowed === true) throw new Error('EXECUTION REELLE TENTEE');
+      }
+      onDone({});
+    };
+    const r = await testModel('code', { model: 'm-tool-safe' }, { _stream: fakeStream });
+    assert.equal(r.toolCalling.ok, true, 'l\'intention de tool-call reste détectée');
+    assert.ok(r.toolCalling.detail.includes('Ls'));
+    assert.equal(responses.length, 1);
+    assert.equal(responses[0].allowed, false, 'le hook ne doit jamais autoriser pendant la sonde');
+    assert.ok(responses[0].reason.includes('Diagnostic'), 'raison explicite de blocage');
+  } finally {
+    delete globalThis.window;
+  }
+});
