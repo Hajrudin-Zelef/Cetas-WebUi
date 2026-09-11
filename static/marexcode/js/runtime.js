@@ -16,7 +16,7 @@ export const AUTO_PHASES = ['plan', 'code', 'audit'];
 // (finalContent) de la phase précédente, injecté via contextStore.previousPhase.
 // checkCompaction (context-store.js) ne s'applique qu'aux boucles qui possèdent
 // un historique complet (chat manuel), pas à ce pipeline.
-function runPhase(stream, model, history, tools, signal, onChunk, options) {
+function runPhase(stream, model, history, tools, signal, onChunk, options, onThinking) {
   let finalContent = '';
   return new Promise((resolve, reject) => {
     stream(
@@ -27,7 +27,7 @@ function runPhase(stream, model, history, tools, signal, onChunk, options) {
       (err) => reject(err),
       tools,
       true,
-      null,
+      onThinking || null,
       signal,
       options || null,
       null,
@@ -64,7 +64,7 @@ export async function runAutoMode(opts) {
   const {
     task, tree, model, signal, onPhase, onChunk, onDone, onError, _stream,
     requireApproval, onApprovalNeeded, maxRetries, continueOnError, maxBudgetTokens,
-    compactPrevious,
+    compactPrevious, onThinking,
   } = opts || {};
   const stream = _stream
     || (typeof streamModelWithTools !== 'undefined' ? streamModelWithTools : null);
@@ -115,7 +115,7 @@ export async function runAutoMode(opts) {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       if (onPhase) onPhase({ phase: phase, agent: agent.name, model: effectiveModel, attempt: attempt });
       try {
-        res = await runPhase(stream, effectiveModel, history, getToolsForRole(agent), signal, onChunk, streamOptions);
+        res = await runPhase(stream, effectiveModel, history, getToolsForRole(agent), signal, onChunk, streamOptions, onThinking);
         lastErr = null;
         break;
       } catch (err) {

@@ -935,6 +935,7 @@ export function createChat(deps) {
             maxBudgetTokens: flowOpts.maxBudgetTokens,
             requireApproval: flowOpts.approvalEnabled || undefined,
             onApprovalNeeded: flowOpts.approvalEnabled ? requestApproval : undefined,
+            onThinking: (t) => onThinking(t),
             onPhase: (p) => {
                 if (flowOpts.verboseLog) console.debug('[auto] phase', p.phase, 'tentative', p.attempt, '→', p.model);
                 finalizePhase();
