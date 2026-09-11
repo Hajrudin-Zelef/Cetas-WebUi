@@ -118,6 +118,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .action-desc{font-size:12px;color:var(--text2);margin-top:2px}
 .branch-select{margin:16px 0;padding:12px;background:var(--bg3);border:1px solid var(--bg4);border-radius:var(--radius-sm);color:var(--text);font-size:14px;width:100%;outline:none;display:none;box-shadow:0 1px 2px rgba(16,24,40,0.06)}
 .branch-select.visible{display:block}
+.branch-row{display:none;margin:16px 0;gap:8px;align-items:center}
+.branch-row.visible{display:flex}
+.branch-row .branch-select{flex:1;width:auto;margin:0;display:block}
+.branch-refresh{flex-shrink:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border:1px solid var(--bg4);border-radius:var(--radius-sm);color:var(--text2);cursor:pointer;font-size:18px;line-height:1;transition:background .2s,color .2s,border-color .2s;box-shadow:0 1px 2px rgba(16,24,40,0.06)}
+.branch-refresh:hover{background:var(--bg);color:var(--text);border-color:var(--primary)}
+.branch-refresh:disabled{cursor:default;opacity:.7}
+.branch-refresh.spinning{animation:spin .8s linear infinite}
 
 /* Logs screen */
 .logs-content{flex:1;display:flex;flex-direction:column;padding:0;overflow:hidden}
@@ -377,9 +384,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <div class="action-desc">PyInstaller cetas.spec</div>
       </div>
     </div>
-    <select class="branch-select" id="branchSelect">
-      <option value="">Chargement des branches...</option>
-    </select>
+    <div class="branch-row" id="branchRow">
+      <select class="branch-select" id="branchSelect">
+        <option value="">Chargement des branches...</option>
+      </select>
+      <button class="branch-refresh" id="branchRefreshBtn" type="button" title="Actualiser les branches (git fetch)" onclick="refreshBranches()">&#8635;</button>
+    </div>
     <div style="padding:0 0 24px;margin-top:8px">
       <button class="btn-primary" onclick="createRipple(event,this);startDeploy()">Exécuter</button>
     </div>
@@ -435,9 +445,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
     <div class="field">
       <label class="field-label">Branche par défaut</label>
-      <select class="field-input" id="settingsBranch" style="padding:12px 16px;cursor:pointer">
-        <option value="">Chargement...</option>
-      </select>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="field-input" id="settingsBranch" style="padding:12px 16px;cursor:pointer;flex:1">
+          <option value="">Chargement...</option>
+        </select>
+        <button class="branch-refresh" id="settingsBranchRefreshBtn" type="button" title="Actualiser les branches (git fetch)" onclick="refreshSettingsBranches()">&#8635;</button>
+      </div>
       <div class="field-hint">Branche utilisée pour l'action Auto si aucune sélection explicite</div>
     </div>
 
@@ -543,7 +556,7 @@ function showScreen(id) {
   closeSidebar();
   if (id === 'detect') runDetection();
   if (id === 'logs') scrollLogs();
-  if (id === 'action') { loadBranches(); document.getElementById('branchSelect').classList.toggle('visible', selectedAction === 'pull' || selectedAction === 'auto'); }
+  if (id === 'action') { loadBranches(); document.getElementById('branchRow').classList.toggle('visible', selectedAction === 'pull' || selectedAction === 'auto'); }
   if (id === 'settings') loadSettings();
 }
 
@@ -551,13 +564,22 @@ function selectAction(el) {
   document.querySelectorAll('.action-option').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
   selectedAction = el.dataset.action;
-  const bs = document.getElementById('branchSelect');
+  const bs = document.getElementById('branchRow');
   bs.classList.toggle('visible', selectedAction === 'pull' || selectedAction === 'auto');
 }
 
-async function loadBranches() {
+async function loadBranches(refresh) {
   if (!config.repo_path) return;
-  const r = await api('branches');
+  const btn = document.getElementById('branchRefreshBtn');
+  if (refresh && btn) { btn.classList.add('spinning'); btn.disabled = true; }
+  let r;
+  try {
+    r = await api('branches' + (refresh ? '?fetch=1' : ''));
+  } catch (e) {
+    r = { branches: [], current: '' };
+  } finally {
+    if (refresh && btn) { btn.classList.remove('spinning'); btn.disabled = false; }
+  }
   const sel = document.getElementById('branchSelect');
   sel.innerHTML = '';
   (r.branches || []).forEach(b => {
@@ -566,7 +588,10 @@ async function loadBranches() {
     if (r.current && b === r.current) { o.textContent = b + ' (courante)'; o.selected = true; }
     sel.appendChild(o);
   });
+  if (r.fetch_error) console.warn('git fetch:', r.fetch_error);
 }
+
+function refreshBranches() { loadBranches(true); }
 
 function updateMainUI() {
   document.getElementById('exePathDisplay').textContent = config.exe_path || 'Non configuré';
@@ -717,11 +742,20 @@ async function launchApp() {
   }
 }
 
-async function loadSettings() {
+async function loadSettings(refresh) {
   document.getElementById('settingsRepo').value = config.repo_path || '';
   document.getElementById('settingsExe').value = config.exe_path || '';
   document.getElementById('configPathDisplay').textContent = config._config_path || '';
-  const r = await api('branches');
+  const btn = document.getElementById('settingsBranchRefreshBtn');
+  if (refresh && btn) { btn.classList.add('spinning'); btn.disabled = true; }
+  let r;
+  try {
+    r = await api('branches' + (refresh ? '?fetch=1' : ''));
+  } catch (e) {
+    r = { branches: [], current: '' };
+  } finally {
+    if (refresh && btn) { btn.classList.remove('spinning'); btn.disabled = false; }
+  }
   const sel = document.getElementById('settingsBranch');
   sel.innerHTML = '';
   (r.branches || []).forEach(b => {
@@ -730,8 +764,11 @@ async function loadSettings() {
     if (b === (config.default_branch || r.current)) { o.selected = true; }
     sel.appendChild(o);
   });
+  if (r.fetch_error) console.warn('git fetch:', r.fetch_error);
   renderHistory();
 }
+
+function refreshSettingsBranches() { loadSettings(true); }
 
 async function saveSettings() {
   const repo = document.getElementById('settingsRepo').value.trim();
@@ -896,11 +933,26 @@ class DeployAPI:
             result["repository_error"] = "Chemin du repository non configuré"
         return result
 
-    def get_branches(self):
+    def get_branches(self, fetch=False):
         repo = self.config.get("repo_path", "")
         if not repo:
-            return {"branches": [], "current": ""}
+            return {"branches": [], "current": "", "fetched": False, "fetch_error": None}
         current = ""
+        fetch_error = None
+        if fetch:
+            # Récupère les nouvelles branches distantes avant de lister.
+            try:
+                subprocess.check_output(
+                    ["git", "-C", repo, "fetch", "--all", "--prune"],
+                    text=True, timeout=60, stderr=subprocess.STDOUT,
+                    creationflags=_NO_WINDOW
+                )
+            except subprocess.CalledProcessError as e:
+                fetch_error = (e.output or str(e)).strip()[-300:]
+                log.warning("git fetch a échoué: %s", fetch_error)
+            except Exception as e:
+                fetch_error = str(e)
+                log.warning("git fetch a échoué: %s", e)
         try:
             out = subprocess.check_output(
                 ["git", "-C", repo, "rev-parse", "--abbrev-ref", "HEAD"],
@@ -911,14 +963,32 @@ class DeployAPI:
             pass
         try:
             out = subprocess.check_output(
-                ["git", "-C", repo, "branch", "-a", "--format=%(refname:short)"],
+                ["git", "-C", repo, "branch", "-a", "--format=%(refname:short)%09%(symref)"],
                 text=True, timeout=10, creationflags=_NO_WINDOW
             )
-            branches = [b.strip() for b in out.strip().split("\n") if b.strip() and "HEAD" not in b]
-            return {"branches": branches, "current": current}
+            # Normalise les refs distantes origin/X -> X (dédupliquées) pour que
+            # `git pull origin <branche>` fonctionne sur les branches récupérées.
+            # Les refs symboliques (origin/HEAD -> origin/main) sont ignorées.
+            seen = set()
+            branches = []
+            for raw in out.strip().split("\n"):
+                line = raw.strip()
+                if not line:
+                    continue
+                parts = line.split("\t")
+                b = parts[0].strip()
+                symref = parts[1].strip() if len(parts) > 1 else ""
+                if not b or "HEAD" in b or symref:
+                    continue
+                name = b[len("origin/"):] if b.startswith("origin/") else b
+                if name in seen:
+                    continue
+                seen.add(name)
+                branches.append(name)
+            return {"branches": branches, "current": current, "fetched": bool(fetch), "fetch_error": fetch_error}
         except Exception as e:
             log.warning("Erreur lors de la récupération des branches: %s", e)
-            return {"branches": [], "current": current}
+            return {"branches": [], "current": current, "fetched": bool(fetch), "fetch_error": fetch_error}
 
     def deploy(self, action, branch=None):
         deploy_id = str(int(time.time() * 1000))
@@ -1163,7 +1233,9 @@ class DeployHTTPHandler(http.server.BaseHTTPRequestHandler):
         elif path == "/api/detect":
             self._json(self.api.detect())
         elif path == "/api/branches":
-            self._json(self.api.get_branches())
+            qs = urlparse(self.path).query
+            do_fetch = any(p == "fetch=1" for p in qs.split("&"))
+            self._json(self.api.get_branches(fetch=do_fetch))
         elif path == "/api/browse":
             self._json(self.api.browse_folder())
         elif path == "/api/launch":
