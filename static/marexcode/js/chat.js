@@ -24,6 +24,7 @@ export function createChat(deps) {
     let pendingImages = [];
     const md = createMarkdownRenderer();
     const autoScroll = createAutoScroll(chatLog);
+    const panelScroll = sidePanelBody ? createAutoScroll(sidePanelBody) : null;
 
     function setupImageDrop() {
         if (!ta) return;
@@ -269,7 +270,7 @@ export function createChat(deps) {
         const label = getStepLabel(name, args, result);
         line.innerHTML = '<span class="step-icon">' + icon + '</span><span class="step-label">' + esc(label) + '</span>';
         group.appendChild(line);
-        chatLog.scrollTop = chatLog.scrollHeight;
+        autoScroll.onContentChange();
         return line;
     }
 
@@ -279,7 +280,7 @@ export function createChat(deps) {
         statusEl.className = 'chat-status-line';
         statusEl.innerHTML = '<span class="status-dot"></span><span class="status-action">Ready</span><span class="status-model">' + esc(session?.model || '') + '</span>';
         chatLog.appendChild(statusEl);
-        chatLog.scrollTop = chatLog.scrollHeight;
+        autoScroll.onContentChange();
         return statusEl;
     }
 
@@ -307,7 +308,7 @@ export function createChat(deps) {
         }
         html += '</ul>';
         todoBlockEl.innerHTML = html;
-        chatLog.scrollTop = chatLog.scrollHeight;
+        autoScroll.onContentChange();
     }
 
     function ensureThinkBadge() {
@@ -321,7 +322,7 @@ export function createChat(deps) {
             openSidePanel();
         });
         chatLog.appendChild(b);
-        chatLog.scrollTop = chatLog.scrollHeight;
+        autoScroll.onContentChange();
         thinkBadgeEl = b;
         return b;
     }
@@ -342,7 +343,7 @@ export function createChat(deps) {
             thinkStepEl.className = 'chat-step-line';
             thinkStepEl.innerHTML = '<span class="step-icon">✦</span><span class="step-label">Thought…</span>';
             group.appendChild(thinkStepEl);
-            chatLog.scrollTop = chatLog.scrollHeight;
+            autoScroll.onContentChange();
         }
         if (!thinkStepEl._timerStart) {
             thinkStepEl._timerStart = Date.now();
@@ -353,7 +354,7 @@ export function createChat(deps) {
         }
         const txt = thinkBlockEl.querySelector('.sp-think-text');
         if (txt && mode === 'all') txt.textContent += t;
-        if (sidePanelBody && mode === 'all') sidePanelBody.scrollTop = sidePanelBody.scrollHeight;
+        if (sidePanelBody && mode === 'all' && panelScroll) panelScroll.onContentChange();
     }
 
     function finishThinking() {
@@ -886,7 +887,7 @@ export function createChat(deps) {
             wrap.appendChild(preview);
             wrap.appendChild(bar);
             chatLog.appendChild(wrap);
-            chatLog.scrollTop = chatLog.scrollHeight;
+            autoScroll.onContentChange();
         });
     }
 
@@ -961,7 +962,7 @@ export function createChat(deps) {
                 wrap.appendChild(badge);
                 wrap.appendChild(body);
                 chatLog.appendChild(wrap);
-                chatLog.scrollTop = chatLog.scrollHeight;
+                autoScroll.onContentChange();
                 phaseBodyEl = body;
                 phaseRaw = '';
                 lastPhase = p.phase;
@@ -969,7 +970,7 @@ export function createChat(deps) {
             onChunk: (c) => {
                 phaseRaw += c;
                 if (phaseBodyEl) phaseBodyEl.textContent = phaseRaw;
-                chatLog.scrollTop = chatLog.scrollHeight;
+                autoScroll.onContentChange();
             },
             onDone: (outputs) => {
                 if (flowOpts.verboseLog) console.debug('[auto] terminé', (outputs || []).map(o => o.phase + (o.failed ? ' (échec)' : '')).join(', '));
