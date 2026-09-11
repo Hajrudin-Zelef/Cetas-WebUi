@@ -7,6 +7,7 @@ import { COMPETENCES } from './skills.js';
 import { getPermission, setPermission, checkToolPermission, getRule, setRule, isAutoAllowWorkspace, setAutoAllowWorkspace } from './marex-permission.js';
 import { getAutoRoleConfig, setAutoRoleConfig, MODEL_CONTEXT_LIMITS } from './auto-mode-config.js';
 import { resolveAgent, AGENT_ROLES } from './agents.js';
+import { testModel } from './model-diagnostics.js';
 
 const AUTO_ROLE_CARD_FILLERS = {};
 
@@ -170,6 +171,53 @@ function setupAutoRoleCard(role) {
 
     fillFromConfig();
     AUTO_ROLE_CARD_FILLERS[role] = fillFromConfig;
+}
+
+// Mode Auto — bouton "Tester la connexion" d'une carte de rôle : teste les
+// valeurs ACTUELLES du formulaire (jamais persistées, setAutoRoleConfig non
+// appelé), affiche connexion / tool-calling / contexte.
+function setupAutoRoleTester(role) {
+    const testBtn = document.getElementById('gen-auto-test-' + role);
+    const resultEl = document.getElementById('gen-auto-testresult-' + role);
+    if (!testBtn || !resultEl) return;
+
+    function readFormConfig() {
+        const modelSel = document.getElementById('gen-auto-model-' + role);
+        const tempToggle = document.getElementById('gen-auto-ttemp-' + role);
+        const tempRange = document.getElementById('gen-auto-temp-' + role);
+        const cfg = { model: modelSel ? modelSel.value : '' };
+        if (tempToggle && tempToggle.checked && tempRange) {
+            cfg.temperature = parseFloat(tempRange.value);
+        }
+        return cfg;
+    }
+
+    function fmt(r) {
+        const conn = r.connection.ok
+            ? '✅ Connexion — ' + (r.connection.latencyMs != null ? r.connection.latencyMs + 'ms' : '?')
+            : '❌ Connexion — ' + (r.connection.error || 'échec');
+        const tool = r.toolCalling.ok
+            ? '✅ Tool-calling — ' + r.toolCalling.detail
+            : '❌ Tool-calling — ' + r.toolCalling.detail;
+        const ctx = r.context.known
+            ? 'ℹ️ Contexte — ' + r.context.note
+            : '⚠️ Contexte — ' + r.context.note;
+        return [conn, tool, ctx];
+    }
+
+    testBtn.addEventListener('click', async () => {
+        if (testBtn.disabled) return;
+        testBtn.disabled = true;
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = '<div>⏳ Test en cours…</div>';
+        try {
+            const r = await testModel(role, readFormConfig(), {});
+            resultEl.innerHTML = fmt(r).map(l => '<div>' + l + '</div>').join('');
+        } catch (e) {
+            resultEl.innerHTML = '<div>❌ Test impossible — ' + (e && e.message ? e.message : e) + '</div>';
+        }
+        testBtn.disabled = false;
+    });
 }
 
 // Préférences du menu "+" (Réflexion / Recherche web) — visuel pour l'instant,
@@ -907,6 +955,7 @@ function loadGeneralPanel() {
 
     // Mode Auto — cartes de rôle (panneau Automatisation)
     ['plan', 'code', 'audit'].forEach(role => setupAutoRoleCard(role));
+    ['plan', 'code', 'audit'].forEach(role => setupAutoRoleTester(role));
 
     // Mode Auto — Pipeline (panneau Automatisation)
     const autoModeActive = document.getElementById('gen-auto-mode-active');
