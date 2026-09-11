@@ -905,11 +905,11 @@ function loadGeneralPanel() {
         });
     }
 
-    // Permission policy (Bash/Write/Edit)
-    ['bash', 'write', 'edit'].forEach(tool => {
+    // Permission policy (Bash/RunScript/Write/Edit)
+    ['bash', 'runscript', 'write', 'edit'].forEach(tool => {
         const sel = document.getElementById('gen-perm-' + tool);
         if (sel) {
-            sel.value = localStorage.getItem('marex-perm-' + tool) || (tool === 'bash' ? 'ask' : 'allow');
+            sel.value = localStorage.getItem('marex-perm-' + tool) || (tool === 'bash' || tool === 'runscript' ? 'ask' : 'allow');
             sel.addEventListener('change', () => {
                 localStorage.setItem('marex-perm-' + tool, sel.value);
                 setRule(tool, sel.value);
