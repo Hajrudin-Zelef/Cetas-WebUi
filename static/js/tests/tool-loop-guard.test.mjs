@@ -50,18 +50,29 @@ function loadToolSearch(opts = {}) {
 
   const streams = [];
   const calls = { done: 0, error: 0, errors: [], chunks: 0 };
+  const events = [];
+  const modelRequests = [];
 
   const win = {
-    dispatchEvent() {},
+    dispatchEvent(ev) { events.push(ev); },
     FORCE_WEB_SEARCH: false,
     _streamIdleTimeoutMs: opts.idleMs ?? 40,
+    _toolExecTimeoutMs: opts.execMs ?? 60,
     _toolMaxIterations: 15
   };
 
   async function fetchStub(url, fopts) {
     if (typeof url === 'string' && url.indexOf('/api/exec') === 0) {
+      if (opts.execBehavior === 'hang') return new Promise(() => {});
+      if (opts.execBehavior === 'network') throw new Error('network down');
+      if (opts.execBehavior === 'timeout') {
+        const err = new Error('signal timed out');
+        err.name = 'TimeoutError';
+        throw err;
+      }
       return { ok: true, status: 200, json: async () => ({ text: 'tool-result-ok' }) };
     }
+    if (fopts && fopts.body) modelRequests.push(JSON.parse(fopts.body));
     const resp = streamResponse(opts.makeChunks ? opts.makeChunks(streams.length) : [sseBytes({ choices: [{ delta: { content: 'x' } }] })]);
     streams.push(resp);
     if (fopts && fopts.signal) {
@@ -91,7 +102,7 @@ function loadToolSearch(opts = {}) {
     class CustomEvent { constructor(t, o) { this.type = t; this.detail = o && o.detail; } }
   );
 
-  return { streamModelWithTools, calls, streams, win };
+  return { streamModelWithTools, calls, streams, win, events, modelRequests };
 }
 
 function settle(env, ms) {
@@ -157,4 +168,49 @@ test('boucle d outils puis stall itération 2 → onError (gel mid-implementatio
   const verdict = await run(env);
   assert.equal(verdict, 'error', "stall après exécution d'outil = le gel rapporté ; le watchdog doit lever onError");
   assert.ok(env.streams.length >= 2, 'la boucle outils doit avoir rappelé le modèle au moins une fois');
+});
+
+const writeToolCall = '{"file_path":"a.py","content":"x"}';
+function toolThenFinal(n) {
+  return n === 0 ? [
+    sseBytes({ choices: [{ delta: { tool_calls: [{ index: 0, id: 'tc1', type: 'function', function: { name: 'Write', arguments: writeToolCall } }] } }] }),
+    sseBytes({ choices: [{ delta: {}, finish_reason: 'tool_calls' }] }),
+    doneBytes()
+  ] : [
+    sseBytes({ choices: [{ delta: { content: 'fini' } }] }),
+    sseBytes({ choices: [{ delta: {}, finish_reason: 'stop' }] }),
+    doneBytes()
+  ];
+}
+
+test("exec d'outil pendu (fetch qui ne résout jamais) → garde-fou, la boucle aboutit, jamais gel", async () => {
+  const env = loadToolSearch({ execBehavior: 'hang', makeChunks: toolThenFinal });
+  const verdict = await run(env);
+  assert.equal(verdict, 'done', 'sans garde-fou exec, la boucle reste bloquée sur await → gel silencieux');
+  const toolEvents = env.events
+    .filter(ev => ev.detail && ev.detail.name === 'Write')
+    .map(ev => ev.detail.phase);
+  assert.deepEqual(toolEvents, ['start', 'end'], "l'événement end doit lever le bloc outil pending");
+  const toolMsg = env.modelRequests[1] && env.modelRequests[1].messages.find(m => m.role === 'tool');
+  assert.ok(toolMsg, 'le modèle doit recevoir un résultat de tool_call (timeout) pour continuer');
+  assert.match(toolMsg.content, /sans réponse|timed out|timeout/i);
+});
+
+test("exec fetch qui rejette (réseau) → événement end émis après start", async () => {
+  const env = loadToolSearch({ execBehavior: 'network', makeChunks: toolThenFinal });
+  const verdict = await run(env);
+  assert.equal(verdict, 'done');
+  const phases = env.events
+    .filter(ev => ev.detail && ev.detail.name === 'Write')
+    .map(ev => ev.detail.phase);
+  assert.deepEqual(phases, ['start', 'end'], 'le catch doit dispatcher end, sinon bloc outil figé');
+});
+
+test("AbortSignal.timeout (name TimeoutError) → message Timeout exécution visible par le modèle", async () => {
+  const env = loadToolSearch({ execBehavior: 'timeout', makeChunks: toolThenFinal });
+  const verdict = await run(env);
+  assert.equal(verdict, 'done');
+  const toolMsg = env.modelRequests[1] && env.modelRequests[1].messages.find(m => m.role === 'tool');
+  assert.ok(toolMsg);
+  assert.match(toolMsg.content, /Timeout exécution/i, "TimeoutError doit mapper sur le message timeout, pas 'signal timed out'");
 });
