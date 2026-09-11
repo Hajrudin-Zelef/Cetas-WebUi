@@ -97,6 +97,9 @@ RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/render.js -o /usr/
 RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/queue.js -o /usr/share/nginx/html/static/marexcode/js/markdown/queue.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/worker-client.js -o /usr/share/nginx/html/static/marexcode/js/markdown/worker-client.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/worker.js -o /usr/share/nginx/html/static/marexcode/js/markdown/worker.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/static/marexcode/js/auto-scroll.js -o /usr/share/nginx/html/static/marexcode/js/auto-scroll.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/static/marexcode/js/text-shimmer.js -o /usr/share/nginx/html/static/marexcode/js/text-shimmer.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/static/marexcode/js/text-reveal.js -o /usr/share/nginx/html/static/marexcode/js/text-reveal.js -c -m --comments false --module
 
 # Minifier le CSS — style.css est un point d'entrée @import, on concatène
 # dans l'ordre de cascade avant minification
