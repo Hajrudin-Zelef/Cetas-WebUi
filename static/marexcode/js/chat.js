@@ -4,6 +4,8 @@ import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions, trac
 import { runAutoMode } from './runtime.js';
 import { createMarkdownRenderer } from './markdown/render.js';
 import { createAutoScroll } from './auto-scroll.js';
+import { createTextShimmer } from './text-shimmer.js';
+import { createTextReveal } from './text-reveal.js';
 
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
@@ -19,6 +21,8 @@ export function createChat(deps) {
     let statusEl = null;
     let currentToolGroupEl = null;
     let thinkStepEl = null;
+    let thinkShimmer = null;
+    let statusReveal = null;
     let cachedInstructions = { global: '', workspace: '', memory: '' };
     let messageQueue = [];
     let pendingImages = [];
@@ -279,6 +283,7 @@ export function createChat(deps) {
         statusEl = document.createElement('div');
         statusEl.className = 'chat-status-line';
         statusEl.innerHTML = '<span class="status-dot"></span><span class="status-action">Ready</span><span class="status-model">' + esc(session?.model || '') + '</span>';
+        statusReveal = createTextReveal(statusEl.querySelector('.status-action'));
         chatLog.appendChild(statusEl);
         autoScroll.onContentChange();
         return statusEl;
@@ -287,7 +292,10 @@ export function createChat(deps) {
     function updateStatus(action) {
         ensureStatusLine();
         const actionEl = statusEl.querySelector('.status-action');
-        if (actionEl && action) actionEl.textContent = action;
+        if (actionEl && action) {
+            if (statusReveal) statusReveal.setText(action);
+            else actionEl.textContent = action;
+        }
     }
 
     function renderTodoBlock(todos) {
@@ -316,13 +324,15 @@ export function createChat(deps) {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'think-badge';
-        b.innerHTML = '<span class="think-spinner"></span><span>Thinking</span>';
+        b.innerHTML = '<span class="think-spinner"></span><span class="think-label">Thinking</span>';
         b.addEventListener('click', () => {
             userClosedPanel = false;
             openSidePanel();
         });
         chatLog.appendChild(b);
         autoScroll.onContentChange();
+        thinkShimmer = createTextShimmer(b.querySelector('.think-label'));
+        thinkShimmer.start();
         thinkBadgeEl = b;
         return b;
     }
@@ -359,6 +369,7 @@ export function createChat(deps) {
 
     function finishThinking() {
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
+        if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
         if (thinkStepEl && thinkStepEl._timerInterval) {
             clearInterval(thinkStepEl._timerInterval);

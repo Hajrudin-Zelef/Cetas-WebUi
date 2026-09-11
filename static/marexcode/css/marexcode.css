@@ -1709,3 +1709,8 @@ html,body{
 .markdown-copy-button:hover{ color:var(--text-primary); }
 .markdown-copy-button[data-copied="true"]{ color:var(--accent); border-color:var(--accent); opacity:1; }
 @media (hover:none){ .markdown-copy-button{ opacity:1; } }
+.text-shimmer{ background-image:linear-gradient(90deg,var(--text-tertiary) 0%,var(--text-primary) 50%,var(--text-tertiary) 100%); background-size:200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; animation:text-shimmer-sweep 1.2s linear infinite; }
+@keyframes text-shimmer-sweep{ 0%{ background-position:200% 0; } 100%{ background-position:-200% 0; } }
+.text-reveal{ display:inline-block; transition:opacity .18s ease, transform .18s ease; }
+.text-reveal.is-swapping{ opacity:0; transform:translateY(-4px); }
+@media (prefers-reduced-motion: reduce){ .text-shimmer{ animation:none; color:inherit; -webkit-text-fill-color:currentColor; background-image:none; } .text-reveal{ transition:none; } }
