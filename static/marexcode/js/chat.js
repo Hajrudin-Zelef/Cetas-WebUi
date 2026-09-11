@@ -14,6 +14,7 @@ export function createChat(deps) {
     let session = null;
     let running = false;
     let pendingEl = null, pendingMd = null, thinkBadgeEl = null, thinkBlockEl = null, thinkText = '';
+    let _thinkRaf = null, _thinkOpened = false;
     let rawAcc = '';
     let controller = null;
     let userClosedPanel = false;
@@ -338,23 +339,38 @@ export function createChat(deps) {
         return b;
     }
 
-    function onThinking(t) {
+    function _flushThinking() {
+        _thinkRaf = null;
         const mode = localStorage.getItem('marex-thinking-mode') || 'all';
         if (mode === 'hidden') return;
-        thinkText += t;
-        ensureThinkBadge();
-        if (mode === 'all') openSidePanel();
-        if (sidePanelSpinner) sidePanelSpinner.style.display = 'block';
+        if (!_thinkOpened) {
+            _thinkOpened = true;
+            ensureThinkBadge();
+            if (mode === 'all') openSidePanel();
+            if (sidePanelSpinner) sidePanelSpinner.style.display = 'block';
+        }
+        if (mode !== 'all') return;
         if (!thinkBlockEl) {
             thinkBlockEl = document.createElement('div');
             thinkBlockEl.className = 'sp-think-block';
             thinkBlockEl.innerHTML = '<div class="sp-think-block-label">Reasoning</div><div class="sp-think-text"></div>';
-            if (sidePanelBody && mode === 'all') sidePanelBody.appendChild(thinkBlockEl);
-            autoScroll.onContentChange();
+            if (sidePanelBody) sidePanelBody.appendChild(thinkBlockEl);
         }
         const txt = thinkBlockEl.querySelector('.sp-think-text');
-        if (txt && mode === 'all') txt.textContent += t;
-        if (sidePanelBody && mode === 'all' && panelScroll) panelScroll.onContentChange();
+        if (txt) txt.textContent = thinkText;
+        if (sidePanelBody && panelScroll) panelScroll.onContentChange();
+    }
+
+    function _resetThinkStream() {
+        if (_thinkRaf !== null) { cancelAnimationFrame(_thinkRaf); _thinkRaf = null; }
+        _thinkOpened = false;
+    }
+
+    function onThinking(t) {
+        const mode = localStorage.getItem('marex-thinking-mode') || 'all';
+        if (mode === 'hidden') return;
+        thinkText += t;
+        if (_thinkRaf === null) _thinkRaf = requestAnimationFrame(_flushThinking);
     }
 
     function _callOpenRouterFree(model, prompt) {
@@ -390,6 +406,7 @@ export function createChat(deps) {
     }
 
     function finishThinking() {
+        _resetThinkStream();
         if (thinkBadgeEl) thinkBadgeEl.classList.add('done');
         if (thinkShimmer) { thinkShimmer.stop(); thinkShimmer = null; }
         if (sidePanelSpinner) sidePanelSpinner.style.display = 'none';
@@ -398,7 +415,10 @@ export function createChat(deps) {
         thinkText = '';
         if (block && raw) {
             const txt = block.querySelector('.sp-think-text');
-            if (txt) translateReasoning(raw).then((fr) => { if (fr) txt.textContent = fr; });
+            if (txt) {
+                txt.textContent = raw;
+                translateReasoning(raw).then((fr) => { if (fr) txt.textContent = fr; });
+            }
         }
         thinkBlockEl = null;
         thinkStepEl = null;
@@ -445,6 +465,7 @@ export function createChat(deps) {
     function setSession(s) {
         session = s;
         thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null;
+        _resetThinkStream();
         pendingMd = null;
         resetSidePanel();
         renderHistory();
@@ -462,6 +483,7 @@ export function createChat(deps) {
         setChatVisible(false);
         pendingEl = null; pendingMd = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = '';
         todoBlockEl = null; statusEl = null;
+        _resetThinkStream();
         resetSidePanel();
         return session;
     }
@@ -813,6 +835,7 @@ export function createChat(deps) {
         const sys = (skill ? skill + '\n\n' : '') + baseSys + instructionsBlock + skillsPrompt + outputInstruction;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
         pendingEl = null; pendingMd = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
+        _resetThinkStream();
         todoBlockEl = null; statusEl = null;
         currentToolGroupEl = null;
         pendingEl = addMsg('assistant', '', false);
