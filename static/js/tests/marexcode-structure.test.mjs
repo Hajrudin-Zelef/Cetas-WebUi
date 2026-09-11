@@ -119,8 +119,10 @@ test('chat.js : traduction FR du reasoning (OpenRouter free → DeepSeek → ang
     assert.match(src, /translateReasoning\(raw\)\.then/, 'la traduction doit remplacer le texte affiché en fin de tour');
     assert.match(src, /reasoning-translate\.js/, 'le module de traduction doit être importé');
     const mod = readFileSync(resolve(MX, 'js/reasoning-translate.js'), 'utf8');
-    assert.match(mod, /provider:\s*'openrouter'[\s\S]{0,140}model:\s*'openrouter\/free'/, 'OpenRouter free en primaire');
+    assert.match(mod, /provider:\s*'openrouter'[\s\S]{0,160}model:\s*'nex-agi\/nex-n2\.5-pro:free'/, 'modèle gratuit épinglé en primaire');
     assert.match(mod, /provider:\s*'deepseek'[\s\S]{0,140}model:\s*'deepseek-chat'/, 'DeepSeek en second recours');
+    assert.match(mod, /looksFrench/, 'garde-fou langue FR requis');
+    assert.match(mod, /not-french/, 'sortie non-FR doit déclencher le fallback');
 });
 
 test('composer.html : sélecteurs par outil (6)', () => {

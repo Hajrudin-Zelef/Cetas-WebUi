@@ -76,6 +76,41 @@ test('primaire réponse tronquée (entrée longue) → bascule DeepSeek', async 
   assert.deepEqual(calls, ['openrouter', 'deepseek']);
 });
 
+test('primaire réponse en anglais non traduite → rejetée (not-french) → bascule DeepSeek', async () => {
+  const calls = [];
+  const out = await translateReasoning('some reasoning', (step) => {
+    calls.push(step.provider);
+    if (step.provider === 'openrouter') {
+      return Promise.resolve({ text: "Here's a thinking process: The user is asking to add a feature. I should first search the codebase then find the answer." });
+    }
+    return Promise.resolve({ text: "Voici la traduction française du raisonnement demandé." });
+  }, null, steps);
+  assert.match(out, /traduction française/i);
+  assert.deepEqual(calls, ['openrouter', 'deepseek']);
+});
+
+test('primaire réponse FR acceptée (accents + mots français)', async () => {
+  const calls = [];
+  const out = await translateReasoning('some reasoning', (step) => {
+    calls.push(step.provider);
+    return Promise.resolve({ text: "L'utilisateur demande d'ajouter un bouton ; je dois d'abord chercher dans le code puis implémenter la modification." });
+  }, null, steps);
+  assert.match(out, /bouton/);
+  assert.deepEqual(calls, ['openrouter']);
+});
+
+test('language guard: sortie longue sans aucun signal FR → not-french', async () => {
+  const logs = [];
+  await translateReasoning('reasoning', (step) => {
+    if (step.provider === 'openrouter') {
+      return Promise.resolve({ text: 'The quick brown fox jumps over the lazy dog while evaluating several candidate strategies.' });
+    }
+    return Promise.resolve({ text: 'Le renard brun rapide saute par-dessus le chien paresseux pendant plusieurs stratégies.' });
+  }, (i) => logs.push(i), steps);
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0].reason, 'not-french');
+});
+
 test('les deux providers échouent → null (anglais conservé, pas de blocage)', async () => {
   const calls = [];
   const out = await translateReasoning('reasoning', (step) => {
