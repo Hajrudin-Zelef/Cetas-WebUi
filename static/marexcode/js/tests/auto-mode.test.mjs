@@ -5,6 +5,14 @@ import { classifyTask } from '../task-classifier.js';
 import { buildProjectIndex, checkCompaction, estimateTokens, COMPACTION_THRESHOLD } from '../context-store.js';
 import { composePrompt } from '../prompt-composer.js';
 import { runAutoMode, AUTO_PHASES } from '../runtime.js';
+import { getAutoModelConfig, setAutoModel, getEffectiveModel } from '../auto-mode-config.js';
+
+const lsStore = {};
+globalThis.localStorage = {
+  getItem: (k) => (k in lsStore ? lsStore[k] : null),
+  setItem: (k, v) => { lsStore[k] = String(v); },
+  removeItem: (k) => { delete lsStore[k]; },
+};
 
 const VALID_TOOL_NAMES = ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob', 'Ls', 'TodoWrite', 'LSP', 'RunScript'];
 
@@ -257,6 +265,48 @@ test('runAutoMode: onError propage une erreur du stream et interrompt la chaîne
   assert.ok(captured instanceof Error, 'la phase d\'erreur doit appeler onError');
   assert.equal(captured.message, 'boom');
   assert.equal(calls, 1, 'la chaîne s\'arrête après la première erreur');
+});
+
+test('getAutoModelConfig: localStorage vide ou JSON invalide → {} sans exception', () => {
+  delete lsStore['marexcode_auto_models'];
+  assert.deepEqual(getAutoModelConfig(), {});
+  lsStore['marexcode_auto_models'] = '{pas du json';
+  assert.deepEqual(getAutoModelConfig(), {});
+  lsStore['marexcode_auto_models'] = '[1,2]';
+  assert.deepEqual(getAutoModelConfig(), {});
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('setAutoModel: écrit puis fusionne sans écraser les autres rôles', () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoModel('plan', 'glm-9');
+  assert.deepEqual(getAutoModelConfig(), { plan: 'glm-9' });
+  setAutoModel('audit', 'deepseek-x');
+  assert.deepEqual(getAutoModelConfig(), { plan: 'glm-9', audit: 'deepseek-x' });
+  setAutoModel('code', 'kimi-y');
+  assert.deepEqual(getAutoModelConfig(), { plan: 'glm-9', audit: 'deepseek-x', code: 'kimi-y' });
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('getEffectiveModel: modèle configuré si présent, sinon placeholder agent.model', () => {
+  delete lsStore['marexcode_auto_models'];
+  const agent = { id: 'code', model: 'model-code' };
+  assert.equal(getEffectiveModel('code', agent), 'model-code', 'placeholder quand non configuré');
+  setAutoModel('code', 'glm-5.2');
+  assert.equal(getEffectiveModel('code', agent), 'glm-5.2', 'configuré prioritaire');
+  setAutoModel('code', '   ');
+  assert.equal(getEffectiveModel('code', agent), 'model-code', 'chaîne vide = fallback placeholder');
+  delete lsStore['marexcode_auto_models'];
+});
+
+test('resolveAgent: .model résolu depuis la config, placeholder comme fallback, AGENT_ROLES non muté', () => {
+  delete lsStore['marexcode_auto_models'];
+  setAutoModel('code', 'kimi-k2.6');
+  assert.equal(resolveAgent('code').model, 'kimi-k2.6', 'rôle configuré → modèle effectif');
+  assert.equal(resolveAgent('plan').model, 'model-plan', 'rôle non configuré → placeholder');
+  assert.equal(AGENT_ROLES.code.model, 'model-code', 'AGENT_ROLES garde le placeholder intact (pas de mutation)');
+  assert.equal(resolveAgent('inconnu').model, 'kimi-k2.6', 'rôle inconnu → code, donc config code');
+  delete lsStore['marexcode_auto_models'];
 });
 
 

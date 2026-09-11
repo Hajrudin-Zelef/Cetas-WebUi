@@ -1,3 +1,5 @@
+import { getEffectiveModel } from './auto-mode-config.js';
+
 export const AGENT_ROLES = {
   plan: {
     id: 'plan',
@@ -29,7 +31,8 @@ export const AGENT_ROLES = {
 };
 
 export function resolveAgent(role) {
-  return AGENT_ROLES[role] || AGENT_ROLES.code;
+  const agent = AGENT_ROLES[role] || AGENT_ROLES.code;
+  return Object.assign({}, agent, { model: getEffectiveModel(agent.id, agent) });
 }
 
 export function getToolsForRole(agent, tools) {
