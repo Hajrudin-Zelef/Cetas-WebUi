@@ -686,8 +686,8 @@ html,body{
   align-items:center;
   justify-content:center;
   background:
-    radial-gradient(circle at 50% 42%, rgba(91,127,255,.05), transparent 60%),
-    var(--bg-app);
+    radial-gradient(ellipse at center, rgba(36,48,100,0.55) 0%, rgba(12,15,26,0.30) 45%, #000000 80%),
+    #000000;
   overflow:hidden;
 }
 
