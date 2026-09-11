@@ -6,7 +6,7 @@ import { buildProjectIndex, checkCompaction, estimateTokens, COMPACTION_THRESHOL
 import { composePrompt } from '../prompt-composer.js';
 import { runAutoMode, AUTO_PHASES } from '../runtime.js';
 
-const VALID_TOOL_NAMES = ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob', 'Ls', 'TodoWrite', 'LSP'];
+const VALID_TOOL_NAMES = ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob', 'Ls', 'TodoWrite', 'LSP', 'RunScript'];
 
 test('AGENT_ROLES expose plan/code/audit', () => {
   assert.ok(AGENT_ROLES.plan, 'plan manquant');
@@ -30,6 +30,16 @@ test('chaque rôle a model + tools non vides, noms d\'outils valides', () => {
       assert.ok(VALID_TOOL_NAMES.includes(t), `${role.id}: outil inconnu dans MAREXCODE_TOOLS: ${t}`);
     }
   }
+});
+
+test('getToolsForRole: RunScript filtré pour code, absent pour plan/audit', () => {
+  const globalTools = VALID_TOOL_NAMES.map(n => ({ type: 'function', function: { name: n, description: 'd', parameters: {} } }));
+  const codeTools = getToolsForRole(AGENT_ROLES.code, globalTools).map(t => t.function.name);
+  const planTools = getToolsForRole(AGENT_ROLES.plan, globalTools).map(t => t.function.name);
+  const auditTools = getToolsForRole(AGENT_ROLES.audit, globalTools).map(t => t.function.name);
+  assert.ok(codeTools.includes('RunScript'), 'code doit avoir RunScript');
+  assert.ok(!planTools.includes('RunScript'), 'plan (lecture seule) ne doit pas avoir RunScript');
+  assert.ok(!auditTools.includes('RunScript'), 'audit (lecture seule) ne doit pas avoir RunScript');
 });
 
 test('classifyTask: plan pour demande d\'analyse/architecture', () => {

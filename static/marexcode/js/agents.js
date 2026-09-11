@@ -13,7 +13,7 @@ export const AGENT_ROLES = {
     name: 'Développeur',
     model: 'model-code',
     fallback: null,
-    tools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob', 'Ls', 'TodoWrite', 'LSP'],
+    tools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob', 'Ls', 'TodoWrite', 'LSP', 'RunScript'],
     systemPrompt: 'Tu es un développeur expert. Implémente le plan validé, fichier par fichier. Lis le fichier avant de le modifier (Read), puis Edit ou Write pour appliquer le changement. Utilise Bash pour tester dans le sandbox. Décompose avec TodoWrite. Cite les chemins exacts et les lignes modifiées.',
     maxTokens: 32000,
   },

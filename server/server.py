@@ -1751,6 +1751,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path == "/api/marexcode/redo":
             self._exec_redo()
             return
+        if self.path == "/api/marexcode/runscript":
+            self._marex_runscript()
+            return
         if self.path == "/api/websearch":
             self._websearch()
             return

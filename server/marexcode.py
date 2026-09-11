@@ -378,6 +378,71 @@ class MarexcodeMixin:
         err = proc.stderr[:EXEC_MAX_OUTPUT]
         return {"stdout": out, "stderr": err, "code": proc.returncode, "timeout_used": exec_timeout}
 
+    # ── RunScript (exécution typée python/node, sans shell) ────────────
+
+    def _exec_runscript(self, language: str, code: str, timeout: int = None) -> dict:
+        """Exécution typée d'un script python ou node dans le sandbox.
+
+        Contrairement à _exec_bash (whitelist de binaires), cet outil reçoit un
+        langage fermé {python, node}, écrit le code dans un fichier temporaire à
+        nom aléatoire sous .runscript_tmp/, et le lance via subprocess.run(liste)
+        — JAMAIS shell=True. L'environnement du sous-processus est nettoyé :
+        seules PATH, HOME (= racine workspace) et LANG sont transmises, aucun
+        secret hérité (vault, JWT, worker token). Timeout borné à 60s (défaut 30s),
+        stdout/stderr tronqués à EXEC_MAX_OUTPUT, fichier temporaire supprimé dans
+        tous les cas (finally).
+        """
+        import uuid
+        root = self._exec_root()
+        if not root:
+            return {"error": "Sandbox non initialisée", "code": 500}
+        lang = (language or "").strip().lower()
+        runners = {"python": "python3", "node": "node"}
+        if lang not in runners:
+            return {"error": f"Unsupported language: {language}", "code": 400}
+        ext = "py" if lang == "python" else "js"
+        t = min(timeout if timeout else 30, 60)
+        tmp_dir = os.path.join(root, ".runscript_tmp")
+        try:
+            os.makedirs(tmp_dir, exist_ok=True)
+        except OSError as e:
+            return {"error": f"Préparation sandbox impossible: {e}", "code": 500}
+        fpath = os.path.join(tmp_dir, uuid.uuid4().hex + "." + ext)
+        try:
+            with open(fpath, "w", encoding="utf-8") as f:
+                f.write(code or "")
+        except OSError as e:
+            return {"error": f"Écriture script impossible: {e}", "code": 500}
+        safe_env = {
+            "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
+            "HOME": root,
+            "LANG": "C.UTF-8",
+        }
+        try:
+            proc = subprocess.run(
+                [runners[lang], fpath],
+                cwd=root,
+                env=safe_env,
+                capture_output=True,
+                text=True,
+                timeout=t,
+            )
+        except subprocess.TimeoutExpired:
+            return {"error": f"Timeout dépassé ({t}s)", "code": 124, "timed_out": True}
+        except FileNotFoundError:
+            return {"error": f"Binaire introuvable: {runners[lang]}", "code": -1}
+        except Exception as e:
+            return {"error": f"Erreur exécution: {e}", "code": -1}
+        finally:
+            try:
+                os.remove(fpath)
+            except OSError:
+                pass
+        return {"stdout": (proc.stdout or "")[:EXEC_MAX_OUTPUT],
+                "stderr": (proc.stderr or "")[:EXEC_MAX_OUTPUT],
+                "code": proc.returncode,
+                "timed_out": False}
+
     # ── Outils fichiers ────────────────────────────────────────────────
 
     def _exec_read(self, rel_path: str, offset=None, limit=None) -> dict:
@@ -488,6 +553,42 @@ class MarexcodeMixin:
         data["redo_stack"].append(entry)
         self._undo_log_save(data)
         self._respond_json({"ok": True, "file": entry["file"]})
+
+    def _marex_runscript(self):
+        """POST /api/marexcode/runscript — exécution typée python/node (mode Auto).
+        Body: {"language": "python|node", "code": "...", "timeout?": int}
+        Additif : n'affecte pas /api/exec ni la whitelist Bash.
+        """
+        from server import _rate_check
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        if not _rate_check("runscript:" + username, 30, 60):
+            self._respond_json({"error": "Trop de requêtes. Réessayez dans une minute."}, 429)
+            return
+        self._marex_root = marex_project_root(username)
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self._respond_json({"error": "JSON invalide"}, 400)
+            return
+        language = str(data.get("language", ""))
+        code = str(data.get("code", ""))
+        log.info("runscript lang=%s user=%s", language, username)
+        try:
+            result = self._exec_runscript(language, code, data.get("timeout"))
+        except Exception as e:
+            self._respond_json({"error": f"Erreur interne: {e}"}, 500)
+            return
+        if "error" in result:
+            status = result.get("code")
+            if not (isinstance(status, int) and 400 <= status < 600):
+                status = 500
+            self._respond_json({"error": result["error"], "language": language}, status)
+            return
+        self._respond_json(result)
 
     def _exec_redo(self):
         """POST /api/marexcode/redo — rétablit la dernière opération annulée."""
