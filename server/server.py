@@ -1670,9 +1670,24 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if path == "/api/marexcode/profile/activity":
             self._profile_activity_get()
             return
-        # Memory
+        # Memory (legacy single-file)
         if path == "/api/marexcode/memory":
             self._memory_get()
+            return
+        # Session-scoped memory pages
+        if path.startswith("/api/marexcode/memory/") and path.endswith("/pages"):
+            sid = path[len("/api/marexcode/memory/"):-len("/pages")]
+            self._mem_list_page(sid)
+            return
+        if path.startswith("/api/marexcode/memory/") and path.endswith("/index"):
+            sid = path[len("/api/marexcode/memory/"):-len("/index")]
+            self._mem_get_index_page(sid)
+            return
+        if path.startswith("/api/marexcode/memory/") and "/page/" in path:
+            parts = path[len("/api/marexcode/memory/"):].split("/page/", 1)
+            sid = parts[0]
+            name = parts[1] if len(parts) > 1 else ""
+            self._mem_read_page(sid, name)
             return
         # MCP servers
         if path == "/api/mcp/servers":
@@ -1754,6 +1769,15 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path == "/api/marexcode/runscript":
             self._marex_runscript()
             return
+        # Session-scoped memory: add page / search
+        if self.path.startswith("/api/marexcode/memory/") and self.path.endswith("/page"):
+            sid = self.path[len("/api/marexcode/memory/"):-len("/page")]
+            self._mem_add_page(sid)
+            return
+        if self.path.startswith("/api/marexcode/memory/") and self.path.endswith("/search"):
+            sid = self.path[len("/api/marexcode/memory/"):-len("/search")]
+            self._mem_search_page(sid)
+            return
         if self.path == "/api/websearch":
             self._websearch()
             return
@@ -1799,6 +1823,13 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path == "/api/marexcode/memory":
             self._memory_put()
             return
+        # Session-scoped memory: edit page
+        if self.path.startswith("/api/marexcode/memory/") and "/page/" in self.path:
+            parts = self.path[len("/api/marexcode/memory/"):].split("/page/", 1)
+            sid = parts[0]
+            name = parts[1] if len(parts) > 1 else ""
+            self._mem_edit_page(sid, name)
+            return
         if self.path.startswith("/api/marexcode/workspaces/") and self.path.endswith("/activate"):
             ws_id = self.path[len("/api/marexcode/workspaces/"):-len("/activate")]
             self._workspace_activate_put(ws_id)
@@ -1838,6 +1869,13 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             return
         if self.path == "/api/marexcode/memory":
             self._memory_delete()
+            return
+        # Session-scoped memory: delete page
+        if self.path.startswith("/api/marexcode/memory/") and "/page/" in self.path:
+            parts = self.path[len("/api/marexcode/memory/"):].split("/page/", 1)
+            sid = parts[0]
+            name = parts[1] if len(parts) > 1 else ""
+            self._mem_delete_page(sid, name)
             return
         self.send_response(404)
         self.end_headers()
@@ -2731,6 +2769,80 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             self._respond_json({"ok": True})
         except Exception as e:
             self._error(500, f"Erreur suppression: {e}")
+
+    # ── Session-scoped memory (pages .md + MEMORY.md index) ──────────
+
+    def _mem_list_page(self, session_id: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        self._mem_list(username, session_id)
+
+    def _mem_read_page(self, session_id: str, name: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        offset = int(self.headers.get("X-Mem-Offset", 0) or 0)
+        limit = int(self.headers.get("X-Mem-Limit", 0) or 0)
+        self._mem_read(username, session_id, name, offset, limit)
+
+    def _mem_add_page(self, session_id: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        self._mem_add(username, session_id, data.get("name", ""), data.get("content", ""))
+
+    def _mem_edit_page(self, session_id: str, name: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        self._mem_edit(username, session_id, name, data.get("old", ""), data.get("new", ""))
+
+    def _mem_delete_page(self, session_id: str, name: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        self._mem_delete(username, session_id, name)
+
+    def _mem_search_page(self, session_id: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        self._mem_search(username, session_id, data.get("query", ""), data.get("limit", 8))
+
+    def _mem_get_index_page(self, session_id: str):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._marex_root = marex_project_root(username)
+        self._mem_get_index(username, session_id)
 
     def _error(self, code: int, msg: str):
         body = json.dumps({"error": msg}).encode()

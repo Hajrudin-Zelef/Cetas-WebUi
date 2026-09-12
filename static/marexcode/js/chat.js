@@ -510,6 +510,7 @@ export function createChat(deps) {
     function setSession(s) {
         if (translateTimer) { clearTimeout(translateTimer); translateTimer = null; }
         session = s;
+        window._marexSessionId = s && s.id ? s.id : '';
         thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null;
         _resetThinkStream();
         pendingMd = null;
@@ -582,6 +583,13 @@ export function createChat(deps) {
         const h = { 'Content-Type': 'application/json' };
         if (typeof Auth !== 'undefined' && Auth.getToken) { const tk = Auth.getToken(); if (tk) h.Authorization = 'Bearer ' + tk; }
         return h;
+    }
+
+    async function fetchMemIndex(sessionId) {
+        var headers = _authHeaders();
+        var resp = await fetch('/api/marexcode/memory/' + encodeURIComponent(sessionId) + '/index', { headers: headers, signal: AbortSignal.timeout(5000) });
+        if (!resp.ok) return null;
+        return await resp.json().catch(function() { return null; });
     }
 
     async function handleSlashCommand(text) {
@@ -839,10 +847,11 @@ export function createChat(deps) {
         addMsg('user', userContent);
         updateTokenCounter();
 
-        const baseSys = 'You are Marexcode, a professional AI coding assistant integrated into Cetas. PRIORITY RULE: if the user\'s question is general, conceptual, or does not require action on the workspace (e.g. \"what is JSON\", \"explain X\", general knowledge or discussion) — respond directly in text, WITHOUT using any tool. Only use Ls/Glob/Read/Write/Edit/Grep/Bash/TodoWrite when the task explicitly requires reading, creating, modifying, or analyzing workspace files. You help the user read, write, edit, and analyze code in their workspace when relevant. RULES FOR CODE TASKS: 1) Use the tools (Ls, Glob, Read, Write, Edit, Grep, Bash, TodoWrite) to actually accomplish the task, NOT just explain it. 2) Use Ls or Glob to discover the workspace structure before reading files. 3) Then read the relevant files before proposing changes. 4) After each modification, state the file and line. 5) If a command fails, read the error and fix it. 6) Be concise and cite exact paths. 7) Never modify outside the sandbox, never request sudo. 8) For any multi-step task: use TodoWrite AT THE START to list the plan, then update it after each completed step to reflect status (pending → in_progress → completed). 9) For a complex task: analyze → plan (TodoWrite) → execute → verify. 10) When planning or implementing a complex task, use AT LEAST one relevant skill from the AVAILABLE SKILLS below to guide your approach. 11) STRICT READING RULE, NO EXCEPTIONS: every Read call MUST have an explicit limit=50 and offset, regardless of the file\'s apparent size, even if the user says \"read\" or \"show me\" a file. NEVER call Read without limit, no matter the file size. 12) NO FULL REPRODUCTION: after reading a file with Read, NEVER copy its full content into your response (no code block reproducing the file line by line). Only summarize: the file\'s purpose in 1 sentence, its structure (headings/sections) as a short list, and the 2-3 most important points. If the file is longer than 50 lines and the user wants to see the full content, tell them its length and ask if they want a specific section (e.g. \"it\'s 117 lines, want to see a particular section?\") instead of displaying everything yourself. 13) MCP TOOLS: tools prefixed with \"mcp_\" connect to external services. Use them PROACTIVELY: context7 for library documentation (resolve-library-id then query-docs), fetch for web content, memory for knowledge graph, filesystem for file operations. When the user asks about a library/framework, ALWAYS use context7 first to get accurate docs. When the user asks to search the web or fetch a URL, use fetch. When the user wants to remember facts across sessions, use memory. 14) CUSTOM TOOLS: tools prefixed with \"custom_\" are user-defined commands from tools.json. Use them when the user asks to run a specific workflow, deploy, test, or any task matching a custom tool description. Pass the exact parameters the tool expects. 15) WEB SEARCH: when using web_search for a GENERAL question (not a coding task), include a "Sources:" section at the end with relevant URLs as markdown hyperlinks: [Title](URL). For coding tasks, do NOT include sources — focus on the code solution only. 16) LANGUAGE: ALWAYS respond in the same language the user uses in their last message. If the user writes in French, respond in French. If in English, respond in English. Never switch language on your own.';
+        const layer1_identity = 'Tu es Marexcode, un assistant de codage IA professionnel integre dans Cetas. REGLE DE PRIORITE: si la question est generale ou conceptuelle, reponds directement SANS outil. Utilise les outils uniquement quand la tache necessite de lire, creer, modifier ou analyser des fichiers.';
+        const layer2_tools = 'REGLES: 1) Utilise les outils pour accomplir, pas expliquer. 2) Ls/Glob pour decouvrir avant de lire. 3) Lis avant de proposer. 4) Indique fichier+ligne apres modif. 5) Si echec, lis erreur et corrige. 6) Concis, chemins exacts. 7) Jamais hors sandbox. 8) Multi-etapes: TodoWrite au debut + mise a jour. 9) Complexe: analyse->plan->execute->verify. 10) Utilise un skill pertinent. 11) Read: limit=50+offset toujours. 12) Pas reproduction complete: resume 1 phrase + structure + 2-3 points.';
+        const layer3_date = '\n\nDate: ' + new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) + '.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
 
-        // Injecter les skills activés
         let skillsPrompt = '';
         try {
             const skillsConfig = await listSkillsConfig();
@@ -850,17 +859,16 @@ export function createChat(deps) {
                 const autoSkills = skillsConfig.filter(s => s.enabled && s.mode === 'auto');
                 const manualSkills = skillsConfig.filter(s => s.enabled && s.mode === 'manual');
                 if (autoSkills.length) {
-                    skillsPrompt += '\n\nSKILLS DISPONIBLES (utilise automatiquement celui/ceux pertinent(s) pour la requête, sans demander confirmation) :\n' +
+                    skillsPrompt += '\n\nSKILLS DISPONIBLES (utilise automatiquement) :\n' +
                         autoSkills.map(s => '- ' + s.id + ': ' + s.description).join('\n');
                 }
                 if (manualSkills.length) {
-                    skillsPrompt += '\n\nSKILLS DISPONIBLES SUR DEMANDE (n\'utilise que si l\'utilisateur le mentionne explicitement par son nom) :\n' +
+                    skillsPrompt += '\n\nSKILLS SUR DEMANDE :\n' +
                         manualSkills.map(s => '- ' + s.id + ': ' + s.description).join('\n');
                 }
             }
-        } catch (e) { /* ignore skills errors */ }
+        } catch (e) { }
 
-        // Inject instructions (from cache, preloaded at boot)
         let instructionsBlock = '';
         if (cachedInstructions.global) {
             instructionsBlock += '\n\nUSER GLOBAL INSTRUCTIONS (highest priority):\n' + cachedInstructions.global;
@@ -869,14 +877,13 @@ export function createChat(deps) {
             instructionsBlock += '\n\nPROJECT-SPECIFIC INSTRUCTIONS:\n' + cachedInstructions.workspace;
         }
 
-        // Output mode
         const outputMode = localStorage.getItem('marex-output-mode') || 'verbose';
         let outputInstruction = '';
         if (outputMode === 'compressed') {
-            outputInstruction = '\n\nOUTPUT MODE: COMPRESSED. Keep responses extremely short. One sentence max per answer. No explanations unless asked. Fragments OK. No preamble, no conclusion.';
+            outputInstruction = '\n\nOUTPUT MODE: COMPRESSED. One sentence max.';
         }
 
-        const sys = (skill ? skill + '\n\n' : '') + baseSys + instructionsBlock + skillsPrompt + outputInstruction;
+        const sys = (skill ? skill + '\n\n' : '') + layer1_identity + '\n\n' + layer2_tools + layer3_date + instructionsBlock + skillsPrompt + outputInstruction;
         const history = [{ role: 'system', content: sys }].concat(session.messages);
         pendingEl = null; pendingMd = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
         userClosedPanel = false;
@@ -936,17 +943,30 @@ export function createChat(deps) {
             var webSearchEnabled = true;
             try { webSearchEnabled = localStorage.getItem('marex-web-search') !== '0'; } catch (e) {}
             if (typeof marexInjectWebSearch === 'function') marexInjectWebSearch(model, webSearchEnabled);
+
+            var allTools = MAREX_TOOLS.concat(typeof MEM_TOOLS !== 'undefined' ? MEM_TOOLS : []);
+
+            if (window._marexSessionId && typeof fetchMemIndex === 'function') {
+                try {
+                    var memIdx = await fetchMemIndex(window._marexSessionId);
+                    if (memIdx && memIdx.content) {
+                        history = [{ role: 'system', content: 'Index memoire de cette session (titres, pas contenu). Utilise mem_read pour lire une page.\n\n' + memIdx.content }].concat(history);
+                    }
+                } catch (e) { }
+            }
+
+            var chatDedup = {};
             await streamModelWithTools(
                 model,
                 history,
                 onChunk,
                 onDone,
                 onError,
-                MAREX_TOOLS,
+                allTools,
                 true,
                 (t) => onThinking(t),
                 controller.signal,
-                null, null, 0
+                null, { _dedup: chatDedup }, 0
             );
         } catch (err) {
             setRunning(false);

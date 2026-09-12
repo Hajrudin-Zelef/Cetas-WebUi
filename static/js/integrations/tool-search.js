@@ -1,4 +1,150 @@
-var TOOL_SEARCH_MAX_ITERATIONS = 15;async function _executeToolCall(e){var t,r=e.function.name;try{t=JSON.parse(e.function.arguments)}catch(e){t={}}if("web_search"===r){window.dispatchEvent(new CustomEvent("websearch-start"));var a=await executeWebSearch(t.query||"");window.dispatchEvent(new CustomEvent("websearch-end",{detail:{success:a&&0!==a.length}}));return a&&0!==a.length?{id:e.id,name:r,result:a}:{id:e.id,name:r,result:{error:"Recherche web indisponible actuellement (tous les moteurs ont échoué). Ne pas affirmer qu il n y a aucun résultat sur ce sujet -- informe l utilisateur que la recherche web est temporairement indisponible."}}}if("web_fetch"===r){var o=await executeWebFetch(t.url||"");return{id:e.id,name:r,result:o}}if("Bash"===r||"Read"===r||"Write"===r||"Edit"===r||"Grep"===r||"Ls"===r||"Glob"===r)return _execMarexcodeTool(e);if("RunScript"===r)return _execRunscriptTool(e);if("LSP"===r)return _execLspTool(e);if(r&&r.indexOf("mcp_")===0)return _execMcpTool(e);if(r&&r.indexOf("custom_")===0)return _execCustomTool(e);if("TodoWrite"===r){window.dispatchEvent(new CustomEvent("marexcode-todo",{detail:{todos:t.todos||[]}}));return{id:e.id,name:r,result:{ok:!0}}}return{id:e.id,name:r,result:{error:"Unknown tool: "+r}}}async function streamModelWithTools(e,t,r,a,o,n,l,i,u,s,c,d){d||(d=0);var h=getModelEditeur(e)||("function"==typeof getSearchModelEditeur?getSearchModelEditeur(e):null),f=PROVIDERS[h];if(!f)return c&&c.model&&c.provider?(console.warn("[tool-search] éditeur inconnu pour "+e+" → fallback "+c.model),streamModelWithTools(c.model,t,r,a,o,n,!1,i,u,s,c._nextFallback||null,0)):void o(new Error("Éditeur inconnu pour le modèle "+e));var _idleMs="number"==typeof window._streamIdleTimeoutMs?window._streamIdleTimeoutMs:12e4,_idleTimer=null,_idleFired=!1,_ctl=new AbortController();if(u){if(u.aborted)_ctl.abort();else u.addEventListener("abort",function(){_ctl.abort()},{once:!0})}var _armIdle=function(){_idleTimer&&clearTimeout(_idleTimer);_idleTimer=setTimeout(function(){_idleFired=!0;try{_ctl.abort()}catch(e){}},_idleMs)};_armIdle();try{var m,_sys=null;for(var _k=0;_k<t.length;_k++){if(t[_k]&&"system"===t[_k].role){_sys=typeof t[_k].content==="string"?t[_k].content:"";break}}var _opts=Object.assign({},s||{},{tools:Array.isArray(n)&&n.length?n:(s&&s.tools)});var g=f.formatMessages(t),p=f.buildBody(e,g,_sys,!!(Array.isArray(n)&&n.length)||!!(s&&s.webSearch),_opts);p.tools&&0!==p.tools.length||(p.tools="undefined"!=typeof WEB_SEARCH_TOOLS?WEB_SEARCH_TOOLS:[]);if(window.FORCE_WEB_SEARCH&&p.tools&&p.tools.some(function(t){return t.function&&"web_search"===t.function.name})){p.tool_choice={type:"function",function:{name:"web_search"}}}try{m=await fetch(f.getUrl(e,l),{method:"POST",headers:"function"==typeof proxyHeaders?proxyHeaders(h,f.getHeaders()):f.getHeaders(),body:JSON.stringify(p),signal:_ctl.signal})}catch(e){if(e&&"AbortError"===e.name)throw e;throw new Error("Connexion à "+h+" impossible.")}if(!m.ok){var v=await m.text();throw new Error(h+" API error "+m.status+": "+v)}var y=createChatCompletionsParser(!!i,{extractCitations:function(e){var t=e.choices&&e.choices[0]&&e.choices[0].delta&&e.choices[0].delta.annotations;return t?t.filter((function(e){return"url_citation"===e.type&&e.url})).map((function(e){return{url:e.url,title:e.title||""}})):null},extractReasoning:function(e){return e.choices&&e.choices[0]&&e.choices[0].delta&&(e.choices[0].delta.reasoning_content||e.choices[0].delta.reasoning)||null},accumulateCitations:!0,accumulateToolCalls:!0}),_="";for await(var w of readSSE(m,function(){_armIdle()}))for(var T=y(w),b=0;b<T.length;b++){var E=T[b];"chunk"===E.type?(_+=E.data,r(E.data)):"thinking"===E.type&&i&&E.data&&i(E.data)}for(var S=y.flush(),C=0;C<S.length;C++){var O=S[C];"chunk"===O.type?(_+=O.data,r(O.data)):"thinking"===O.type&&i&&O.data&&i(O.data)}var A=y.getResult(),x=A.usage,R=A.citations;if(y.hasToolCalls&&y.hasToolCalls()&&d<(window._toolMaxIterations||TOOL_SEARCH_MAX_ITERATIONS)){for(var k=y.getToolCalls(),M=[],H=0;H<k.length;H++)try{var W=await _withToolGuard(_executeToolCall(k[H]),k[H]);M.push(W)}catch(e){M.push({id:k[H].id,name:k[H].function&&k[H].function.name||"unknown",result:{error:e&&e.message||String(e)}})}for(var I=[],N=0;N<M.length;N++)if("web_search"===M[N].name&&Array.isArray(M[N].result))for(var L=0;L<M[N].result.length;L++)I.push({url:M[N].result[L].url,title:M[N].result[L].title});var P={role:"assistant"};P.content=_||null,P.tool_calls=k.map((function(e){return{id:e.id,type:"function",function:{name:e.function.name,arguments:e.function.arguments}}}));var q=M.map((function(e){var t="string"==typeof e.result?e.result:JSON.stringify(e.result);return{role:"tool",tool_call_id:e.id,content:t}}));if(_idleTimer)clearTimeout(_idleTimer);return streamModelWithTools(e,t.concat([P],q),r,a,o,n,!0,i,u,s,c,d+1)}if(!_&&d>=(window._toolMaxIterations||TOOL_SEARCH_MAX_ITERATIONS)){r("⚠️ Limite d'étapes atteinte, réessayez ou reformulez.");}a(x,R)}catch(l){if(_idleTimer)clearTimeout(_idleTimer);if(l&&"AbortError"===l.name)return void(_idleFired?o(new Error("Modèle silencieux depuis "+Math.round(_idleMs/1e3)+"s : stream inactif, tentative interrompue. Réessayez ou changez de modèle.")):a(null,[]));if(c&&c.model&&c.provider)return console.warn("[tool-search] échec "+e+" → fallback "+c.model),streamModelWithTools(c.model,t,r,a,o,n,!1,i,u,s,c._nextFallback||null,0);o(l)}finally{if(_idleTimer)clearTimeout(_idleTimer)}}
+async function _executeToolCall(e){var t,r=e.function.name;try{t=JSON.parse(e.function.arguments)}catch(e){t={}}if("web_search"===r){window.dispatchEvent(new CustomEvent("websearch-start"));var a=await executeWebSearch(t.query||"");window.dispatchEvent(new CustomEvent("websearch-end",{detail:{success:a&&0!==a.length}}));return a&&0!==a.length?{id:e.id,name:r,result:a}:{id:e.id,name:r,result:{error:"Recherche web indisponible actuellement (tous les moteurs ont échoué). Ne pas affirmer qu il n y a aucun résultat sur ce sujet -- informe l utilisateur que la recherche web est temporairement indisponible."}}}if("web_fetch"===r){var o=await executeWebFetch(t.url||"");return{id:e.id,name:r,result:o}}if("Bash"===r||"Read"===r||"Write"===r||"Edit"===r||"Grep"===r||"Ls"===r||"Glob"===r)return _execMarexcodeTool(e);if("RunScript"===r)return _execRunscriptTool(e);if("LSP"===r)return _execLspTool(e);if(r&&r.indexOf("mcp_")===0)return _execMcpTool(e);if(r&&r.indexOf("custom_")===0)return _execCustomTool(e);if("TodoWrite"===r){window.dispatchEvent(new CustomEvent("marexcode-todo",{detail:{todos:t.todos||[]}}));return{id:e.id,name:r,result:{ok:!0}}}if("mem_search"===r||"mem_read"===r||"mem_add"===r||"mem_edit"===r||"mem_delete"===r)return _execMemTool(e);return{id:e.id,name:r,result:{error:"Unknown tool: "+r}}}
+async function streamModelWithTools(model, history, onChunk, onDone, onError, tools, _continuing, onThinking, abortSignal, _webSearch, _opts, _fallback, iter) {
+  iter || (iter = 0);
+  var dedup = _opts && _opts._dedup ? _opts._dedup : {};
+  var nudgeCount = _opts && _opts._nudgeCount != null ? _opts._nudgeCount : 0;
+  var toolsDisabled = _opts && _opts._toolsDisabled ? true : false;
+  var maxNudges = 2;
+  var editor = getModelEditeur(model) || (typeof getSearchModelEditeur === 'function' ? getSearchModelEditeur(model) : null);
+  var provider = PROVIDERS[editor];
+  if (!provider) {
+    if (_fallback && _fallback.model && _fallback.provider) {
+      return streamModelWithTools(_fallback.model, history, onChunk, onDone, onError, tools, false, onThinking, abortSignal, _webSearch, _opts, _fallback._nextFallback || null, 0);
+    }
+    return onError(new Error('Editeur inconnu pour le modele ' + model));
+  }
+  var idleMs = typeof window._streamIdleTimeoutMs === 'number' ? window._streamIdleTimeoutMs : 120000;
+  var idleTimer = null, idleFired = false;
+  var ctl = new AbortController();
+  if (abortSignal) {
+    if (abortSignal.aborted) ctl.abort();
+    else abortSignal.addEventListener('abort', function() { ctl.abort(); }, { once: true });
+  }
+  var armIdle = function() {
+    idleTimer && clearTimeout(idleTimer);
+    idleTimer = setTimeout(function() { idleFired = true; try { ctl.abort(); } catch(e) {} }, idleMs);
+  };
+  armIdle();
+  try {
+    var sysMsg = null;
+    for (var k = 0; k < history.length; k++) {
+      if (history[k] && 'system' === history[k].role) {
+        sysMsg = typeof history[k].content === 'string' ? history[k].content : '';
+        break;
+      }
+    }
+    var effectiveTools = toolsDisabled ? [] : (Array.isArray(tools) && tools.length ? tools : (_opts && _opts.tools));
+    var reqOpts = Object.assign({}, _opts || {}, { tools: effectiveTools });
+    var fmtMsgs = provider.formatMessages(history);
+    var body = provider.buildBody(model, fmtMsgs, sysMsg, !!(Array.isArray(tools) && tools.length) || !!(_opts && _opts.webSearch), reqOpts);
+    body.tools && 0 !== body.tools.length || (body.tools = typeof WEB_SEARCH_TOOLS !== 'undefined' ? WEB_SEARCH_TOOLS : []);
+    if (window.FORCE_WEB_SEARCH && body.tools && body.tools.some(function(t) { return t.function && 'web_search' === t.function.name; })) {
+      body.tool_choice = { type: 'function', function: { name: 'web_search' } };
+    }
+    var resp;
+    try {
+      resp = await fetch(provider.getUrl(model, _continuing), {
+        method: 'POST',
+        headers: typeof proxyHeaders === 'function' ? proxyHeaders(editor, provider.getHeaders()) : provider.getHeaders(),
+        body: JSON.stringify(body),
+        signal: ctl.signal
+      });
+    } catch (e) {
+      if (e && 'AbortError' === e.name) throw e;
+      throw new Error('Connexion a ' + editor + ' impossible.');
+    }
+    if (!resp.ok) {
+      var errText = await resp.text();
+      var errMsg = (editor + ' API error ' + resp.status + ': ' + errText);
+      if (!toolsDisabled && Array.isArray(effectiveTools) && effectiveTools.length > 0) {
+        toolsDisabled = true;
+        history = history.concat([{ role: 'system', content: "N'appelle plus d'outil. Reponds maintenant directement a partir des informations deja obtenues." }]);
+        if (idleTimer) clearTimeout(idleTimer);
+        return streamModelWithTools(model, history, onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: true }), _fallback, iter);
+      }
+      throw new Error(errMsg);
+    }
+    var parser = createChatCompletionsParser(!!onThinking, {
+      extractCitations: function(chunk) {
+        var ann = chunk.choices && chunk.choices[0] && chunk.choices[0].delta && chunk.choices[0].delta.annotations;
+        return ann ? ann.filter(function(a) { return 'url_citation' === a.type && a.url; }).map(function(a) { return { url: a.url, title: a.title || '' }; }) : null;
+      },
+      extractReasoning: function(chunk) {
+        return chunk.choices && chunk.choices[0] && chunk.choices[0].delta && (chunk.choices[0].delta.reasoning_content || chunk.choices[0].delta.reasoning) || null;
+      },
+      accumulateCitations: true,
+      accumulateToolCalls: true
+    });
+    var rawContent = '';
+    for await (var sseChunk of readSSE(resp, function() { armIdle(); })) {
+      var events = parser(sseChunk);
+      for (var i = 0; i < events.length; i++) {
+        var ev = events[i];
+        if ('chunk' === ev.type) { rawContent += ev.data; onChunk(ev.data); }
+        else if ('thinking' === ev.type && onThinking && ev.data) onThinking(ev.data);
+      }
+    }
+    var flushed = parser.flush();
+    for (var i = 0; i < flushed.length; i++) {
+      var ev = flushed[i];
+      if ('chunk' === ev.type) { rawContent += ev.data; onChunk(ev.data); }
+      else if ('thinking' === ev.type && onThinking && ev.data) onThinking(ev.data);
+    }
+    var result = parser.getResult();
+    var usage = result.usage, citations = result.citations;
+    if (parser.hasToolCalls && parser.hasToolCalls()) {
+      var toolCalls = parser.getToolCalls();
+      var toolResults = [];
+      for (var i = 0; i < toolCalls.length; i++) {
+        var tc = toolCalls[i];
+        var tcName = tc.function && tc.function.name || '';
+        var dedupKey = tcName + '\x00' + (tc.function && tc.function.arguments || '');
+        if (tcName !== 'Bash' && dedup[dedupKey]) {
+          var prevResult = dedup[dedupKey];
+          var repeatCount = dedup[dedupKey + ':count'] || 0;
+          repeatCount++;
+          dedup[dedupKey + ':count'] = repeatCount;
+          var skipResult;
+          if (repeatCount >= 2) {
+            skipResult = '[deja fait] Cet appel exact a deja ete execute ' + repeatCount + ' fois dans ce tour; son resultat est plus haut dans la conversation. Ne le redemande plus: reponds avec ce que tu as, ou change d\'approche.';
+          } else {
+            skipResult = '[deja fait] Appel identique deja execute dans ce tour -- non rejoue. Voici a nouveau son resultat; ne le redemande pas une troisieme fois.\n\n' + prevResult;
+          }
+          toolResults.push({ id: tc.id, name: tcName, result: skipResult });
+          continue;
+        }
+        try {
+          var execResult = await _withToolGuard(_executeToolCall(tc), tc);
+          toolResults.push(execResult);
+          if (tcName !== 'Bash') dedup[dedupKey] = typeof execResult.result === 'string' ? execResult.result : JSON.stringify(execResult.result);
+        } catch (e) {
+          toolResults.push({ id: tc.id, name: tcName, result: { error: e && e.message || String(e) } });
+        }
+      }
+      var assistantMsg = { role: 'assistant', content: rawContent || null, tool_calls: toolCalls.map(function(tc) { return { id: tc.id, type: 'function', function: { name: tc.function.name, arguments: tc.function.arguments } }; }) };
+      var toolMsgs = toolResults.map(function(r) { return { role: 'tool', tool_call_id: r.id, content: typeof r.result === 'string' ? r.result : JSON.stringify(r.result) }; });
+      if (idleTimer) clearTimeout(idleTimer);
+      return streamModelWithTools(model, history.concat([assistantMsg], toolMsgs), onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: toolsDisabled }), _fallback, iter + 1);
+    }
+    if (!rawContent && nudgeCount < maxNudges && Array.isArray(effectiveTools) && effectiveTools.length > 0) {
+      nudgeCount++;
+      var nudge = 'Tu as raisonne mais pas utilise d\'outil ni repondu. Agis MAINTENANT: appelle l\'outil approprie directement, ou donne ta reponse finale si tu as deja l\'info. N\'explique pas, agis.';
+      if (nudgeCount > 1) {
+        nudge = 'Tu es bloque a decrire le meme plan sans l\'executer. Arrete de raisonner. Dans ton PROCHAIN message, appelle UN outil maintenant, ou ecris ta reponse finale en texte brut avec ce que tu sais deja -- plus de plan, plus de reflexion, agis ou reponds instantanement.';
+      }
+      if (idleTimer) clearTimeout(idleTimer);
+      return streamModelWithTools(model, history.concat([{ role: 'user', content: nudge }]), onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: toolsDisabled }), _fallback, iter);
+    }
+    onDone(usage, citations);
+  } catch (err) {
+    if (idleTimer) clearTimeout(idleTimer);
+    if (err && 'AbortError' === err.name) return void (idleFired ? onError(new Error('Modele silencieux depuis ' + Math.round(idleMs / 1000) + 's: stream inactif, tentative interrompue. Reessayez ou changez de modele.')) : onDone(null, []));
+    if (_fallback && _fallback.model && _fallback.provider) return streamModelWithTools(_fallback.model, history, onChunk, onDone, onError, tools, false, onThinking, abortSignal, _webSearch, _opts, _fallback._nextFallback || null, 0);
+    onError(err);
+  } finally {
+    if (idleTimer) clearTimeout(idleTimer);
+  }
+}
 
 // ── Marexcode tools (assistant de codage) ─────────────────────────────
 var MAREXCODE_TOOLS = [
@@ -12,6 +158,14 @@ var MAREXCODE_TOOLS = [
   {type:"function",function:{name:"TodoWrite",description:"Met à jour la liste de tâches pour suivre la progression. À utiliser pour toute tâche multi-étapes : appeler au début pour lister le plan, puis après chaque étape pour mettre à jour les statuts.",parameters:{type:"object",properties:{todos:{type:"array",items:{type:"object",properties:{content:{type:"string",description:"Description de la tâche"},status:{type:"string",enum:["pending","in_progress","completed"],description:"Statut de la tâche"}}},description:"Liste des tâches avec leurs statuts"}},required:["todos"]}}},
   {type:"function",function:{name:"LSP",description:"Intelligence code via Language Server Protocol : go-to-definition, find-references, hover (type/info), document symbols. Nécessite un LSP serveur installé (pyright, typescript-language-server, etc.).",parameters:{type:"object",properties:{operation:{type:"string",enum:["definition","references","hover","symbol"],description:"Opération LSP à exécuter"},file:{type:"string",description:"Chemin relatif du fichier"},line:{type:"integer",description:"Numéro de ligne (0-based)"},character:{type:"integer",description:"Position sur la ligne (0-based)"}},required:["operation","file","line","character"]}}},
   {type:"function",function:{name:"RunScript",description:"Exécute un script python ou node dans le sandbox projet (exécution typée, sans shell). Préférer cet outil à Bash pour lancer du code. Timeout défaut 30s, max 60s.",parameters:{type:"object",properties:{language:{type:"string",enum:["python","node"],description:"Langage du script"},code:{type:"string",description:"Contenu complet du script à exécuter"},timeout:{type:"integer",description:"Timeout en secondes (défaut 30, max 60)"}},required:["language","code"]}}},
+];
+
+var MEM_TOOLS = [
+  {type:"function",function:{name:"mem_search",description:"Recherche full-text dans les pages memoire de la session.",parameters:{type:"object",properties:{query:{type:"string",description:"Termes de recherche"},limit:{type:"integer",description:"Nombre max de resultats (defaut 8)"}},required:["query"]}}},
+  {type:"function",function:{name:"mem_read",description:"Lit le contenu d'une page memoire avec numero de lignes.",parameters:{type:"object",properties:{name:{type:"string",description:"Nom de la page (sans .md)"},offset:{type:"integer",description:"Ligne de depart (1-based)"},limit:{type:"integer",description:"Nombre max de lignes (defaut 500)"}},required:["name"]}}},
+  {type:"function",function:{name:"mem_add",description:"Cree une nouvelle page memoire. Refuse d'ecraser une page existante.",parameters:{type:"object",properties:{name:{type:"string",description:"Nom de la page (sans .md)"},content:{type:"string",description:"Contenu markdown de la page"}},required:["name","content"]}}},
+  {type:"function",function:{name:"mem_edit",description:"Remplace un texte exact dans une page memoire.",parameters:{type:"object",properties:{name:{type:"string",description:"Nom de la page"},old:{type:"string",description:"Texte exact a remplacer"},new:{type:"string",description:"Texte de remplacement"}},required:["name","old","new"]}}},
+  {type:"function",function:{name:"mem_delete",description:"Supprime une page memoire.",parameters:{type:"object",properties:{name:{type:"string",description:"Nom de la page a supprimer"}},required:["name"]}}},
 ];
 
 function _withToolGuard(p, tc) {
@@ -325,4 +479,64 @@ async function _execCustomTool(e) {
     }));
     return { id: e.id, name: name, result: { error: msg } };
   }
+}
+
+async function _execMemTool(e) {
+  var name = e.function.name, args = {};
+  try { args = JSON.parse(e.function.arguments); } catch (_) { args = {}; }
+  var sessionId = window._marexSessionId || '';
+  if (!sessionId) return { id: e.id, name: name, result: { error: 'Aucune session active pour la memoire.' } };
+  var headers = { "Content-Type": "application/json" };
+  if (typeof Auth !== "undefined" && Auth.getToken) { var tk = Auth.getToken(); if (tk) headers.Authorization = "Bearer " + tk; }
+  window.dispatchEvent(new CustomEvent("marexcode-tool", { detail: { name: name, args: args, result: null, phase: "start" } }));
+  try {
+    var resp, data;
+    if (name === "mem_search") {
+      resp = await fetch("/api/marexcode/memory/" + encodeURIComponent(sessionId) + "/search", { method: "POST", headers: headers, body: JSON.stringify({ query: args.query || "", limit: args.limit || 8 }), signal: AbortSignal.timeout(10000) });
+      data = await resp.json().catch(function() { return {}; });
+      window.dispatchEvent(new CustomEvent("marexcode-tool", { detail: { name: name, args: args, result: data, phase: "end" } }));
+      if (!resp.ok) return { id: e.id, name: name, result: { error: data.error || "Erreur search " + resp.status } };
+      var hits = data.hits || [];
+      if (!hits.length) return { id: e.id, name: name, result: "[aucun resultat]" };
+      var out = hits.map(function(h) { return "- " + h.file + " -- " + h.title + "\n  " + h.snippet; }).join("\n");
+      return { id: e.id, name: name, result: out };
+    }
+    if (name === "mem_read") {
+      var url = "/api/marexcode/memory/" + encodeURIComponent(sessionId) + "/page/" + encodeURIComponent(args.name || "");
+      var sep = "?";
+      if (args.offset) { url += sep + "offset=" + args.offset; sep = "&"; }
+      if (args.limit) { url += sep + "limit=" + args.limit; }
+      resp = await fetch(url, { method: "GET", headers: headers, signal: AbortSignal.timeout(10000) });
+      data = await resp.json().catch(function() { return {}; });
+      window.dispatchEvent(new CustomEvent("marexcode-tool", { detail: { name: name, args: args, result: data, phase: "end" } }));
+      if (!resp.ok) return { id: e.id, name: name, result: { error: data.error || "Erreur read " + resp.status } };
+      return { id: e.id, name: name, result: data.content || "" };
+    }
+    if (name === "mem_add") {
+      resp = await fetch("/api/marexcode/memory/" + encodeURIComponent(sessionId) + "/page", { method: "POST", headers: headers, body: JSON.stringify({ name: args.name || "", content: args.content || "" }), signal: AbortSignal.timeout(10000) });
+      data = await resp.json().catch(function() { return {}; });
+      window.dispatchEvent(new CustomEvent("marexcode-tool", { detail: { name: name, args: { name: args.name }, result: data, phase: "end" } }));
+      if (!resp.ok) return { id: e.id, name: name, result: { error: data.error || "Erreur add " + resp.status } };
+      return { id: e.id, name: name, result: data.message || "[ok] page creee" };
+    }
+    if (name === "mem_edit") {
+      resp = await fetch("/api/marexcode/memory/" + encodeURIComponent(sessionId) + "/page/" + encodeURIComponent(args.name || ""), { method: "PUT", headers: headers, body: JSON.stringify({ old: args.old || "", new: args.new || "" }), signal: AbortSignal.timeout(10000) });
+      data = await resp.json().catch(function() { return {}; });
+      window.dispatchEvent(new CustomEvent("marexcode-tool", { detail: { name: name, args: args, result: data, phase: "end" } }));
+      if (!resp.ok) return { id: e.id, name: name, result: { error: data.error || "Erreur edit " + resp.status } };
+      return { id: e.id, name: name, result: data.message || "[ok] page modifiee" };
+    }
+    if (name === "mem_delete") {
+      resp = await fetch("/api/marexcode/memory/" + encodeURIComponent(sessionId) + "/page/" + encodeURIComponent(args.name || ""), { method: "DELETE", headers: headers, signal: AbortSignal.timeout(10000) });
+      data = await resp.json().catch(function() { return {}; });
+      window.dispatchEvent(new CustomEvent("marexcode-tool", { detail: { name: name, args: args, result: data, phase: "end" } }));
+      if (!resp.ok) return { id: e.id, name: name, result: { error: data.error || "Erreur delete " + resp.status } };
+      return { id: e.id, name: name, result: "[ok] page supprimee" };
+    }
+  } catch (err) {
+    var msg = (err && (err.name === "AbortError" || err.name === "TimeoutError")) ? "Timeout memoire (10s)" : (err && err.message ? err.message : "Erreur reseau memoire");
+    window.dispatchEvent(new CustomEvent("marexcode-tool", { detail: { name: name, args: args, result: { error: msg }, phase: "end" } }));
+    return { id: e.id, name: name, result: { error: msg } };
+  }
+  return { id: e.id, name: name, result: { error: "Unknown mem tool: " + name } };
 }

@@ -1360,37 +1360,264 @@ class MarexcodeMixin:
         log.info("upload workspace user=%s ws_id=%s files=%d bytes=%d", username, ws_id, len(resolved), total_bytes)
         self._respond_json({"ok": True, "id": ws_id, "name": project_name, "files": len(resolved), "bytes": total_bytes})
 
+    def _mem_dir(self, username: str, session_id: str) -> str | None:
+        if not session_id or os.path.basename(session_id) != session_id or session_id.startswith("."):
+            return None
+        root = marex_project_root(username)
+        d = os.path.join(root, "memory", session_id)
+        os.makedirs(d, exist_ok=True)
+        real_d = os.path.realpath(d)
+        real_root = os.path.realpath(root)
+        if real_d != real_root and not real_d.startswith(real_root + os.sep):
+            return None
+        return d
 
-def _parse_multipart_files(body: bytes, boundary: bytes) -> list:
-    """Parse minimal d'un corps multipart/form-data : renvoie une liste de
-    {"filename": str, "content": bytes} pour chaque part porteuse d'un
-    `filename` (les champs simples sans filename sont ignorés).
-    """
-    delimiter = b"--" + boundary
-    parts = body.split(delimiter)
-    files = []
-    for part in parts:
-        part = part.strip(b"\r\n")
-        if not part or part == b"--":
-            continue
-        if b"\r\n\r\n" not in part:
-            continue
-        header_blob, content = part.split(b"\r\n\r\n", 1)
-        # Le dernier boundary se termine par "--" ; retire ce suffixe du contenu si présent.
-        if content.endswith(b"\r\n"):
-            content = content[:-2]
-        headers_text = header_blob.decode("utf-8", errors="replace")
-        filename = None
-        for line in headers_text.split("\r\n"):
-            if line.lower().startswith("content-disposition:") and "filename=" in line:
-                # Extrait filename="..."
-                marker = "filename=\""
-                idx = line.find(marker)
-                if idx != -1:
-                    rest = line[idx + len(marker):]
-                    end = rest.find("\"")
-                    if end != -1:
-                        filename = rest[:end]
-        if filename:
-            files.append({"filename": filename, "content": content})
-    return files
+    def _mem_page_path(self, mem_dir: str, name: str) -> str | None:
+        name = name.strip()
+        if not name:
+            return None
+        if not name.endswith(".md"):
+            name += ".md"
+        import re
+        if not re.match(r'^[A-Za-z0-9._-]+\.md$', name):
+            return None
+        full = os.path.realpath(os.path.join(mem_dir, name))
+        real_dir = os.path.realpath(mem_dir)
+        if full == real_dir or not full.startswith(real_dir + os.sep):
+            return None
+        return full
+
+    def _mem_title_of(self, content: str) -> str:
+        for line in content.split("\n"):
+            s = line.strip().lstrip("#").strip()
+            if s:
+                return s
+        return ""
+
+    def _mem_update_index(self, mem_dir: str):
+        index_path = os.path.join(mem_dir, "MEMORY.md")
+        pages = []
+        for fn in sorted(os.listdir(mem_dir)):
+            if fn == "MEMORY.md" or not fn.endswith(".md") or fn.startswith("."):
+                continue
+            try:
+                with open(os.path.join(mem_dir, fn), "r", encoding="utf-8") as f:
+                    title = self._mem_title_of(f.read())
+                if not title:
+                    title = fn
+            except Exception:
+                title = fn
+            pages.append(f"- [{title}]({fn})")
+        body = "# Index memoire\n\n" + "\n".join(pages) + "\n" if pages else ""
+        try:
+            with open(index_path, "w", encoding="utf-8") as f:
+                f.write(body)
+        except Exception:
+            pass
+
+    def _mem_list(self, username: str, session_id: str):
+        mem_dir = self._mem_dir(username, session_id)
+        if not mem_dir:
+            self._respond_json({"error": "session_id invalide"}, 400)
+            return
+        pages = []
+        for fn in sorted(os.listdir(mem_dir)):
+            if fn == "MEMORY.md" or not fn.endswith(".md") or fn.startswith("."):
+                continue
+            try:
+                with open(os.path.join(mem_dir, fn), "r", encoding="utf-8") as f:
+                    title = self._mem_title_of(f.read())
+            except Exception:
+                title = fn
+            pages.append({"name": fn, "title": title})
+        index_content = ""
+        index_path = os.path.join(mem_dir, "MEMORY.md")
+        try:
+            with open(index_path, "r", encoding="utf-8") as f:
+                index_content = f.read()
+        except FileNotFoundError:
+            pass
+        self._respond_json({"pages": pages, "index": index_content})
+
+    def _mem_read(self, username: str, session_id: str, name: str, offset: int = 0, limit: int = 0):
+        mem_dir = self._mem_dir(username, session_id)
+        if not mem_dir:
+            self._respond_json({"error": "session_id invalide"}, 400)
+            return
+        path = self._mem_page_path(mem_dir, name)
+        if not path or not os.path.isfile(path):
+            self._respond_json({"error": f"page '{name}' introuvable"}, 404)
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+            return
+        lines = content.split("\n")
+        if offset <= 0:
+            offset = 1
+        if limit <= 0 or limit > 500:
+            limit = 500
+        out = []
+        for i in range(offset - 1, min(len(lines), offset - 1 + limit)):
+            out.append(f"{i + 1}\t{lines[i]}")
+        self._respond_json({"content": "\n".join(out), "total_lines": len(lines), "offset": offset, "limit": limit})
+
+    def _mem_add(self, username: str, session_id: str, name: str, content: str):
+        mem_dir = self._mem_dir(username, session_id)
+        if not mem_dir:
+            self._respond_json({"error": "session_id invalide"}, 400)
+            return
+        path = self._mem_page_path(mem_dir, name)
+        if not path:
+            self._respond_json({"error": "nom de page invalide"}, 400)
+            return
+        if os.path.exists(path):
+            self._respond_json({"error": "la page existe deja -- utilise mem_edit pour la modifier"}, 409)
+            return
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content.rstrip("\n") + "\n")
+            self._mem_update_index(mem_dir)
+            self._respond_json({"ok": True, "message": f"page '{name}' creee"})
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+
+    def _mem_edit(self, username: str, session_id: str, name: str, old: str, new: str):
+        mem_dir = self._mem_dir(username, session_id)
+        if not mem_dir:
+            self._respond_json({"error": "session_id invalide"}, 400)
+            return
+        path = self._mem_page_path(mem_dir, name)
+        if not path or not os.path.isfile(path):
+            self._respond_json({"error": f"page '{name}' introuvable"}, 404)
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+            return
+        if not old:
+            self._respond_json({"error": "old vide"}, 400)
+            return
+        count = content.count(old)
+        if count == 0:
+            if new and new in content:
+                self._respond_json({"ok": True, "message": "deja a jour"})
+                return
+            self._respond_json({"error": "old introuvable dans la page"}, 400)
+            return
+        if count > 1:
+            self._respond_json({"error": f"old apparaît {count} fois -- ajoute du contexte pour le rendre unique"}, 400)
+            return
+        updated = content.replace(old, new, 1)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(updated)
+            self._respond_json({"ok": True, "message": f"page '{name}' modifiee"})
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+
+    def _mem_delete(self, username: str, session_id: str, name: str):
+        mem_dir = self._mem_dir(username, session_id)
+        if not mem_dir:
+            self._respond_json({"error": "session_id invalide"}, 400)
+            return
+        path = self._mem_page_path(mem_dir, name)
+        if not path or not os.path.isfile(path):
+            self._respond_json({"error": "introuvable"}, 404)
+            return
+        try:
+            os.remove(path)
+            self._mem_update_index(mem_dir)
+            self._respond_json({"ok": True})
+        except Exception as e:
+            self._respond_json({"error": str(e)}, 500)
+
+    def _mem_search(self, username: str, session_id: str, query: str, limit: int = 8):
+        import math
+        mem_dir = self._mem_dir(username, session_id)
+        if not mem_dir:
+            self._respond_json({"error": "session_id invalide"}, 400)
+            return
+        if limit <= 0 or limit > 30:
+            limit = 8
+        terms = list(dict.fromkeys(query.lower().split()))
+        if not terms:
+            self._respond_json({"hits": []})
+            return
+        docs = []
+        df = {}
+        for fn in sorted(os.listdir(mem_dir)):
+            if fn == "MEMORY.md" or not fn.endswith(".md") or fn.startswith("."):
+                continue
+            try:
+                with open(os.path.join(mem_dir, fn), "r", encoding="utf-8") as f:
+                    content = f.read()
+            except Exception:
+                content = ""
+            title = self._mem_title_of(content)
+            hay = (fn + "\n" + title + "\n" + content).lower()
+            docs.append({"fn": fn, "title": title, "content": content, "hay": hay})
+            for t in terms:
+                if t in hay:
+                    df[t] = df.get(t, 0) + 1
+        n = len(docs)
+        ranked = []
+        for d in docs:
+            matched = 0
+            score = 0.0
+            for t in terms:
+                cnt = d["hay"].count(t)
+                if cnt == 0:
+                    continue
+                matched += 1
+                idf = math.log((n + 1) / (df.get(t, 0) + 1)) + 1
+                tf = 1.0 + math.log(cnt)
+                field = 1.0
+                if t in d["fn"].lower():
+                    field += 4
+                if t in d["title"].lower():
+                    field += 2
+                score += idf * tf * field
+            if matched == 0:
+                continue
+            flat = " ".join(d["content"].split())
+            low = flat.lower()
+            idx = -1
+            for t in terms:
+                i = low.find(t)
+                if i >= 0 and (idx < 0 or i < idx):
+                    idx = i
+            if idx >= 0:
+                s = max(0, idx - 60)
+                e = min(len(flat), idx + 100)
+                snippet = flat[s:e]
+                if s > 0:
+                    snippet = "..." + snippet
+                if e < len(flat):
+                    snippet += "..."
+            elif len(flat) > 160:
+                snippet = flat[:160] + "..."
+            else:
+                snippet = flat
+            ranked.append({"file": d["fn"], "title": d["title"], "snippet": snippet, "matched": matched, "score": score})
+        ranked.sort(key=lambda r: (-r["matched"], -r["score"]))
+        self._respond_json({"hits": [{"file": r["file"], "title": r["title"], "snippet": r["snippet"]} for r in ranked[:limit]]})
+
+    def _mem_get_index(self, username: str, session_id: str):
+        mem_dir = self._mem_dir(username, session_id)
+        if not mem_dir:
+            self._respond_json({"content": ""})
+            return
+        index_path = os.path.join(mem_dir, "MEMORY.md")
+        try:
+            with open(index_path, "r", encoding="utf-8") as f:
+                self._respond_json({"content": f.read()})
+        except FileNotFoundError:
+            self._respond_json({"content": ""})
+
+
+
