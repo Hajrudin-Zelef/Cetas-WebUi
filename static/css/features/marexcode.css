@@ -70,6 +70,15 @@ body.dark .marex-plus-dropdown { box-shadow:0 8px 30px rgba(0,0,0,0.5); }
 /* Bouton sidebar Marexcode (module actif) */
 .dev-module-btn[data-module="marexcode"] { opacity: 1; border-style: solid; color: var(--text); }
 
+/* Stats fin de tour */
+.chat-turn-stats {
+  font-size: 11px;
+  color: var(--text-secondary, #8b949e);
+  padding: 2px 16px 8px;
+  text-align: right;
+  font-family: monospace;
+}
+
 /* Métriques sidebar */
 .sb-metrics { padding: 0 12px 8px; }
 .sb-metric-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }

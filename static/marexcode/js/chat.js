@@ -904,7 +904,7 @@ export function createChat(deps) {
             else if (pendingEl) pendingEl.textContent = rawAcc;
             autoScroll.onContentChange();
         };
-        const onDone = () => {
+        const onDone = (usage, citations, stats) => {
             setRunning(false);
             finishThinking();
             updateStatus('Done');
@@ -914,6 +914,9 @@ export function createChat(deps) {
                 session.messages.push({ role: 'assistant', content: rawAcc });
                 pendingEl = null;
                 pendingMd = null;
+            }
+            if (stats && stats.elapsedMs) {
+                showTurnStats(stats, rawAcc);
             }
             if (onSave) onSave(session);
             // Process queue
@@ -1192,6 +1195,23 @@ export function createChat(deps) {
         document.addEventListener('click', (e) => {
             if (!dropdown.contains(e.target) && e.target !== ta) hideDropdown();
         });
+    }
+
+    function showTurnStats(stats, content) {
+        const el = document.createElement('div');
+        el.className = 'chat-turn-stats';
+        const secs = (stats.elapsedMs / 1000).toFixed(1);
+        const chars = (content || '').length;
+        const estTokens = Math.ceil(chars / 4);
+        let txt = secs + 's';
+        if (estTokens > 0) txt += ' · ' + estTokens + ' tok';
+        if (stats.elapsedMs > 0 && estTokens > 0) {
+            const tokPerSec = (estTokens / (stats.elapsedMs / 1000)).toFixed(1);
+            txt += ' · ' + tokPerSec + ' tok/s';
+        }
+        el.textContent = txt;
+        chatLog.appendChild(el);
+        autoScroll.onContentChange();
     }
 
     return {

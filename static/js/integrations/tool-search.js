@@ -5,6 +5,7 @@ async function streamModelWithTools(model, history, onChunk, onDone, onError, to
   var nudgeCount = _opts && _opts._nudgeCount != null ? _opts._nudgeCount : 0;
   var toolsDisabled = _opts && _opts._toolsDisabled ? true : false;
   var maxNudges = 2;
+  var _turnStart = _opts && _opts._turnStart ? _opts._turnStart : Date.now();
   var editor = getModelEditeur(model) || (typeof getSearchModelEditeur === 'function' ? getSearchModelEditeur(model) : null);
   var provider = PROVIDERS[editor];
   if (!provider) {
@@ -80,7 +81,7 @@ async function streamModelWithTools(model, history, onChunk, onDone, onError, to
         toolsDisabled = true;
         history = history.concat([{ role: 'system', content: "N'appelle plus d'outil. Reponds maintenant directement a partir des informations deja obtenues." }]);
         if (idleTimer) clearTimeout(idleTimer);
-        return streamModelWithTools(model, history, onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: true }), _fallback, iter);
+        return streamModelWithTools(model, history, onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: true, _turnStart: _turnStart }), _fallback, iter);
       }
       throw new Error(errMsg);
     }
@@ -144,7 +145,7 @@ async function streamModelWithTools(model, history, onChunk, onDone, onError, to
       var assistantMsg = { role: 'assistant', content: rawContent || null, tool_calls: toolCalls.map(function(tc) { return { id: tc.id, type: 'function', function: { name: tc.function.name, arguments: tc.function.arguments } }; }) };
       var toolMsgs = toolResults.map(function(r) { return { role: 'tool', tool_call_id: r.id, content: typeof r.result === 'string' ? r.result : JSON.stringify(r.result) }; });
       if (idleTimer) clearTimeout(idleTimer);
-      return streamModelWithTools(model, history.concat([assistantMsg], toolMsgs), onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: toolsDisabled }), _fallback, iter + 1);
+      return streamModelWithTools(model, history.concat([assistantMsg], toolMsgs), onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: toolsDisabled, _turnStart: _turnStart }), _fallback, iter + 1);
     }
     if (!rawContent && nudgeCount < maxNudges && Array.isArray(effectiveTools) && effectiveTools.length > 0) {
       nudgeCount++;
@@ -154,9 +155,9 @@ async function streamModelWithTools(model, history, onChunk, onDone, onError, to
         nudge = 'Tu es bloque a decrire le meme plan sans l\'executer. Arrete de raisonner. Dans ton PROCHAIN message, appelle UN outil maintenant, ou ecris ta reponse finale en texte brut avec ce que tu sais deja -- plus de plan, plus de reflexion, agis ou reponds instantanement.';
       }
       if (idleTimer) clearTimeout(idleTimer);
-      return streamModelWithTools(model, history.concat([{ role: 'user', content: nudge }]), onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: toolsDisabled }), _fallback, iter);
+      return streamModelWithTools(model, history.concat([{ role: 'user', content: nudge }]), onChunk, onDone, onError, tools, true, onThinking, abortSignal, _webSearch, Object.assign({}, _opts || {}, { _dedup: dedup, _nudgeCount: nudgeCount, _toolsDisabled: toolsDisabled, _turnStart: _turnStart }), _fallback, iter);
     }
-    onDone(usage, citations);
+    onDone(usage, citations, { elapsedMs: Date.now() - _turnStart });
   } catch (err) {
     if (idleTimer) clearTimeout(idleTimer);
     if (err && 'AbortError' === err.name) return void (idleFired ? onError(new Error('Modele silencieux depuis ' + Math.round(idleMs / 1000) + 's: stream inactif, tentative interrompue. Reessayez ou changez de modele.')) : onDone(null, []));
