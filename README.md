@@ -92,21 +92,18 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 # Cloner
 git clone git@github.com:Hajrudin-Zelef/Cetas-WebUi.git
 cd Cetas-WebUi
-git checkout neva-pve
+git checkout Cetasui-vps
 
-# Configurer le coffre-fort et les clés API
-python3 setup.py
-
-# Chiffrer les clés pour le proxy
-CETAS_VAULT_PASSWORD="votre_mdp" python3 server/encrypt_keys.py
-
-# Configurer les variables d'environnement
+# Créer .env.docker
 cat > .env.docker << EOF
-CETAS_VAULT_PASSWORD=votre_mdp
+CETAS_VAULT_PASSWORD=votre_mot_de_passe_vault
 CETAS_WORKER_TOKEN=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
 CETAS_CORS_ORIGINS=https://votre-domaine.com
 SEARXNG_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
 EOF
+
+# Configurer le coffre-fort et les clés API
+python3 scripts/setup.py
 
 # Démarrer
 docker compose build --no-cache
@@ -123,7 +120,7 @@ Ouvrir `http://localhost:8080` dans le navigateur.
 
 ## Déploiement
 
-Voir **[DEPLOY.md](./DEPLOY.md)** — guide complet pour installer sur un VPS.
+Voir **[DEPLOY.md](./Docs/DEPLOY.md)** — guide complet pour installer sur un VPS.
 
 ## Stack technique
 
@@ -133,6 +130,13 @@ Voir **[DEPLOY.md](./DEPLOY.md)** — guide complet pour installer sur un VPS.
 - **Recherche web** : backend `websearch.py` — 6 providers (Tavily, Exa, Brave API, Jina, SearXNG, DuckDuckGo) — chaîne auto avec fallback
 - **Serveur** : Nginx Alpine, Docker
 - **Recherche** : SearXNG (méta-moteur auto-hébergé)
+
+## Branches
+
+| Branche | Usage |
+|---------|-------|
+| `Cetas-Full` | Branche principale (full features) |
+| `Cetasui-vps` | Déploiement VPS (fichiers sensibles exclus du git) |
 
 ## Providers supportés
 
