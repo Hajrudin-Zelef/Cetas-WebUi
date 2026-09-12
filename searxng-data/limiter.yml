@@ -1,8 +1,0 @@
-# Cetas SearXNG — bot detection désactivé (instance privée)
-botdetection:
-  ip_limit:
-    link_token: false
-    filter_match: false
-  ip_lists:
-    pass_ip:
-      - 0.0.0.0/0
