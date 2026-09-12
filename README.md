@@ -36,6 +36,8 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 
 ### Marexcode — Assistant de code
 - **Outils complets** : `Ls` (arborescence), `Read` (pagination offset/limit), `Write` (avec détection existed), `Edit` (diff unifié), `Grep` (limite configurable, ignore binaires), `Bash` (timeout configurable), `Glob` (recherche par pattern)
+- **Tool loop refactoré** : boucle sans cap d'itérations, déduplication des tool calls (Bash exclu), nudge si modèle bloque (max 2), overflow retry avec tools désactivés, `parallel_tool_calls=false`
+- **Mémoire persistante** : 5 outils (`mem_search`, `mem_read`, `mem_add`, `mem_edit`, `mem_delete`), stockage par session dans `{workspace}/memory/{session_id}/`, index `MEMORY.md` auto-maintenu
 - **LSP** : intelligence code via Language Server Protocol (pyright, typescript-language-server, bash-ls, html/css/json-ls) — hover tooltips dans le file viewer
 - **MCP** : 4 serveurs connectés (context7, fetch, memory, filesystem = 26 tools) — injection dynamique au boot
 - **Custom Tools** : outils user-defined via `tools.json` — auto-extraction des paramètres `{name}`
@@ -55,9 +57,13 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 - **Panneau raisonnement** : rôle séparé côté droit (thinking/reasoning)
 - **Transmission des tools à tous les providers** : opencode-go (chat/messages/responses), openai, anthropic, google — priorité sur le fallback web_search
 - **Sécurité sandbox** : workspace par utilisateur, `_exec_root()` strict (pas de fallback silencieux), whitelist Bash, timeout, bloque `../` + symlinks
-- **Garde-fou boucle** : max 5 itérations d'outils avant réponse forcée
 - **Responsive mobile** : panneau raisonnement en bottom sheet, composer fluide, touch-friendly
 - **Mode delete** : suppression du workspace « Projet importé » (DELETE `/api/marexcode/project`)
+- **Paramètres → Features** : Presets (CRUD + switch), Agent (toggle + mémoire), Tasks (schedulées), API Key, Engine (status/start/stop), Marex Link (tunnel distant)
+- **Métriques sidebar** : VRAM (GPU), RAM, Disk, CPU — barres en temps réel (polling 10s)
+- **Stats fin de tour** : `8s · 94 tok · 13.7 tok/s` — temps de génération, tokens, vitesse
+- **Compteur contexte** : `10.2K / 131K` — tokens utilisés / contexte max du modèle (78 modèles référencés)
+- **Slider max tokens** : réglage 300 → 32K dans le menu `+`
 
 ### Productivité
 - **Canvas intégré** : panneau latéral pour contexte long
@@ -71,6 +77,8 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 - **Recherche web intégrée** : toggle activable par conversation
 - **Mode effort** : Faible / Moyen / Max — contrôle la qualité de réponse
 - **Réflexion** : toggle pour activer le raisonnement
+- **System prompts intelligent** : CETAS = expert éducation/formation (jamais d'invention, web search auto). Marexcode = expert coding (PLAN → CODE → VERIFY)
+- **Recherche web native vs interne** : modèles natifs (OpenAI/Anthropic/Grok/OpenCode) utilisent leurs outils, les autres utilisent la recherche interne
 
 ### Administration & Sécurité
 - **Authentification serveur JWT** : scrypt, tokens HS256, expiry 24h
