@@ -4,6 +4,7 @@ import { createChat } from './chat.js';
 import { initRouter } from './router.js';
 import { COMPETENCES } from './skills.js';
 import { getPermission, setPermission, checkToolPermission, getRule, setRule } from './marex-permission.js';
+import { initSettingsFeatures } from './settings.js';
 
 const $ = id => document.getElementById(id);
 
@@ -1091,6 +1092,7 @@ function setupSettings(router) {
         router.showSettings();
         loadSkillsPanel();
         loadInstructionsPanel();
+        initSettingsFeatures();
     });
     refs.setClearAll.addEventListener('click', async () => {
         if (!confirm('Supprimer définitivement toutes vos sessions Marexcode ?')) return;

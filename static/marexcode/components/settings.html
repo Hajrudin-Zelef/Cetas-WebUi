@@ -24,6 +24,12 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Instructions
         </button>
+
+        <div class="settings-cat-label">Features</div>
+        <button class="settings-nav-item" data-panel="features">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Features
+        </button>
       </div>
 
       <div class="settings-content">
@@ -60,6 +66,52 @@
               <textarea id="global-instructions-textarea" rows="10" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
               <button class="settings-btn" id="save-global-instructions">Enregistrer</button>
             </div>
+          </div>
+        </div>
+
+        <!-- FEATURES -->
+        <div class="settings-panel" data-content="features">
+          <h1 class="settings-page-title">Features</h1>
+
+          <div class="settings-group-label">Presets</div>
+          <div class="settings-card" id="presets-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Presets de configuration</h3><p>Changez de modèle et de paramètres en un clic.</p></div><button class="settings-btn" id="btn-new-preset">Nouveau</button></div>
+            <div id="presets-list"></div>
+          </div>
+
+          <div class="settings-group-label">Agent</div>
+          <div class="settings-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Mode agent</h3><p>Donne à l'IA ses outils (shell, fichiers, memoire).</p></div><label class="settings-toggle"><input type="checkbox" id="agent-toggle"><span class="settings-toggle-slider"></span></label></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Compactage auto</h3><p>Compresse l'historique quand le contexte déborde.</p></div><label class="settings-toggle"><input type="checkbox" id="agent-compact" checked><span class="settings-toggle-slider"></span></label></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Memoire</h3><p>Mode : <span id="mem-mode-label">always</span></p></div><select id="mem-mode-select" class="settings-select"><option value="always">Auto</option><option value="ondemand">Sur demande</option><option value="off">Desactivee</option></select></div>
+          </div>
+
+          <div class="settings-group-label">Tasks</div>
+          <div class="settings-card" id="tasks-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Taches planifiees</h3><p>L'IA execute des taches autonomes sur une frequence reguliere.</p></div><button class="settings-btn" id="btn-new-task">Nouvelle</button></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Suspendre tout</h3><p>Met en pause toutes les taches.</p></div><label class="settings-toggle"><input type="checkbox" id="tasks-pause-toggle"><span class="settings-toggle-slider"></span></label></div>
+            <div id="tasks-list"></div>
+          </div>
+
+          <div class="settings-group-label">API</div>
+          <div class="settings-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Cle API locale</h3><p>Protege l'endpoint OpenAI-compatible local.</p></div><span class="settings-row-value" id="api-key-status">—</span></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Generer une cle</h3></div><button class="settings-btn" id="btn-gen-api-key">Generer</button></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Retirer la cle</h3></div><button class="settings-btn danger" id="btn-clear-api-key">Retirer</button></div>
+          </div>
+
+          <div class="settings-group-label">Marex Link</div>
+          <div class="settings-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Acces distant</h3><p>Connectez-vous a votre serveur depuis n'importe ou.</p></div><span class="settings-row-value" id="marex-link-status">Non connecte</span></div>
+            <div class="settings-row" id="marex-link-connect-row"><div class="settings-row-text"><h3>Token</h3></div><input type="text" id="marex-link-token" placeholder="ml_..." class="settings-input" style="width:200px"><button class="settings-btn" id="btn-marex-link-connect">Connecter</button></div>
+            <div class="settings-row" id="marex-link-url-row" style="display:none"><div class="settings-row-text"><h3>URL distante</h3></div><span class="settings-row-value" id="marex-link-url">—</span></div>
+          </div>
+
+          <div class="settings-group-label">Engine</div>
+          <div class="settings-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Etat du moteur</h3><p>llama-server local ou distant.</p></div><span class="settings-row-value" id="engine-status">—</span></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Demarrer / Arreter</h3></div><div style="display:flex;gap:6px"><button class="settings-btn" id="btn-engine-start">Demarrer</button><button class="settings-btn danger" id="btn-engine-stop">Arreter</button></div></div>
+            <div class="settings-row"><div class="settings-row-text"><h3>Logs</h3></div><button class="settings-btn" id="btn-engine-logs">Voir les logs</button></div>
           </div>
         </div>
 

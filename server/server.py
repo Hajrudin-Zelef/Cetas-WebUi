@@ -1715,6 +1715,28 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if path == "/api/vault/exists":
             self._respond_json({"exists": vault_exists()})
             return
+        # Features: presets list, agent status, tasks list, apikey, engine, link
+        if path == "/api/marexcode/presets":
+            self._presets_list()
+            return
+        if path == "/api/marexcode/agent":
+            self._agent_status()
+            return
+        if path == "/api/marexcode/tasks":
+            self._tasks_list()
+            return
+        if path == "/api/marexcode/apikey":
+            self._apikey_status()
+            return
+        if path == "/api/marexcode/engine/status":
+            self._engine_status()
+            return
+        if path == "/api/marexcode/engine/logs":
+            self._engine_logs()
+            return
+        if path == "/api/marexcode/link/status":
+            self._link_status()
+            return
         if self._serve_static():
             return
         self.send_response(404)
@@ -1778,6 +1800,39 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             sid = self.path[len("/api/marexcode/memory/"):-len("/search")]
             self._mem_search_page(sid)
             return
+        # Features: presets create, agent toggle, tasks create, apikey, engine, link
+        if self.path == "/api/marexcode/presets":
+            self._presets_create()
+            return
+        if self.path == "/api/marexcode/presets/apply":
+            self._presets_apply()
+            return
+        if self.path == "/api/marexcode/agent":
+            self._agent_toggle()
+            return
+        if self.path == "/api/marexcode/tasks":
+            self._tasks_create()
+            return
+        if self.path == "/api/marexcode/tasks/pause":
+            self._tasks_pause()
+            return
+        if self.path.startswith("/api/marexcode/tasks/") and self.path.endswith("/toggle"):
+            tid = self.path[len("/api/marexcode/tasks/"):-len("/toggle")]
+            self._task_toggle(tid)
+            return
+        if self.path.startswith("/api/marexcode/tasks/") and self.path.endswith("/run"):
+            tid = self.path[len("/api/marexcode/tasks/"):-len("/run")]
+            self._task_run(tid)
+            return
+        if self.path == "/api/marexcode/apikey":
+            self._apikey_set()
+            return
+        if self.path == "/api/marexcode/engine":
+            self._engine_action()
+            return
+        if self.path == "/api/marexcode/link/connect":
+            self._link_connect()
+            return
         if self.path == "/api/websearch":
             self._websearch()
             return
@@ -1830,6 +1885,11 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             name = parts[1] if len(parts) > 1 else ""
             self._mem_edit_page(sid, name)
             return
+        # Features: preset update
+        if self.path.startswith("/api/marexcode/presets/") and self.path != "/api/marexcode/presets/apply":
+            pid = self.path[len("/api/marexcode/presets/"):]
+            self._presets_update(pid)
+            return
         if self.path.startswith("/api/marexcode/workspaces/") and self.path.endswith("/activate"):
             ws_id = self.path[len("/api/marexcode/workspaces/"):-len("/activate")]
             self._workspace_activate_put(ws_id)
@@ -1866,6 +1926,15 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if self.path.startswith("/api/marexcode/workspaces/"):
             ws_id = self.path[len("/api/marexcode/workspaces/"):]
             self._workspace_delete(ws_id)
+            return
+        # Features: preset delete, task delete
+        if self.path.startswith("/api/marexcode/presets/"):
+            pid = self.path[len("/api/marexcode/presets/"):]
+            self._presets_delete(pid)
+            return
+        if self.path.startswith("/api/marexcode/tasks/"):
+            tid = self.path[len("/api/marexcode/tasks/"):]
+            self._tasks_delete(tid)
             return
         if self.path == "/api/marexcode/memory":
             self._memory_delete()
@@ -2843,6 +2912,373 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             return
         self._marex_root = marex_project_root(username)
         self._mem_get_index(username, session_id)
+
+    # ── Features: Presets ────────────────────────────────────────────
+
+    def _presets_dir(self, username):
+        from marexcode import marex_workspace
+        d = os.path.join(marex_workspace(username), "presets")
+        os.makedirs(d, exist_ok=True)
+        return d
+
+    def _presets_list(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        d = self._presets_dir(username)
+        presets = []
+        for fn in sorted(os.listdir(d)):
+            if not fn.endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(d, fn), "r", encoding="utf-8") as f:
+                    p = json.load(f)
+                p["id"] = fn[:-5]
+                presets.append(p)
+            except Exception:
+                pass
+        self._respond_json({"presets": presets})
+
+    def _presets_create(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        name = data.get("name", "").strip()
+        if not name:
+            self._error(400, "Nom requis")
+            return
+        pid = name.lower().replace(" ", "-")
+        pid = "".join(c for c in pid if c.isalnum() or c in "-_")
+        if not pid:
+            pid = "preset"
+        preset = {"name": name, "model": data.get("model", ""), "provider": data.get("provider", ""), "systemPrompt": data.get("systemPrompt", "")}
+        d = self._presets_dir(username)
+        path = os.path.join(d, pid + ".json")
+        if os.path.exists(path):
+            self._error(409, "Un preset avec ce nom existe deja")
+            return
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(preset, f, ensure_ascii=False, indent=2)
+        self._respond_json({"ok": True, "id": pid})
+
+    def _presets_update(self, pid):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        d = self._presets_dir(username)
+        path = os.path.join(d, pid + ".json")
+        if not os.path.isfile(path):
+            self._error(404, "Preset introuvable")
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                preset = json.load(f)
+        except Exception:
+            preset = {}
+        for k in ("name", "model", "provider", "systemPrompt"):
+            if k in data:
+                preset[k] = data[k]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(preset, f, ensure_ascii=False, indent=2)
+        self._respond_json({"ok": True})
+
+    def _presets_delete(self, pid):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        d = self._presets_dir(username)
+        path = os.path.join(d, pid + ".json")
+        if not os.path.isfile(path):
+            self._error(404, "Preset introuvable")
+            return
+        os.remove(path)
+        self._respond_json({"ok": True})
+
+    def _presets_apply(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        pid = data.get("id", "")
+        d = self._presets_dir(username)
+        path = os.path.join(d, pid + ".json")
+        if not os.path.isfile(path):
+            self._error(404, "Preset introuvable")
+            return
+        with open(path, "r", encoding="utf-8") as f:
+            preset = json.load(f)
+        self._respond_json({"ok": True, "preset": preset})
+
+    # ── Features: Agent ──────────────────────────────────────────────
+
+    def _agent_file(self, username):
+        from marexcode import marex_workspace
+        return os.path.join(marex_workspace(username), "agent.json")
+
+    def _agent_status(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._agent_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {"enabled": False, "compact": True, "mem_mode": "always"}
+        self._respond_json(data)
+
+    def _agent_toggle(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._agent_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {"enabled": False, "compact": True, "mem_mode": "always"}
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            patch = json.loads(body)
+        except Exception:
+            patch = {}
+        for k in ("enabled", "compact", "mem_mode"):
+            if k in patch:
+                data[k] = patch[k]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        self._respond_json({"ok": True})
+
+    # ── Features: Tasks ──────────────────────────────────────────────
+
+    def _tasks_file(self, username):
+        from marexcode import marex_workspace
+        return os.path.join(marex_workspace(username), "tasks.json")
+
+    def _tasks_list(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._tasks_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {"tasks": [], "paused": False}
+        self._respond_json(data)
+
+    def _tasks_create(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._tasks_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {"tasks": [], "paused": False}
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            t = json.loads(body)
+        except Exception:
+            self._error(400, "JSON invalide")
+            return
+        import uuid
+        t["id"] = uuid.uuid4().hex[:12]
+        t.setdefault("enabled", True)
+        t.setdefault("last_run", 0)
+        t.setdefault("last_ok", None)
+        data["tasks"].append(t)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        self._respond_json({"ok": True, "id": t["id"]})
+
+    def _tasks_delete(self, tid):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._tasks_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            self._error(404, "Aucune tache")
+            return
+        data["tasks"] = [t for t in data["tasks"] if t.get("id") != tid]
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        self._respond_json({"ok": True})
+
+    def _task_toggle(self, tid):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._tasks_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            self._error(404, "Aucune tache")
+            return
+        for t in data["tasks"]:
+            if t.get("id") == tid:
+                t["enabled"] = not t.get("enabled", True)
+                break
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        self._respond_json({"ok": True})
+
+    def _task_run(self, tid):
+        self._respond_json({"ok": True, "message": "Tache lancee (execution async non implementee)"})
+
+    def _tasks_pause(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._tasks_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {"tasks": [], "paused": False}
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            patch = json.loads(body)
+        except Exception:
+            patch = {}
+        data["paused"] = patch.get("paused", False)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        self._respond_json({"ok": True})
+
+    # ── Features: API Key ────────────────────────────────────────────
+
+    def _apikey_file(self, username):
+        from marexcode import marex_workspace
+        return os.path.join(marex_workspace(username), "api_key.txt")
+
+    def _apikey_status(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._apikey_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                key = f.read().strip()
+        except Exception:
+            key = ""
+        if key:
+            masked = key[:6] + "****" + key[-4:] if len(key) > 10 else "****"
+            self._respond_json({"set": True, "masked": masked})
+        else:
+            self._respond_json({"set": False})
+
+    def _apikey_set(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            data = {}
+        action = data.get("action", "")
+        path = self._apikey_file(username)
+        if action == "generate":
+            import secrets
+            key = "sk-" + secrets.token_hex(24)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(key)
+            self._respond_json({"ok": True, "key": key})
+        elif action == "clear":
+            if os.path.exists(path):
+                os.remove(path)
+            self._respond_json({"ok": True})
+        else:
+            self._error(400, "Action inconnue")
+
+    # ── Features: Engine ─────────────────────────────────────────────
+
+    def _engine_status(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        from marexcode import marex_workspace
+        agent_path = os.path.join(marex_workspace(username), "agent.json")
+        try:
+            with open(agent_path, "r", encoding="utf-8") as f:
+                agent = json.load(f)
+        except Exception:
+            agent = {}
+        external = agent.get("external", False)
+        self._respond_json({"active": external, "health": external, "external": external})
+
+    def _engine_logs(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._respond_json({"logs": "Logs non disponibles en mode distant."})
+
+    def _engine_action(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            data = {}
+        action = data.get("action", "")
+        self._respond_json({"ok": True, "message": f"Action '{action}' recue (gestion engine non implementee en distant)"})
+
+    # ── Features: Marex Link ─────────────────────────────────────────
+
+    def _link_status(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        self._respond_json({"linked": False, "machineURL": ""})
+
+    def _link_connect(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_len) if content_len > 0 else b"{}"
+        try:
+            data = json.loads(body)
+        except Exception:
+            data = {}
+        token = data.get("token", "")
+        if not token:
+            self._error(400, "Token requis")
+            return
+        self._respond_json({"ok": True, "message": "Token recu (tunnel non implemente)"})
 
     def _error(self, code: int, msg: str):
         body = json.dumps({"error": msg}).encode()
