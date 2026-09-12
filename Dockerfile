@@ -91,25 +91,11 @@ RUN terser /usr/share/nginx/html/static/marexcode/js/reasoning-translate.js -o /
 RUN terser /usr/share/nginx/html/static/marexcode/js/model-select.js -o /usr/share/nginx/html/static/marexcode/js/model-select.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/router.js -o /usr/share/nginx/html/static/marexcode/js/router.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/marex-permission.js -o /usr/share/nginx/html/static/marexcode/js/marex-permission.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/stream.js -o /usr/share/nginx/html/static/marexcode/js/markdown/stream.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/inline-code-kind.js -o /usr/share/nginx/html/static/marexcode/js/markdown/inline-code-kind.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/cache.js -o /usr/share/nginx/html/static/marexcode/js/markdown/cache.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/render.js -o /usr/share/nginx/html/static/marexcode/js/markdown/render.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/queue.js -o /usr/share/nginx/html/static/marexcode/js/markdown/queue.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/worker-client.js -o /usr/share/nginx/html/static/marexcode/js/markdown/worker-client.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/markdown/worker.js -o /usr/share/nginx/html/static/marexcode/js/markdown/worker.js -c -m --comments false --module
+RUN terser /usr/share/nginx/html/static/marexcode/js/markdown.js -o /usr/share/nginx/html/static/marexcode/js/markdown.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/auto-scroll.js -o /usr/share/nginx/html/static/marexcode/js/auto-scroll.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/text-shimmer.js -o /usr/share/nginx/html/static/marexcode/js/text-shimmer.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/text-reveal.js -o /usr/share/nginx/html/static/marexcode/js/text-reveal.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/agents.js -o /usr/share/nginx/html/static/marexcode/js/agents.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/auto-mode-config.js -o /usr/share/nginx/html/static/marexcode/js/auto-mode-config.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/context-store.js -o /usr/share/nginx/html/static/marexcode/js/context-store.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/model-diagnostics.js -o /usr/share/nginx/html/static/marexcode/js/model-diagnostics.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/profile.js -o /usr/share/nginx/html/static/marexcode/js/profile.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/prompt-composer.js -o /usr/share/nginx/html/static/marexcode/js/prompt-composer.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/runtime.js -o /usr/share/nginx/html/static/marexcode/js/runtime.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/skills.js -o /usr/share/nginx/html/static/marexcode/js/skills.js -c -m --comments false --module
-RUN terser /usr/share/nginx/html/static/marexcode/js/task-classifier.js -o /usr/share/nginx/html/static/marexcode/js/task-classifier.js -c -m --comments false --module
 RUN terser /usr/share/nginx/html/static/marexcode/js/websearch.js -o /usr/share/nginx/html/static/marexcode/js/websearch.js -c -m --comments false
 
 # Minifier le CSS — style.css est un point d'entrée @import, on concatène
