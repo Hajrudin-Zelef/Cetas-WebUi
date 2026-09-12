@@ -693,7 +693,7 @@ function updateTokenDisplay() {
     costInfo.textContent = t > 0 ? `Coût estimé : $${t.toFixed(4)}` : "Coût estimé : —";
     var ctxEl = document.getElementById("ctx-counter");
     if (ctxEl && typeof getModelContextWindow === "function") {
-        var model = STATE.selectedModel || "";
+        var model = STATE.currentModel || STATE.selectedModel || "";
         var ctxMax = getModelContextWindow(model);
         var ctxUsed = STATE.totalInputTokens + STATE.totalOutputTokens;
         var pct = Math.min(100, Math.round(ctxUsed * 100 / ctxMax));
