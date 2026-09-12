@@ -54,14 +54,13 @@ async function streamModelWithTools(model, history, onChunk, onDone, onError, to
       }
     }
     var effectiveTools = toolsDisabled ? [] : (Array.isArray(tools) && tools.length ? tools : (_opts && _opts.tools));
-    var reqOpts = Object.assign({}, _opts || {}, { tools: effectiveTools });
+    var maxTok = 32768;
+    try { maxTok = parseInt(localStorage.getItem('marex-max-tokens') || '32768', 10); } catch(e) {}
+    var reqOpts = Object.assign({}, _opts || {}, { tools: effectiveTools, max_tokens: maxTok });
     var fmtMsgs = provider.formatMessages(history);
     var body = provider.buildBody(model, fmtMsgs, sysMsg, !!(Array.isArray(tools) && tools.length) || !!(_opts && _opts.webSearch), reqOpts);
     body.tools && 0 !== body.tools.length || (body.tools = typeof WEB_SEARCH_TOOLS !== 'undefined' ? WEB_SEARCH_TOOLS : []);
     body.parallel_tool_calls = false;
-    var maxTok = 32768;
-    try { maxTok = parseInt(localStorage.getItem('marex-max-tokens') || '32768', 10); } catch(e) {}
-    if (maxTok > 0) body.max_tokens = maxTok;
     if (window.FORCE_WEB_SEARCH && body.tools && body.tools.some(function(t) { return t.function && 'web_search' === t.function.name; })) {
       body.tool_choice = { type: 'function', function: { name: 'web_search' } };
     }
