@@ -21,6 +21,10 @@ package-lock.json
 *.22
 *22
 
+# Secrets (copier manuellement sur le VPS)
+.env
+.env.docker
+
 # Temporary files
 .env.old
 .env.tmp
