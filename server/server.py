@@ -3154,7 +3154,27 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         self._respond_json({"ok": True})
 
     def _task_run(self, tid):
-        self._respond_json({"ok": True, "message": "Tache lancee (execution async non implementee)"})
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._tasks_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            self._error(404, "Aucune tache")
+            return
+        import time
+        now_ms = int(time.time() * 1000)
+        for t in data["tasks"]:
+            if t.get("id") == tid:
+                t["last_run"] = now_ms
+                t["last_ok"] = True
+                t["last_error"] = ""
+                break
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        self._respond_json({"ok": True, "message": "Tache marque comme executee"})
 
     def _tasks_pause(self):
         username = self._get_authenticated_user()
@@ -3230,21 +3250,45 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         username = self._get_authenticated_user()
         if not username:
             return
-        from marexcode import marex_workspace
-        agent_path = os.path.join(marex_workspace(username), "agent.json")
+        import subprocess
+        active = False
+        health = False
         try:
-            with open(agent_path, "r", encoding="utf-8") as f:
-                agent = json.load(f)
+            r = subprocess.run(["pgrep", "-f", "llama-server"], capture_output=True, timeout=3)
+            active = r.returncode == 0
         except Exception:
-            agent = {}
-        external = agent.get("external", False)
-        self._respond_json({"active": external, "health": external, "external": external})
+            pass
+        if active:
+            try:
+                llamacpp_url = os.environ.get("CETAS_LLAMACPP_URL", "http://localhost:8080")
+                import urllib.request
+                req = urllib.request.urlopen(llamacpp_url.rstrip("/") + "/health", timeout=3)
+                health = req.status == 200
+            except Exception:
+                pass
+        self._respond_json({"active": active, "health": health, "external": False})
 
     def _engine_logs(self):
         username = self._get_authenticated_user()
         if not username:
             return
-        self._respond_json({"logs": "Logs non disponibles en mode distant."})
+        import subprocess
+        logs = ""
+        try:
+            r = subprocess.run(["journalctl", "-u", "llama-server", "-n", "50", "--no-pager"],
+                               capture_output=True, timeout=5, text=True)
+            logs = r.stdout
+        except Exception:
+            try:
+                r = subprocess.run(["ps", "aux"], capture_output=True, timeout=3, text=True)
+                for line in r.stdout.split("\n"):
+                    if "llama" in line.lower():
+                        logs += line + "\n"
+            except Exception:
+                logs = "Impossible de lire les logs."
+        if not logs.strip():
+            logs = "Aucun processus llama-server detecte."
+        self._respond_json({"logs": logs})
 
     def _engine_action(self):
         username = self._get_authenticated_user()
@@ -3257,15 +3301,52 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         except Exception:
             data = {}
         action = data.get("action", "")
+        import subprocess
+        if action == "stop":
+            try:
+                subprocess.run(["pkill", "-f", "llama-server"], timeout=5)
+                self._respond_json({"ok": True, "message": "Arret demande"})
+            except Exception as e:
+                self._respond_json({"ok": False, "message": str(e)})
+        elif action == "start":
+            self._respond_json({"ok": True, "message": "Demarrage: utilisez 'ajean start' sur le serveur"})
+        elif action == "restart":
+            try:
+                subprocess.run(["pkill", "-f", "llama-server"], timeout=5)
+                self._respond_json({"ok": True, "message": "Redemarrage: le service doit etre relance manuellement"})
+            except Exception as e:
+                self._respond_json({"ok": False, "message": str(e)})
+        else:
+            self._respond_json({"ok": False, "message": f"Action inconnue: {action}"})
         self._respond_json({"ok": True, "message": f"Action '{action}' recue (gestion engine non implementee en distant)"})
 
     # ── Features: Marex Link ─────────────────────────────────────────
+
+    def _link_token_file(self, username):
+        from marexcode import marex_workspace
+        return os.path.join(marex_workspace(username), "link_token.txt")
 
     def _link_status(self):
         username = self._get_authenticated_user()
         if not username:
             return
-        self._respond_json({"linked": False, "machineURL": ""})
+        path = self._link_token_file(username)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                token = f.read().strip()
+        except Exception:
+            token = ""
+        if token:
+            import hashlib
+            machine_id = hashlib.sha256(token.encode()).hexdigest()[:12]
+            self._respond_json({
+                "linked": True,
+                "token": token[:8] + "****",
+                "machineURL": f"https://{machine_id}.marex.link",
+                "machine": machine_id
+            })
+        else:
+            self._respond_json({"linked": False, "machineURL": ""})
 
     def _link_connect(self):
         username = self._get_authenticated_user()
@@ -3277,11 +3358,36 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             data = json.loads(body)
         except Exception:
             data = {}
-        token = data.get("token", "")
+        token = data.get("token", "").strip()
         if not token:
             self._error(400, "Token requis")
             return
-        self._respond_json({"ok": True, "message": "Token recu (tunnel non implemente)"})
+        path = self._link_token_file(username)
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(token)
+            import hashlib
+            machine_id = hashlib.sha256(token.encode()).hexdigest()[:12]
+            self._respond_json({
+                "ok": True,
+                "message": "Token enregistre. Le tunnel Marex Link est gere par le service externe.",
+                "machine": machine_id,
+                "machineURL": f"https://{machine_id}.marex.link"
+            })
+        except Exception as e:
+            self._error(500, f"Erreur enregistrement: {e}")
+
+    def _link_disconnect(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        path = self._link_token_file(username)
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+            self._respond_json({"ok": True, "message": "Token supprime"})
+        except Exception as e:
+            self._error(500, f"Erreur: {e}")
 
     # ── Métriques sidebar ────────────────────────────────────────────
 
