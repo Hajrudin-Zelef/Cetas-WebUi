@@ -360,7 +360,7 @@ function setupPlusMenu() {
 
     const tokLabel = document.createElement('div');
     tokLabel.className = 'cdrop-section-label';
-    tokLabel.textContent = 'Tokens max';
+    tokLabel.textContent = 'Tokens max par réponse';
     menu.appendChild(tokLabel);
 
     const tokRow = document.createElement('div');
@@ -369,8 +369,9 @@ function setupPlusMenu() {
     tokRow.style.gap = '4px';
     tokRow.style.padding = '6px 10px';
     var savedMaxTok = parseInt(localStorage.getItem('marex-max-tokens') || '32768', 10);
-    tokRow.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary,#8b949e)"><span>300</span><span id="max-tok-val">' + savedMaxTok.toLocaleString('fr') + '</span><span>32K</span></div>' +
-        '<input type="range" id="max-tok-slider" min="300" max="32768" step="100" value="' + savedMaxTok + '" style="width:100%;accent-color:var(--accent,#2563eb)">';
+    tokRow.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary,#8b949e)"><span>300</span><span id="max-tok-val" style="font-weight:600;color:var(--text)">' + savedMaxTok.toLocaleString('fr') + '</span><span>32K</span></div>' +
+        '<input type="range" id="max-tok-slider" min="300" max="32768" step="100" value="' + savedMaxTok + '" style="width:100%;accent-color:var(--accent,#2563eb)">' +
+        '<div style="font-size:10px;color:var(--text-secondary,#8b949e);text-align:center">Tokens max que l\'IA peut générer par réponse</div>';
     menu.appendChild(tokRow);
 
     const tokSlider = tokRow.querySelector('#max-tok-slider');

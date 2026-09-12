@@ -204,10 +204,11 @@
                 <div class="plus-menu-sep"></div>
                 <!-- Section Tokens max -->
                 <div class="plus-menu-section">
-                    <div class="plus-menu-section-title">Tokens max</div>
+                    <div class="plus-menu-section-title">Tokens max par réponse</div>
                     <div class="plus-menu-row" style="flex-direction:column;gap:4px;padding:4px 0">
-                        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary,#8b949e)"><span>300</span><span id="plus-max-tok-val">32K</span><span>32K</span></div>
+                        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary,#8b949e)"><span>300</span><span id="plus-max-tok-val" style="font-weight:600;color:var(--text)">32K</span><span>32K</span></div>
                         <input type="range" id="plus-max-tok-slider" min="300" max="32768" step="100" value="32768" style="width:100%;accent-color:var(--accent,#2563eb)">
+                        <div style="font-size:10px;color:var(--text-secondary,#8b949e);text-align:center">Nombre max de tokens que l'IA peut générer par réponse</div>
                     </div>
                 </div>
             </div>
