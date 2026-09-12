@@ -28,6 +28,14 @@ RUN pip3 install --break-system-packages google-auth
 RUN pip3 install --break-system-packages ruff
 RUN npm install -g prettier
 
+# Cross-encoder reranker for memory search (Marexcode)
+RUN apk add --no-cache libstdc++ libgcc && \
+    pip3 install --break-system-packages --extra-index-url https://robertbak.github.io/onnxruntime-musllinux-wheels/ onnxruntime==1.28.0 huggingface_hub tokenizers numpy
+
+# Download cross-encoder model at build time (no network needed at runtime)
+COPY server/download_reranker.py /tmp/download_reranker.py
+RUN mkdir -p /app/reranker_model && python3 /tmp/download_reranker.py && rm /tmp/download_reranker.py
+
 # Proxy Python
 COPY server/server.py /app/server.py
 COPY server/marexcode.py /app/marexcode.py
@@ -35,6 +43,7 @@ COPY server/observability.py /app/observability.py
 COPY server/lsp.py /app/lsp.py
 COPY server/mcp.py /app/mcp_client.py
 COPY server/websearch.py /app/websearch.py
+COPY server/reranker.py /app/reranker.py
 COPY core/linux/crypto_linux.py /app/core/linux/crypto_linux.py
 COPY core/users-seed.json /usr/share/nginx/html/core/users-seed.json
 
@@ -132,6 +141,7 @@ RUN chmod +x /start.sh
 
 ENV CETAS_BASE_DIR=/usr/share/nginx/html
 ENV CETAS_CRYPTO_PATH=/app/core/linux/crypto_linux.py
+ENV PYTHONPATH=/app
 
 EXPOSE 80
 

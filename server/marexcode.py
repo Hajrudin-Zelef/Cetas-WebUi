@@ -1549,7 +1549,6 @@ class MarexcodeMixin:
             self._respond_json({"hits": []})
             return
         docs = []
-        df = {}
         for fn in sorted(os.listdir(mem_dir)):
             if fn == "MEMORY.md" or not fn.endswith(".md") or fn.startswith("."):
                 continue
@@ -1559,8 +1558,21 @@ class MarexcodeMixin:
             except Exception:
                 content = ""
             title = self._mem_title_of(content)
-            hay = (fn + "\n" + title + "\n" + content).lower()
-            docs.append({"fn": fn, "title": title, "content": content, "hay": hay})
+            docs.append({"fn": fn, "title": title, "content": content})
+        if not docs:
+            self._respond_json({"hits": []})
+            return
+
+        from reranker import rerank
+        hits = rerank(query, docs, limit)
+        if hits is not None:
+            self._respond_json({"hits": hits})
+            return
+
+        df = {}
+        for d in docs:
+            hay = (d["fn"] + "\n" + d["title"] + "\n" + d["content"]).lower()
+            d["hay"] = hay
             for t in terms:
                 if t in hay:
                     df[t] = df.get(t, 0) + 1
