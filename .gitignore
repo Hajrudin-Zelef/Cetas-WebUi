@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Node
+node_modules/
+package-lock.json
+
+# Build artifacts
+*.tar.gz
+*.spec
+
+# Backups
+*.bak
+*.bak-*
+*.bak2
+*.or
+*.opt
+*.22
+*22
+
+# Temporary files
+.env.old
+.env.tmp
+.env.bak
+style.css
+ddg.png
+SearXNG.png
+apply_fix.sh
+skills-lock.json
+
+# Server backups
+server/server.py.back
+server/server.py.bak*
+server/encrypt_keys.py
+server/wrangler.toml
+
+# HTML/CSS backups
+static/partials/*.2
+static/css/components/*.or
+
+# Duplicate files in scripts/
+scripts/.vault/
+scripts/core/
+
+# Vault backups
+.vault/.enc.corrupted
+
+# OpenCode (keep skills, exclude plans and node_modules)
+.opencode/plans/
+.opencode/node_modules/
+.opencode/package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

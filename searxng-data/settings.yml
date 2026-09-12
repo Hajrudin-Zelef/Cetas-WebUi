@@ -1,0 +1,13 @@
+use_default_settings: true
+general:
+  instance_name: "Cetas Search"
+  debug: false
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
+server:
+  secret_key: "cetas-searxng-2026"
+  bind_address: "0.0.0.0"
+  port: 8080

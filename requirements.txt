@@ -1,0 +1,7 @@
+cryptography
+PyJWT
+pywebview
+pystray
+Pillow
+duckduckgo-search
+google-auth

@@ -1,0 +1,82 @@
+    <button id="sidebar-toggle" class="sidebar-toggle" title="Masquer le panneau">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </button>
+    <aside class="sidebar" id="sidebar">
+        <h1 class="sidebar-title"><img src="images/Cetas42.png" class="sidebar-logo" alt="Cetas"> Cetas <span class="version-badge">v3.2</span></h1>
+        <span class="sidebar-credit">By Marexsoft — Fondateur Kouassi Marius</span>
+        <div class="dev-modules">
+            <button class="dev-module-btn" data-module="marexcode">Marexcode</button>
+            <button class="dev-module-btn" data-module="agentcode">Agent Code</button>
+            <button class="dev-module-btn" data-module="plugins">Plugins</button>
+            <button class="dev-module-btn" data-module="competences">Compétences</button>
+        </div>
+        <div id="dev-toast" class="dev-toast" style="display:none">🚧 Développement</div>
+        <button id="new-chat-btn" class="new-chat-btn">Nouvelle conversation</button>
+
+        <div class="fav-section" id="fav-section" style="display:none">
+            <div class="fav-header">
+                <span class="fav-header-icon">★</span>
+                <span class="fav-header-label">Favoris</span>
+            </div>
+            <div id="fav-list" class="fav-list"></div>
+        </div>
+
+        <!-- Conteneurs cachés pour compatibilité JS -->
+        <div id="sp-list" style="display:none"></div>
+        <div id="pr-list" style="display:none"></div>
+
+        <div class="conv-section">
+            <div class="cat-select-row">
+                <div id="cat-select" class="cat-select-custom">
+                    <span class="cat-select-label">Toutes les catégories</span>
+                    <svg class="cat-select-arrow" width="8" height="8" viewBox="0 0 8 8"><path d="M1 3 L4 6 L7 3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <button id="cat-manage-btn" class="cat-manage-btn" title="Gérer les catégories">
+                    <svg width="14" height="14" viewBox="0 0 24 24"><use href="images/icons.svg#icon-settings"/></svg>
+                </button>
+            </div>
+            <div id="cat-select-dropdown" class="cat-select-dropdown" style="display:none"></div>
+            <input type="text" id="conv-search" class="conv-search" placeholder="Rechercher...">
+            <div class="conv-list-container">
+                <div id="conv-list" class="conv-list"><div class="conv-list-loading"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></div></div>
+            </div>
+        </div>
+
+        <div class="user-menu-wrapper">
+            <div style="position:relative">
+                <button id="user-avatar-btn" class="user-avatar-btn" title="Menu utilisateur">
+                    <span id="user-avatar-initials" class="user-avatar-initials"></span>
+                </button>
+                <div id="user-menu-dropdown" class="user-menu-dropdown" style="display:none">
+                    <button id="sidebar-roles-btn" class="user-menu-item" title="Gérer les rôles enregistrés">
+                        <svg width="14" height="14" viewBox="0 0 24 24"><use href="images/icons.svg#icon-user"/></svg>
+                        Rôles
+                    </button>
+                    <button id="sidebar-prompts-btn" class="user-menu-item" title="Gérer les prompts enregistrés">
+                        <svg width="14" height="14" viewBox="0 0 24 24"><use href="images/icons.svg#icon-document"/></svg>
+                        Prompts
+                    </button>
+                    <button id="dashboard-btn" class="user-menu-item" title="Sauvegarder ou importer une sauvegarde">
+                        <svg width="14" height="14" viewBox="0 0 24 24"><use href="images/icons.svg#icon-save"/></svg>
+                        Sauvegardes
+                    </button>
+                    <button id="sidebar-faq-btn" class="user-menu-item" title="Foire aux questions">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        FAQ
+                    </button>
+                    <button id="theme-toggle" class="user-menu-item" title="Changer le thème" style="display:none">&#9788; Thème</button>
+                    <button id="logout-btn" class="user-menu-item user-menu-item-logout" title="Se déconnecter" style="display:none">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        Déconnexion
+                    </button>
+                </div>
+            </div>
+            <button id="apikeys-btn" class="sidebar-config-btn" title="Configuration">
+                <svg width="16" height="16" viewBox="0 0 24 24"><use href="images/icons.svg#icon-settings"/></svg>
+            </button>
+            <button id="clear-all-btn" class="sidebar-config-btn" title="Effacer toutes les conversations" style="color:var(--danger,#dc2626);margin-top:4px">
+                <svg width="16" height="16" viewBox="0 0 24 24"><use href="images/icons.svg#icon-trash"/></svg>
+            </button>
+            <input type="file" id="import-file-input" accept=".json" hidden>
+        </div>
+    </aside>

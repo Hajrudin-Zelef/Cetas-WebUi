@@ -1,0 +1,189 @@
+<!-- MAIN -->
+    <div class="main">
+      <div class="ocean-fx" aria-hidden="true">
+        <div class="ocean-particles">
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+          <span class="ocean-particle"></span>
+        </div>
+      </div>
+      <div class="hero">
+        <div class="hero-title">
+          <span class="hero-title-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-1.5z"/></svg>
+          </span>
+          <h1>Marexcode</h1>
+          <span class="badge-pill">Preview</span>
+        </div>
+
+        <div class="composer">
+          <div class="composer-selectors">
+
+            <!-- SÉLECTEUR PROJET (workspace serveur / dossier importé) -->
+            <div class="cdrop" id="dd-workspace">
+              <button class="selector" id="btn-workspace">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+                <span id="label-workspace">Marexcode (serveur)</span>
+                <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="cdrop-menu" id="menu-workspace">
+                <div class="cdrop-section-label">Projet</div>
+                <button class="cdrop-item selected" data-project="Marexcode (serveur)">
+                  <span class="cdrop-item-left">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/></svg>
+                    <span class="cdrop-item-text">
+                      <span class="t">Marexcode (serveur)</span>
+                      <span class="d">Espace de travail hébergé par défaut</span>
+                    </span>
+                  </span>
+                  <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+                </button>
+                <button class="cdrop-item" id="item-uploaded-project" data-project="Projet importé" disabled>
+                  <span class="cdrop-item-left">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+                    <span class="cdrop-item-text">
+                      <span class="t">Projet importé</span>
+                      <span class="d" id="uploaded-project-desc">Aucun dossier importé pour l'instant</span>
+                    </span>
+                  </span>
+                  <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+                </button>
+                <div class="cdrop-divider"></div>
+                <button class="cdrop-upload-btn" id="btn-upload-folder">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Importer un dossier…
+                </button>
+                <button class="cdrop-upload-btn cdrop-delete-btn" id="btn-delete-project" style="display:none">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Supprimer le projet importé
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <div id="image-preview" class="image-preview" style="display:none"></div>
+          <textarea id="marex-input" placeholder="Décrivez la tâche de code à réaliser... (glissez des images ici)"></textarea>
+          <div id="slash-commands-dropdown" class="slash-commands-dropdown" style="display:none"></div>
+          <div class="composer-info-bar">
+            <span id="token-counter" style="display:none"></span>
+            <span id="queue-indicator" style="display:none"></span>
+          </div>
+
+          <div class="composer-footer">
+            <div class="composer-footer-left">
+
+              <!-- MENU + (compétences, modèles) -->
+              <div class="cdrop" id="dd-plus">
+                <button class="plus-btn" id="plus-btn" aria-label="Ajouter" title="Ajouter">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+                <div class="cdrop-menu" id="menu-plus"></div>
+              </div>
+              <button class="icon-btn web-globe-btn" id="web-globe-btn" title="Recherche web" style="display:none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              </button>
+              <span class="skill-chip" id="skill-chip" style="display:none"><span id="skill-chip-name"></span><span class="skill-chip-x" id="skill-chip-clear" title="Retirer">✕</span></span>
+
+              <!-- SÉLECTEUR PERMISSIONS -->
+              <div class="cdrop" id="dd-permission">
+                <button class="selector" id="btn-permission" style="padding:0;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  <span id="label-permission">Espace Write</span>
+                  <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="cdrop-menu" id="menu-permission">
+                  <div class="cdrop-section-label">Permissions</div>
+                  <button class="cdrop-item" data-permission="Read only" data-icon="eye">
+                    <span class="cdrop-item-left">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <span class="cdrop-item-text">
+                        <span class="t">Read only</span>
+                        <span class="d">L'agent peut lire les fichiers, jamais les modifier</span>
+                      </span>
+                    </span>
+                    <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+                  </button>
+                  <button class="cdrop-item selected" data-permission="Espace Write" data-icon="edit">
+                    <span class="cdrop-item-left">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                      <span class="cdrop-item-text">
+                        <span class="t">Espace Write</span>
+                        <span class="d">L'agent lit et modifie librement le workspace</span>
+                      </span>
+                    </span>
+                    <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+                  </button>
+                  <button class="cdrop-item" data-permission="Ask permission" data-icon="ask">
+                    <span class="cdrop-item-left">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                      <span class="cdrop-item-text">
+                        <span class="t">Ask permission</span>
+                        <span class="d">Demande ta validation avant chaque modification</span>
+                      </span>
+                    </span>
+                    <svg class="check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>
+                  </button>
+                  <div class="cdrop-section-label">Par outil</div>
+                  <div class="tool-perms">
+                    <label class="tool-perm-row"><span>Read</span><select class="tool-perm-select" data-tool="read">
+                      <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
+                    <label class="tool-perm-row"><span>Grep</span><select class="tool-perm-select" data-tool="grep">
+                      <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
+                    <label class="tool-perm-row"><span>Ls</span><select class="tool-perm-select" data-tool="ls">
+                      <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
+                    <label class="tool-perm-row"><span>Write</span><select class="tool-perm-select" data-tool="write">
+                      <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
+                    <label class="tool-perm-row"><span>Edit</span><select class="tool-perm-select" data-tool="edit">
+                      <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
+                    <label class="tool-perm-row"><span>Bash</span><select class="tool-perm-select" data-tool="bash">
+                      <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
+                    <label class="tool-perm-row"><span>RunScript</span><select class="tool-perm-select" data-tool="runscript">
+                      <option value="allow">Autoriser</option><option value="ask">Demander</option><option value="deny">Bloquer</option></select></label>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+            <div class="composer-footer-right">
+
+              <!-- UNDO/REDO -->
+              <button class="icon-btn" id="undo-btn" disabled title="Annuler (Ctrl+Z)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a5 5 0 0 1 0 10H12"/><path d="M3 10l4-4M3 10l4 4"/></svg>
+              </button>
+              <button class="icon-btn" id="redo-btn" disabled title="Rétablir (Ctrl+Shift+Z)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H11a5 5 0 0 0 0 10h1"/><path d="M21 10l-4-4M21 10l-4 4"/></svg>
+              </button>
+
+              <!-- SÉLECTEUR PROVIDER + MODÈLE -->
+              <div class="cdrop" id="dd-model">
+                <button class="model-select" id="btn-model">
+                  <span id="label-model">Choisir un modèle</span>
+                  <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="cdrop-menu up-right" id="menu-model"></div>
+              </div>
+
+              <button class="stop-btn" id="stop-btn" aria-label="Arrêter">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+              </button>
+
+              <button class="send-btn" id="marex-send-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-panel" id="marex-chat-panel" style="display:none">
+          <div class="chat-log" id="marex-chat-log"></div>
+        </div>
+      </div>
+    </div>

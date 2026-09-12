@@ -1,0 +1,6 @@
+mss
+pyautogui
+pyperclip
+Pillow
+requests
+pywebview

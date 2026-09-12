@@ -1,0 +1,16 @@
+.git
+.gitignore
+.opencode
+Docs/
+node_modules
+*.log
+.backups
+.playwright-mcp
+*.png
+*.jpg
+!static/images/*.png
+!static/images/*.jpg
+login-screen.png
+memory_session.md
+CLAUDE.md
+server/server.py.back

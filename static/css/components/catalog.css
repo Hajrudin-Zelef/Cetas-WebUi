@@ -1,0 +1,508 @@
+/* Cetas — © Marexsoft Corporation. Fondateur Kouassi Marius. */
+/* --- Catalogue de modèles --- */
+
+.catalog-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.catalog-search-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.catalog-search-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--text-secondary);
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.catalog-search-input {
+    width: 100%;
+    padding: 8px 10px 8px 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-input);
+    background: var(--bg-input);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.catalog-search-input:focus {
+    border-color: var(--accent);
+}
+
+.catalog-type-btns {
+    display: inline-flex;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    height: var(--catalog-toggle-h);
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    border-radius: 999px;
+    padding: 3px;
+    position: relative;
+}
+
+/* Pastille de surlignage glissante : positionnée derrière les boutons,
+   elle se translate horizontalement selon le bouton actif (sélection via
+   :has(), évite tout couplage JS). */
+.catalog-type-btns::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    background: var(--accent);
+    border-radius: 999px;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+    z-index: 0;
+}
+.catalog-type-btns:has(.catalog-type-btn.active[data-type="image"])::before {
+    transform: translateX(100%);
+}
+
+.catalog-type-btn {
+    flex: 1;
+    padding: 4px 15px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.76rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+}
+
+.catalog-type-btn:not(.active):hover {
+    color: var(--text);
+}
+
+.catalog-type-btn.active,
+.catalog-type-btn.active:hover {
+    color: #fff;
+}
+
+.catalog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Section provider */
+.catalog-section {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.catalog-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    /* Réserve la place du toggle même quand il est absent → toutes les sections
+       ont la même hauteur. 16px = padding vertical (8px × 2). */
+    min-height: calc(var(--catalog-toggle-h) + 16px);
+    box-sizing: border-box;
+    background: var(--bg-hover);
+    border-bottom: 1px solid var(--border);
+}
+
+.catalog-section-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+}
+
+
+.catalog-section-master-cb {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    cursor: pointer;
+    margin: 0;
+}
+
+.catalog-section-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--accent-light);
+    color: var(--accent);
+    flex-shrink: 0;
+}
+
+.catalog-or-load-btn {
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 6px;
+    border: 1px solid var(--border-input);
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.catalog-or-load-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.catalog-or-load-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.catalog-or-load-btn:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.catalog-or-load-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.catalog-section-models {
+    padding: 4px 0;
+}
+
+/* Ligne modèle */
+.catalog-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 6px 0 12px;
+    transition: background 0.1s;
+    user-select: none;
+}
+
+.catalog-row:hover {
+    background: var(--bg-hover);
+}
+
+/* Zone cliquable principale (label) — toggle la checkbox */
+.catalog-row-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    cursor: pointer;
+}
+
+.catalog-row input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.catalog-row-name {
+    flex: 1;
+    font-size: 0.82rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.catalog-row-price {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    white-space: nowrap;
+    width: 140px;
+    text-align: right;
+}
+
+.catalog-row-maker {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    white-space: nowrap;
+    width: 100px;
+    padding-left: 10px;
+    border-left: 1px solid var(--border-input);
+}
+
+/* Réservation d'espace pour l'icône info quand absente, pour conserver un alignement
+   strict des colonnes (prix/fournisseur) sur toutes les lignes. */
+.catalog-row-info-spacer {
+    display: inline-block;
+    width: 14px;
+    min-width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+/* Badges NEW / expiration */
+.catalog-row-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 16px;
+    padding: 0 6px;
+    border-radius: 8px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.catalog-row-badge--new {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent-light, rgba(0, 0, 0, 0.12));
+    font-weight: 600;
+    font-size: 0.55rem;
+    height: 14px;
+    padding: 0 5px;
+    opacity: 0.85;
+}
+
+.catalog-row-badge--warn {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    font-size: 0.7rem;
+    padding: 0 5px;
+}
+
+/* Icône info ouvrant le tooltip enrichi (override de .custom-select-info) */
+.catalog-row-info {
+    margin-left: 0;
+    cursor: help;
+    opacity: 0.55;
+}
+
+.catalog-row:hover .catalog-row-info,
+.catalog-row-info:hover {
+    opacity: 1;
+}
+
+.catalog-row-info:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Section OpenRouter */
+.catalog-or-section {
+    border-color: var(--border);
+    border-style: solid;
+}
+
+.catalog-or-section .catalog-section-header {
+    background: var(--bg-hover);
+}
+
+/* Wrapper du select de catégorie OR (avec caret personnalisé) */
+.catalog-or-cat-select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.catalog-or-cat-select-caret {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--text-secondary);
+}
+
+/* Champ de recherche OpenRouter */
+.catalog-or-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.catalog-or-search-wrap > svg {
+    position: absolute;
+    left: 10px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.catalog-or-search {
+    flex: 1;
+    width: 100%;
+    border: 1px solid var(--border-input);
+    background: var(--bg-input);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 6px 10px 6px 30px;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.catalog-or-search:focus {
+    border-color: var(--accent);
+}
+
+/* Toolbar OR (catégorie + recherche + bouton charger) */
+.catalog-or-toolbar {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-hover);
+    border-bottom: 1px solid var(--border);
+    --or-ctl-h: 32px;
+    --or-ctl-radius: 6px;
+}
+
+.catalog-or-toolbar > .catalog-or-cat-select-wrap,
+.catalog-or-toolbar > .catalog-or-search-wrap {
+    height: var(--or-ctl-h);
+}
+
+.catalog-or-toolbar .catalog-or-cat-select,
+.catalog-or-toolbar .catalog-or-search {
+    height: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--border-input);
+    border-radius: var(--or-ctl-radius);
+    background: var(--bg-input);
+}
+
+.catalog-or-toolbar .catalog-or-load-btn {
+    flex-shrink: 0;
+    width: var(--or-ctl-h);
+    min-width: var(--or-ctl-h);
+    height: var(--or-ctl-h);
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    gap: 0;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    border-radius: var(--or-ctl-radius);
+}
+
+.catalog-or-toolbar .catalog-or-load-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--bg-input);
+}
+
+/* Sélecteur de catégorie OR */
+.catalog-or-cat-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border: 1px solid var(--border-input);
+    background: var(--bg-input);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 400;
+    padding: 5px 28px 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.catalog-or-cat-select:hover {
+    border-color: var(--accent);
+}
+
+.catalog-or-cat-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-light, rgba(0,0,0,0.08));
+}
+
+.catalog-or-empty {
+    padding: 14px 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.5;
+}
+
+.catalog-or-loading {
+    padding: 14px 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.catalog-or-hint {
+    border: 1px dashed var(--border-input);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+}
+
+.catalog-or-hint svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.catalog-or-hint strong {
+    color: var(--text);
+}
+
+/* Animation rotation (chargement) */
+@keyframes catalog-spin {
+    to { transform: rotate(360deg); }
+}
+
+.catalog-spin {
+    animation: catalog-spin 0.8s linear infinite;
+    display: inline-block;
+}
+

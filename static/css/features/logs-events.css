@@ -1,0 +1,245 @@
+/* Logs & Events panel */
+
+.logs-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.logs-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
+}
+
+.logs-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.logs-controls select {
+    min-width: 120px;
+}
+
+.logs-counters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.logs-counter {
+    background: var(--bg-tertiary, #f5f5f5);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+.logs-counter-value {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text, #1a1a2e);
+}
+
+.logs-counter-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #6b7280);
+    margin-top: 4px;
+}
+
+.logs-timeline {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.logs-event {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.logs-event:last-child {
+    border-bottom: none;
+}
+
+.logs-event:hover {
+    background: var(--bg-secondary, #f9fafb);
+}
+
+.logs-event-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.logs-event-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #6b7280);
+    font-family: monospace;
+}
+
+.logs-event-source {
+    font-size: 0.75rem;
+    color: var(--text-tertiary, #9ca3af);
+}
+
+.logs-event-message {
+    font-size: 0.85rem;
+    color: var(--text, #1a1a2e);
+    line-height: 1.4;
+}
+
+.logs-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.logs-badge-error {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.logs-badge-warning {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+.logs-badge-info {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.logs-empty {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.9rem;
+}
+
+.logs-detail {
+    margin-bottom: 12px;
+}
+
+.logs-detail h4 {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+}
+
+.logs-detail pre {
+    background: var(--bg-tertiary, #f5f5f5);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 6px;
+    padding: 12px;
+    overflow-x: auto;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.logs-incidents {
+    margin-bottom: 12px;
+}
+
+.logs-incidents h4 {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+}
+
+.logs-incident-card {
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+}
+
+.logs-incident-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+.logs-incident-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #6b7280);
+}
+
+.logs-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.logs-report {
+    margin-bottom: 12px;
+}
+
+.logs-report h4 {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+}
+
+.logs-report-severity {
+    margin-bottom: 8px;
+}
+
+.logs-report-field {
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.logs-report-field strong {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.logs-report-field ul {
+    margin: 4px 0 0 16px;
+    padding: 0;
+}
+
+.logs-report-field pre {
+    background: var(--bg-tertiary, #f5f5f5);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 6px;
+    padding: 12px;
+    overflow-x: auto;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+@media (max-width: 600px) {
+    .logs-counters {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .logs-controls {
+        flex-direction: column;
+    }
+
+    .logs-actions {
+        flex-direction: column;
+    }
+}
