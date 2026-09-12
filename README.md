@@ -29,8 +29,30 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 - Interface modulaire (sidebar, chat, panneau configuration)
 - Thème clair / sombre / automatique, sans flash au chargement
 - Messages en markdown avec coloration syntaxique, blocs de code
+- **Bulles de chat améliorées** : max-width 75%, labels "Vous" / "Marexcode", espacement 14px
+- **Tableaux markdown** : bordures arrondies, fond alterné, padding généreux
 - Streaming temps réel — rendu optimisé
 - PWA installable, mode hors-ligne via service worker
+
+### Marexcode — Assistant de code
+- **Outils complets** : `Ls` (arborescence), `Read` (pagination offset/limit), `Write` (avec détection existed), `Edit` (diff unifié), `Grep` (limite configurable, ignore binaires), `Bash` (timeout configurable), `Glob` (recherche par pattern)
+- **LSP** : intelligence code via Language Server Protocol (pyright, typescript-language-server, bash-ls, html/css/json-ls) — hover tooltips dans le file viewer
+- **MCP** : 4 serveurs connectés (context7, fetch, memory, filesystem = 26 tools) — injection dynamique au boot
+- **Custom Tools** : outils user-defined via `tools.json` — auto-extraction des paramètres `{name}`
+- **Formatters** : auto-format après Write/Edit (ruff pour Python, prettier pour JS/TS/JSON/CSS/HTML/MD)
+- **Undo/Redo** : journal `undo_log.json` (max 50 entries), boutons ↩ ↪, Ctrl+Z/Y
+- **WebSearch** : 6 providers en cascade (Tavily → Exa → Brave → Jina → SearXNG → DDG), icône globe toggle, native pour OpenRouter
+- **Slash Commands** : 12 commandes built-in (`/help`, `/clear`, `/model`, `/undo`, `/redo`, `/compact`, `/init`, `/mcp`, `/cost`, `/workspace`, `/skills`, `/diff`) + autocomplete dropdown
+- **TodoWrite** : planification multi-étapes live dans le fil de chat (statuts pending/in_progress/completed)
+- **Images** : drag & drop + Ctrl+V paste, preview avec bouton ✕, content array pour vision models
+- **Blocs d'outils collapsibles** dans le fil de chat : badge Bash jaune, diff vert/rouge pour Write/Edit
+- **Todo-list live** + ligne de statut (action en cours + modèle actif)
+- **Panneau raisonnement** : rôle séparé côté droit (thinking/reasoning)
+- **Transmission des tools à tous les providers** : opencode-go (chat/messages/responses), openai, anthropic, google — priorité sur le fallback web_search
+- **Sécurité sandbox** : workspace par utilisateur, `_exec_root()` strict (pas de fallback silencieux), whitelist Bash, timeout, bloque `../` + symlinks
+- **Garde-fou boucle** : max 5 itérations d'outils avant réponse forcée
+- **Responsive mobile** : panneau raisonnement en bottom sheet, composer fluide, touch-friendly
+- **Mode delete** : suppression du workspace « Projet importé » (DELETE `/api/marexcode/project`)
 
 ### Productivité
 - **Canvas intégré** : panneau latéral pour contexte long
@@ -52,6 +74,7 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 - Rate limiting configurables
 - **Synchronisation multi-appareils** : conversations + paramètres sauvegardés côté serveur
 - **Headers sécurité** : Referrer-Policy, Permissions-Policy, CSP
+- **Sandbox Marexcode durcie** : `_exec_root()` strict (pas de fallback vers `CETAS_BASE_DIR`), workspace par projet, `../` et symlinks bloqués
 - Suivi de coûts en temps réel, alertes budget configurables
 - **Quotas d'utilisation** : crédits API restants, alertes seuil
 - **Sauvegardes** : export/import complet
@@ -100,7 +123,9 @@ Voir **[DEPLOY.md](./DEPLOY.md)** — guide complet pour installer sur un VPS.
 ## Stack technique
 
 - **Frontend** : Vanilla JS (ES modules), CSS custom properties, HTML5 Canvas
-- **Backend proxy** : Python stdlib, AES-256-GCM, JWT, scrypt
+- **Backend proxy** : Python stdlib, AES-256-GCM, JWT, scrypt, subprocess (sandbox Marexcode)
+- **Outils IA** : Ls, Glob, Read (pagination), Write, Edit (diff unifié), Grep, Bash (sandbox), TodoWrite (virtuel client-side), LSP (6 serveurs), MCP (4 serveurs), Custom Tools, Formatters, Undo/Redo, Images, Slash Commands
+- **Recherche web** : 6 providers (Tavily, Exa, Brave, Jina, SearXNG, DuckDuckGo) — chaîne auto avec fallback
 - **Serveur** : Nginx Alpine, Docker
 - **Recherche** : SearXNG (méta-moteur auto-hébergé)
 
