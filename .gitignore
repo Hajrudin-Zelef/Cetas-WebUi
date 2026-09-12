@@ -10,7 +10,6 @@ package-lock.json
 
 # Build artifacts
 *.tar.gz
-*.spec
 
 # Backups
 *.bak
@@ -21,14 +20,36 @@ package-lock.json
 *.22
 *22
 
-# Secrets (copier manuellement sur le VPS)
+# Secrets
 .env
 .env.docker
-
-# Temporary files
 .env.old
 .env.tmp
 .env.bak
+
+# Vault & sensitive data
+.vault/
+conversations/
+core/
+Docs/
+scripts/
+searxng-data/
+.opencode/
+.git/
+
+# Specific files
+AGENTS.md
+build_windows.ps1
+cetas.py
+cetas.spec
+deploy.py
+deploy.spec
+index.md
+installer.iss
+nginx.conf
+vision-agent.py
+
+# Temporary files
 style.css
 ddg.png
 SearXNG.png
@@ -49,10 +70,7 @@ static/css/components/*.or
 scripts/.vault/
 scripts/core/
 
-# Vault backups
-.vault/.enc.corrupted
-
-# OpenCode (keep skills, exclude plans and node_modules)
+# OpenCode
 .opencode/plans/
 .opencode/node_modules/
 .opencode/package-lock.json

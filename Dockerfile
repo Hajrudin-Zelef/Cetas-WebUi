@@ -119,6 +119,9 @@ RUN npm uninstall -g terser clean-css-cli && rm -rf /root/.npm
 # Supprimer le seed de clés en clair
 RUN rm -f /usr/share/nginx/html/core/api-keys-seed.json
 
+# Symlink core/ dans static/ pour que auth.js puisse fetch users-seed.json
+RUN ln -sf /usr/share/nginx/html/core /usr/share/nginx/html/static/core
+
 # Configuration nginx
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf

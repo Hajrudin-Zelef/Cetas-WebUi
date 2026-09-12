@@ -524,6 +524,26 @@ def main() -> None:
         "16": ("OpenCode Go", "sk-..."),
     }
 
+    # Mapping display name → vault key name
+    PROVIDER_VAULT_KEY = {
+        "NVIDIA NIM": "nvidia",
+        "Groq": "groq",
+        "OpenRouter": "openrouter",
+        "DeepSeek": "deepseek",
+        "FreeLLMAPI": "freellmapi",
+        "Anthropic": "anthropic",
+        "OpenAI": "openai",
+        "Grok": "grok",
+        "Perplexity": "perplexity",
+        "Google": "google",
+        "Mistral": "mistral",
+        "Qwen": "qwen",
+        "Kimi": "kimi",
+        "GLM": "glm",
+        "OpenCode Zen": "opencode",
+        "OpenCode Go": "opencode-go",
+    }
+
     LOCAL_ENGINES = {
         "1": ("Ollama", "http://localhost:11434"),
         "2": ("LM Studio", "http://localhost:1234"),
@@ -541,7 +561,8 @@ def main() -> None:
         return ok, err
 
     def _configure_provider(secrets: dict, provider_name: str, hint: str, password: str, quick_mode: bool = False) -> bool:
-        existing = secrets.get("api_keys", {}).get(provider_name)
+        vault_key = PROVIDER_VAULT_KEY.get(provider_name, provider_name)
+        existing = secrets.get("api_keys", {}).get(vault_key)
 
         if not quick_mode:
             print()
@@ -573,7 +594,7 @@ def main() -> None:
             if ok:
                 if "api_keys" not in secrets:
                     secrets["api_keys"] = {}
-                secrets["api_keys"][provider_name] = key
+                secrets["api_keys"][vault_key] = key
 
                 if not quick_mode:
                     print(c("green", f"  Cle {provider_name} enregistree.\n"))
@@ -626,7 +647,8 @@ def main() -> None:
         print()
 
         for k, (pname, _) in PROVIDERS.items():
-            existing = secrets.get("api_keys", {}).get(pname)
+            vault_key = PROVIDER_VAULT_KEY.get(pname, pname)
+            existing = secrets.get("api_keys", {}).get(vault_key)
             if existing:
                 masked = existing[:6] + "..." + existing[-4:] if len(existing) > 10 else "****"
                 status = c("green", f"✓ {masked}")
