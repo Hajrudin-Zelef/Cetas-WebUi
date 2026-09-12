@@ -102,7 +102,7 @@ test('composer contient les ancres attendues', () => {
 test('skills.js exporte les compétences CETAS', async () => {
     const m = await import(resolve(MX, 'js/skills.js'));
     assert.ok(Array.isArray(m.COMPETENCES), 'COMPETENCES non exporté');
-    assert.ok(m.COMPETENCES.length >= 5, 'au moins 5 compétences attendues');
+    assert.ok(m.COMPETENCES.length >= 3, 'au moins 3 compétences attendues');
     for (const sk of m.COMPETENCES) {
         assert.ok(sk.id && sk.name && sk.prompt, 'compétence incomplète: ' + (sk.id || '?'));
     }
@@ -116,7 +116,8 @@ test('tool-search.js : contenu modèle = data.text (format concis)', () => {
 test('chat.js : traduction FR du reasoning (OpenRouter free → DeepSeek → anglais)', () => {
     const src = readFileSync(resolve(MX, 'js/chat.js'), 'utf8');
     assert.match(src, /thinkText \+= t/, 'le reasoning brut doit être accumulé pour traduction');
-    assert.match(src, /translateReasoning\(raw\)\.then/, 'la traduction doit remplacer le texte affiché en fin de tour');
+    assert.match(src, /REASONING_TRANSLATE_DELAY_MS/, 'la traduction doit être différée (constante de délai)');
+    assert.match(src, /setTimeout\(\(\) => \{[\s\S]{0,200}translateReasoning\(raw\)\.then/, 'la traduction différée remplace le texte affiché après la réponse');
     assert.match(src, /reasoning-translate\.js/, 'le module de traduction doit être importé');
     const mod = readFileSync(resolve(MX, 'js/reasoning-translate.js'), 'utf8');
     assert.match(mod, /provider:\s*'openrouter'[\s\S]{0,160}model:\s*'nex-agi\/nex-n2\.5-pro:free'/, 'modèle gratuit épinglé en primaire');

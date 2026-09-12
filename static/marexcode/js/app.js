@@ -1,240 +1,23 @@
-import { getToken, listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, getSkillContent, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions, trackActivity, getProfileStats, getProfileActivity, getMemory, saveMemory, deleteMemory } from './api.js';
+import { listSessions, loadSession as apiLoadSession, saveSession as apiSaveSession, deleteSession as apiDeleteSession, listTree, readFile, getProject, setProject, uploadProjectFolder, deleteProject, listSkillsConfig, saveSkillsConfig, listWorkspaces, listWorkspaceTree, activateWorkspace, deleteWorkspace, getWorkspaceInstructions, saveWorkspaceInstructions, getGlobalInstructions, saveGlobalInstructions } from './api.js';
 import { initModelSelect, selectModel, getSelectedModelId } from './model-select.js';
 import { createChat } from './chat.js';
 import { initRouter } from './router.js';
-import { loadProfilePage } from './profile.js';
 import { COMPETENCES } from './skills.js';
-import { getPermission, setPermission, checkToolPermission, getRule, setRule, isAutoAllowWorkspace, setAutoAllowWorkspace } from './marex-permission.js';
-import { getAutoRoleConfig, setAutoRoleConfig, MODEL_CONTEXT_LIMITS } from './auto-mode-config.js';
-import { resolveAgent, AGENT_ROLES } from './agents.js';
-import { testModel } from './model-diagnostics.js';
-
-const AUTO_ROLE_CARD_FILLERS = {};
+import { getPermission, setPermission, checkToolPermission, getRule, setRule } from './marex-permission.js';
 
 const $ = id => document.getElementById(id);
 
-// Mode Auto — carte de rôle (panneau Automatisation) : wiring complet
-// provider/modèle/contexte/température/maxTokens/prompt système/outils.
-function setupAutoRoleCard(role) {
-    const providerSel = document.getElementById('gen-auto-provider-' + role);
-    const modelSel = document.getElementById('gen-auto-model-' + role);
-    const ctxEl = document.getElementById('gen-auto-ctx-' + role);
-    const tempToggle = document.getElementById('gen-auto-ttemp-' + role);
-    const tempRange = document.getElementById('gen-auto-temp-' + role);
-    const tempVal = document.getElementById('gen-auto-tempval-' + role);
-    const maxTokInput = document.getElementById('gen-auto-maxtok-' + role);
-    const sysPromptTa = document.getElementById('gen-auto-sysprompt-' + role);
-    const resetPromptBtn = document.getElementById('gen-auto-resetprompt-' + role);
-    const toolsBox = document.getElementById('gen-auto-tools-' + role);
-    const roleAgent = AGENT_ROLES[role];
-    if (!providerSel || !modelSel || !roleAgent) return;
+const MAX_VIEW_LINES = 4000;
 
-    const models = (typeof MODELS_DATA !== 'undefined' && MODELS_DATA.text) ? MODELS_DATA.text : [];
-    const providers = [...new Set(models.map(m => m.editeur).filter(Boolean))].sort();
-    const defOpt = document.createElement('option');
-    defOpt.value = '';
-    defOpt.textContent = '(par défaut)';
-    providerSel.appendChild(defOpt);
-    for (const p of providers) {
-        const o = document.createElement('option');
-        o.value = p;
-        o.textContent = p;
-        providerSel.appendChild(o);
-    }
-
-    for (const toolName of roleAgent.tools) {
-        const label = document.createElement('label');
-        label.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:12px;';
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.dataset.toolName = toolName;
-        label.appendChild(cb);
-        label.appendChild(document.createTextNode(toolName));
-        toolsBox.appendChild(label);
-    }
-
-    let promptTimer = null;
-
-    function populateModels(prov) {
-        modelSel.innerHTML = '';
-        const head = document.createElement('option');
-        head.value = '';
-        head.textContent = '(par défaut placeholder)';
-        modelSel.appendChild(head);
-        const list = prov ? models.filter(m => m.editeur === prov) : models;
-        for (const m of list) {
-            const o = document.createElement('option');
-            o.value = m.id;
-            o.textContent = m.label || m.id;
-            modelSel.appendChild(o);
-        }
-    }
-
-    function updateContextLine() {
-        const m = modelSel.value;
-        if (Object.prototype.hasOwnProperty.call(MODEL_CONTEXT_LIMITS, m)) {
-            const v = MODEL_CONTEXT_LIMITS[m];
-            ctxEl.textContent = 'Contexte : ' + (v >= 1000 ? Math.round(v / 1000) + 'k' : v) + ' tokens';
-        } else {
-            ctxEl.textContent = 'Contexte : non renseigné (plafond par défaut appliqué)';
-        }
-    }
-
-    function refreshSummary() {
-        const s = document.getElementById('gen-auto-summary-' + role);
-        if (!s) return;
-        const cfgModel = String(getAutoRoleConfig(role).model || '').trim();
-        s.textContent = cfgModel ? resolveAgent(role).model : '(non configuré)';
-    }
-
-    function fillFromConfig() {
-        const cfg = getAutoRoleConfig(role);
-        const prov = typeof cfg.provider === 'string' ? cfg.provider : '';
-        providerSel.value = providers.indexOf(prov) !== -1 ? prov : '';
-        populateModels(prov);
-        const modelCfg = typeof cfg.model === 'string' ? cfg.model.trim() : '';
-        modelSel.value = [...modelSel.options].some(o => o.value === modelCfg) ? modelCfg : '';
-        updateContextLine();
-        refreshSummary();
-        const t = (typeof cfg.temperature === 'number' && isFinite(cfg.temperature)) ? cfg.temperature : null;
-        tempToggle.checked = t !== null;
-        tempRange.disabled = t === null;
-        tempRange.value = t !== null ? String(t) : '0.7';
-        tempVal.textContent = t !== null ? String(t) : '—';
-        maxTokInput.value = (typeof cfg.maxTokens === 'number' && cfg.maxTokens > 0) ? String(cfg.maxTokens) : '';
-        sysPromptTa.value = (typeof cfg.systemPrompt === 'string' && cfg.systemPrompt.trim()) ? cfg.systemPrompt : roleAgent.systemPrompt;
-        const toolsCfg = (Array.isArray(cfg.tools) && cfg.tools.length) ? cfg.tools : roleAgent.tools;
-        toolsBox.querySelectorAll('input[type=checkbox]').forEach(cb => {
-            cb.checked = toolsCfg.indexOf(cb.dataset.toolName) !== -1;
-        });
-    }
-
-    providerSel.addEventListener('change', () => {
-        populateModels(providerSel.value);
-        modelSel.value = '';
-        updateContextLine();
-        setAutoRoleConfig(role, { provider: providerSel.value || null });
-        refreshSummary();
-    });
-
-    modelSel.addEventListener('change', () => {
-        updateContextLine();
-        refreshSummary();
-        setAutoRoleConfig(role, { model: modelSel.value || null });
-    });
-
-    tempToggle.addEventListener('change', () => {
-        tempRange.disabled = !tempToggle.checked;
-        if (tempToggle.checked) {
-            const t = parseFloat(tempRange.value);
-            tempVal.textContent = String(t);
-            setAutoRoleConfig(role, { temperature: t });
-        } else {
-            tempVal.textContent = '—';
-            setAutoRoleConfig(role, { temperature: null });
-        }
-    });
-
-    tempRange.addEventListener('input', () => {
-        tempVal.textContent = String(parseFloat(tempRange.value));
-    });
-    tempRange.addEventListener('change', () => {
-        if (tempToggle.checked) setAutoRoleConfig(role, { temperature: parseFloat(tempRange.value) });
-    });
-
-    maxTokInput.addEventListener('change', () => {
-        const n = parseInt(maxTokInput.value, 10);
-        setAutoRoleConfig(role, { maxTokens: (n && n > 0) ? n : null });
-    });
-
-    sysPromptTa.addEventListener('input', () => {
-        clearTimeout(promptTimer);
-        promptTimer = setTimeout(() => {
-            const isDefault = sysPromptTa.value.trim() === roleAgent.systemPrompt.trim();
-            setAutoRoleConfig(role, { systemPrompt: isDefault ? null : sysPromptTa.value });
-        }, 500);
-    });
-
-    resetPromptBtn.addEventListener('click', () => {
-        clearTimeout(promptTimer);
-        sysPromptTa.value = roleAgent.systemPrompt;
-        setAutoRoleConfig(role, { systemPrompt: null });
-    });
-
-    toolsBox.addEventListener('change', (e) => {
-        if (!e.target || e.target.type !== 'checkbox') return;
-        const checked = [...toolsBox.querySelectorAll('input[type=checkbox]')]
-            .filter(cb => cb.checked)
-            .map(cb => cb.dataset.toolName);
-        setAutoRoleConfig(role, { tools: checked });
-    });
-
-    fillFromConfig();
-    AUTO_ROLE_CARD_FILLERS[role] = fillFromConfig;
-}
-
-// Mode Auto — bouton "Tester la connexion" d'une carte de rôle : teste les
-// valeurs ACTUELLES du formulaire (jamais persistées, setAutoRoleConfig non
-// appelé), affiche connexion / tool-calling / contexte.
-function setupAutoRoleTester(role) {
-    const testBtn = document.getElementById('gen-auto-test-' + role);
-    const resultEl = document.getElementById('gen-auto-testresult-' + role);
-    if (!testBtn || !resultEl) return;
-
-    function readFormConfig() {
-        const modelSel = document.getElementById('gen-auto-model-' + role);
-        const tempToggle = document.getElementById('gen-auto-ttemp-' + role);
-        const tempRange = document.getElementById('gen-auto-temp-' + role);
-        const cfg = { model: modelSel ? modelSel.value : '' };
-        if (tempToggle && tempToggle.checked && tempRange) {
-            cfg.temperature = parseFloat(tempRange.value);
-        }
-        return cfg;
-    }
-
-    function fmt(r) {
-        const conn = r.connection.ok
-            ? '✅ Connexion — ' + (r.connection.latencyMs != null ? r.connection.latencyMs + 'ms' : '?')
-            : '❌ Connexion — ' + (r.connection.error || 'échec');
-        const tool = r.toolCalling.ok
-            ? '✅ Tool-calling — ' + r.toolCalling.detail
-            : '❌ Tool-calling — ' + r.toolCalling.detail;
-        const ctx = r.context.known
-            ? 'ℹ️ Contexte — ' + r.context.note
-            : '⚠️ Contexte — ' + r.context.note;
-        return [conn, tool, ctx];
-    }
-
-    testBtn.addEventListener('click', async () => {
-        if (testBtn.disabled) return;
-        testBtn.disabled = true;
-        resultEl.style.display = 'block';
-        resultEl.innerHTML = '<div>⏳ Test en cours…</div>';
-        try {
-            const r = await testModel(role, readFormConfig(), {});
-            resultEl.innerHTML = fmt(r).map(l => '<div>' + l + '</div>').join('');
-        } catch (e) {
-            resultEl.innerHTML = '<div>❌ Test impossible — ' + (e && e.message ? e.message : e) + '</div>';
-        }
-        testBtn.disabled = false;
-    });
-}
-
-// Préférences du menu "+" (Réflexion / Recherche web) — visuel pour l'instant,
-// branchement fonctionnel réel à faire une fois streamModelWithTools consulté.
+// Préférences du menu "+" (Recherche web) — état UI, persisté dans localStorage.
 const marexPrefs = {
-    reflection: false,
-    effort: 'medium',
-    webSearch: false,
-    webSearchDepth: 'standard'
+    webSearch: (() => { try { return localStorage.getItem("marex-web-search") !== "0"; } catch (e) { return true; } })()
 };
 
 const refs = {
     authGate: $('auth-gate'),
     mainFrame: $('main-frame'),
     settingsFrame: $('settings-frame'),
-    profileFrame: $('profile-frame'),
-    profileBackBtn: $('profile-back-btn'),
     settingsBackBtn: $('settings-back-btn'),
     settingsContent: document.querySelector('.settings-content'),
     sidebar: document.querySelector('.sidebar'),
@@ -287,8 +70,6 @@ const refs = {
     stopBtn: $('stop-btn'),
     chatPanel: $('marex-chat-panel'),
     chatLog: $('marex-chat-log'),
-    setUsername: $('set-username'),
-    setRole: $('set-role'),
     setSessionsCount: $('set-sessions-count'),
     setClearAll: $('set-clear-all'),
     setLogout: $('set-logout'),
@@ -297,7 +78,6 @@ const refs = {
     fvBody: $('fv-body'),
     fvClose: $('fv-close'),
     authLoginBtn: $('auth-login-btn'),
-    composerProjectName: $('composer-project-name'),
     sbProjectHeaderName: $('sb-project-header-name'),
     sidePanel: $('side-panel'),
     sidePanelBody: $('side-panel-body'),
@@ -357,7 +137,6 @@ function setupPermissionSelector() {
 function applyProjectUI(name) {
     activeProjectName = name;
     refs.labelWorkspace.textContent = name;
-    if (refs.composerProjectName) refs.composerProjectName.textContent = name;
     if (refs.sbProjectHeaderName) refs.sbProjectHeaderName.textContent = name;
     refs.menuWorkspace.querySelectorAll('.cdrop-item[data-project]').forEach(item => {
         item.classList.toggle('selected', item.getAttribute('data-project') === name);
@@ -549,51 +328,10 @@ function setupPlusMenu() {
 
     refs.skillChipClear.addEventListener('click', clearSkill);
 
-    // ── Séparateur + Réflexion + Recherche web ──
+    // ── Séparateur + Recherche web ──
     const divider = document.createElement('div');
     divider.className = 'cdrop-divider';
     menu.appendChild(divider);
-
-    // Section Réflexion
-    const reflLabel = document.createElement('div');
-    reflLabel.className = 'cdrop-section-label';
-    reflLabel.textContent = 'Réflexion';
-    menu.appendChild(reflLabel);
-
-    const reflRow = document.createElement('div');
-    reflRow.className = 'cdrop-row';
-    reflRow.innerHTML = '<span class="cdrop-row-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A5.5 5.5 0 0 0 4 7.5c0 2 1 3 1.5 4S7 13.5 7 15h4c0-1.5.5-2.5 1.5-3.5S14 9.5 14 7.5A5.5 5.5 0 0 0 8.5 2z"/><path d="M7 18h4"/><path d="M8 21h2"/></svg><span>Réflexion</span></span>' +
-        '<label class="cdrop-toggle"><input type="checkbox" id="marex-reflection-toggle"><span class="cdrop-toggle-slider"></span></label>';
-    menu.appendChild(reflRow);
-
-    const effortPills = document.createElement('div');
-    effortPills.className = 'cdrop-pills disabled';
-    effortPills.id = 'marex-effort-pills';
-    const effortLevels = [['low', 'Faible'], ['medium', 'Moyen'], ['high', 'Élevé']];
-    effortPills.innerHTML = effortLevels.map(([val, label]) =>
-        '<button type="button" class="cdrop-pill' + (marexPrefs.effort === val ? ' active' : '') + '" data-effort="' + val + '">' + label + '</button>'
-    ).join('');
-    menu.appendChild(effortPills);
-
-    const reflToggle = reflRow.querySelector('#marex-reflection-toggle');
-    reflToggle.checked = marexPrefs.reflection;
-    reflToggle.addEventListener('change', () => {
-        marexPrefs.reflection = reflToggle.checked;
-        effortPills.classList.toggle('disabled', !reflToggle.checked);
-    });
-    effortPills.querySelectorAll('.cdrop-pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-            if (!reflToggle.checked) return;
-            marexPrefs.effort = pill.dataset.effort;
-            effortPills.querySelectorAll('.cdrop-pill').forEach(p => p.classList.remove('active'));
-            pill.classList.add('active');
-         });
-    });
-
-    // Section Recherche web
-    const divider2 = document.createElement('div');
-    divider2.className = 'cdrop-divider';
-    menu.appendChild(divider2);
 
     const webLabel = document.createElement('div');
     webLabel.className = 'cdrop-section-label';
@@ -606,29 +344,12 @@ function setupPlusMenu() {
         '<label class="cdrop-toggle"><input type="checkbox" id="marex-websearch-toggle"><span class="cdrop-toggle-slider"></span></label>';
     menu.appendChild(webRow);
 
-    const webPills = document.createElement('div');
-    webPills.className = 'cdrop-pills';
-    webPills.id = 'marex-websearch-pills';
-    webPills.style.display = marexPrefs.webSearch ? 'flex' : 'none';
-    const webDepths = [['standard', 'Standard'], ['deep', 'Approfondie']];
-    webPills.innerHTML = webDepths.map(([val, label]) =>
-        '<button type="button" class="cdrop-pill' + (marexPrefs.webSearchDepth === val ? ' active' : '') + '" data-depth="' + val + '">' + label + '</button>'
-    ).join('');
-    menu.appendChild(webPills);
-
     const webToggle = webRow.querySelector('#marex-websearch-toggle');
     webToggle.checked = marexPrefs.webSearch;
     webToggle.addEventListener('change', () => {
         marexPrefs.webSearch = webToggle.checked;
-        webPills.style.display = webToggle.checked ? 'flex' : 'none';
+        localStorage.setItem('marex-web-search', webToggle.checked ? '1' : '0');
         updateWebSearchGlobe();
-    });
-    webPills.querySelectorAll('.cdrop-pill').forEach(pill => {
-        pill.addEventListener('click', () => {
-            marexPrefs.webSearchDepth = pill.dataset.depth;
-            webPills.querySelectorAll('.cdrop-pill').forEach(p => p.classList.remove('active'));
-            pill.classList.add('active');
-        });
     });
 }
 
@@ -833,360 +554,6 @@ async function loadSkillsPanel() {
     }
 }
 
-function loadGeneralPanel() {
-    // Font size
-    const fontSelect = document.getElementById('gen-font-size');
-    const savedFont = localStorage.getItem('marex-font-size') || '14';
-    if (fontSelect) {
-        fontSelect.value = savedFont;
-        document.documentElement.style.setProperty('--chat-font-size', savedFont + 'px');
-        fontSelect.addEventListener('change', () => {
-            localStorage.setItem('marex-font-size', fontSelect.value);
-            document.documentElement.style.setProperty('--chat-font-size', fontSelect.value + 'px');
-        });
-    }
-
-    // Reduce motion
-    const motionToggle = document.getElementById('gen-reduce-motion');
-    const savedMotion = localStorage.getItem('marex-reduce-motion') === '1';
-    if (motionToggle) {
-        motionToggle.checked = savedMotion;
-        if (savedMotion) document.body.classList.add('reduce-motion');
-        motionToggle.addEventListener('change', () => {
-            localStorage.setItem('marex-reduce-motion', motionToggle.checked ? '1' : '0');
-            document.body.classList.toggle('reduce-motion', motionToggle.checked);
-        });
-    }
-
-    // Auto-allow workspace
-    const autoAllow = document.getElementById('gen-auto-allow');
-    if (autoAllow) {
-        autoAllow.checked = isAutoAllowWorkspace();
-        autoAllow.addEventListener('change', () => {
-            setAutoAllowWorkspace(autoAllow.checked);
-        });
-    }
-
-    // Plain text mode
-    const plainText = document.getElementById('gen-plain-text');
-    if (plainText) {
-        plainText.checked = localStorage.getItem('marex-plain-text') === '1';
-        plainText.addEventListener('change', () => {
-            localStorage.setItem('marex-plain-text', plainText.checked ? '1' : '0');
-        });
-    }
-
-    // Show token usage
-    const showTokens = document.getElementById('gen-show-tokens');
-    if (showTokens) {
-        showTokens.checked = localStorage.getItem('marex-show-tokens') !== '0';
-        showTokens.addEventListener('change', () => {
-            localStorage.setItem('marex-show-tokens', showTokens.checked ? '1' : '0');
-            const el = document.getElementById('token-counter');
-            if (el) el.style.display = showTokens.checked ? '' : 'none';
-        });
-    }
-
-    // Send mode
-    const sendMode = document.getElementById('gen-send-mode');
-    if (sendMode) {
-        sendMode.value = localStorage.getItem('marex-send-mode') || 'enter';
-        sendMode.addEventListener('change', () => {
-            localStorage.setItem('marex-send-mode', sendMode.value);
-        });
-    }
-
-    // Message queue
-    const queueToggle = document.getElementById('gen-message-queue');
-    if (queueToggle) {
-        queueToggle.checked = localStorage.getItem('marex-message-queue') === '1';
-        queueToggle.addEventListener('change', () => {
-            localStorage.setItem('marex-message-queue', queueToggle.checked ? '1' : '0');
-        });
-    }
-
-    // Permission policy (Bash/RunScript/Write/Edit)
-    ['bash', 'runscript', 'write', 'edit'].forEach(tool => {
-        const sel = document.getElementById('gen-perm-' + tool);
-        if (sel) {
-            sel.value = localStorage.getItem('marex-perm-' + tool) || (tool === 'bash' || tool === 'runscript' ? 'ask' : 'allow');
-            sel.addEventListener('change', () => {
-                localStorage.setItem('marex-perm-' + tool, sel.value);
-                setRule(tool, sel.value);
-            });
-        }
-    });
-
-    // Sandbox strict
-    const sandboxStrict = document.getElementById('gen-sandbox-strict');
-    if (sandboxStrict) {
-        sandboxStrict.checked = localStorage.getItem('marex-sandbox-strict') !== '0';
-        sandboxStrict.addEventListener('change', () => {
-            localStorage.setItem('marex-sandbox-strict', sandboxStrict.checked ? '1' : '0');
-        });
-    }
-
-    // Web search
-    const webSearch = document.getElementById('gen-web-search');
-    if (webSearch) {
-        webSearch.checked = localStorage.getItem('marex-web-search') !== '0';
-        webSearch.addEventListener('change', () => {
-            localStorage.setItem('marex-web-search', webSearch.checked ? '1' : '0');
-        });
-    }
-
-    // Output mode (verbose/compressed)
-    const outputMode = document.getElementById('gen-output-mode');
-    if (outputMode) {
-        outputMode.value = localStorage.getItem('marex-output-mode') || 'verbose';
-        outputMode.addEventListener('change', () => {
-            localStorage.setItem('marex-output-mode', outputMode.value);
-        });
-    }
-
-    // Thinking mode (all/summary/hidden)
-    const thinkingMode = document.getElementById('gen-thinking-mode');
-    if (thinkingMode) {
-        thinkingMode.value = localStorage.getItem('marex-thinking-mode') || 'all';
-        thinkingMode.addEventListener('change', () => {
-            localStorage.setItem('marex-thinking-mode', thinkingMode.value);
-        });
-    }
-
-    // Mode Auto — cartes de rôle (panneau Automatisation)
-    ['plan', 'code', 'audit'].forEach(role => setupAutoRoleCard(role));
-    ['plan', 'code', 'audit'].forEach(role => setupAutoRoleTester(role));
-
-    // Mode Auto — Pipeline (panneau Automatisation)
-    const autoModeActive = document.getElementById('gen-auto-mode-active');
-    if (autoModeActive) {
-        autoModeActive.checked = localStorage.getItem('marex-auto-mode') === '1';
-        autoModeActive.addEventListener('change', () => {
-            localStorage.setItem('marex-auto-mode', autoModeActive.checked ? '1' : '0');
-            if (typeof window._updateAutoModeUI === 'function') window._updateAutoModeUI();
-        });
-    }
-    const autoApproval = document.getElementById('gen-auto-approval');
-    if (autoApproval) {
-        autoApproval.checked = localStorage.getItem('marex-auto-approval') === '1';
-        autoApproval.addEventListener('change', () => {
-            localStorage.setItem('marex-auto-approval', autoApproval.checked ? '1' : '0');
-        });
-    }
-
-    // Mode Auto — Comportement du flow (panneau Automatisation)
-    const stopOnError = document.getElementById('gen-auto-stop-on-error');
-    if (stopOnError) {
-        stopOnError.checked = localStorage.getItem('marex-auto-stop-on-error') !== '0';
-        stopOnError.addEventListener('change', () => {
-            localStorage.setItem('marex-auto-stop-on-error', stopOnError.checked ? '1' : '0');
-        });
-    }
-    const maxRetriesInput = document.getElementById('gen-auto-max-retries');
-    if (maxRetriesInput) {
-        maxRetriesInput.value = localStorage.getItem('marex-auto-max-retries') || '0';
-        maxRetriesInput.addEventListener('change', () => {
-            const n = Math.max(0, Math.min(5, parseInt(maxRetriesInput.value, 10) || 0));
-            maxRetriesInput.value = String(n);
-            localStorage.setItem('marex-auto-max-retries', String(n));
-        });
-    }
-    const compactToggle = document.getElementById('gen-auto-compact');
-    if (compactToggle) {
-        compactToggle.checked = localStorage.getItem('marex-auto-compact') === '1';
-        compactToggle.addEventListener('change', () => {
-            localStorage.setItem('marex-auto-compact', compactToggle.checked ? '1' : '0');
-        });
-    }
-    const budgetInput = document.getElementById('gen-auto-budget');
-    if (budgetInput) {
-        budgetInput.value = localStorage.getItem('marex-auto-budget') || '';
-        budgetInput.addEventListener('change', () => {
-            const n = parseInt(budgetInput.value, 10);
-            localStorage.setItem('marex-auto-budget', (n && n > 0) ? String(n) : '');
-        });
-    }
-    const verboseLog = document.getElementById('gen-auto-verbose-log');
-    if (verboseLog) {
-        verboseLog.checked = localStorage.getItem('marex-auto-verbose-log') === '1';
-        verboseLog.addEventListener('change', () => {
-            localStorage.setItem('marex-auto-verbose-log', verboseLog.checked ? '1' : '0');
-        });
-    }
-
-    // Global instructions
-    const textarea = document.getElementById('gen-global-instructions');
-    const saveBtn = document.getElementById('gen-save-instructions');
-    if (textarea) {
-        getGlobalInstructions().then(d => { textarea.value = d.content || ''; }).catch(() => {});
-    }
-    if (saveBtn && textarea) {
-        saveBtn.addEventListener('click', async () => {
-            try {
-                await saveGlobalInstructions(textarea.value);
-                saveBtn.textContent = 'Saved';
-                setTimeout(() => { saveBtn.textContent = 'Save'; }, 2000);
-            } catch (e) { console.error(e); }
-        });
-    }
-
-    // Licences modal
-    const licBtn = document.getElementById('gen-licenses');
-    if (licBtn) {
-        licBtn.addEventListener('click', () => {
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
-            overlay.innerHTML = `<div class="modal-instructions" style="max-width:480px;">
-                <div class="modal-instructions-header"><h2>Open Source Licences</h2></div>
-                <div style="padding:16px 24px;font-size:13px;color:var(--text-secondary);line-height:1.8;">
-                    <div><strong style="color:var(--text-primary)">marked</strong> — MIT licence</div>
-                    <div><strong style="color:var(--text-primary)">DOMPurify</strong> — Apache 2.0</div>
-                    <div><strong style="color:var(--text-primary)">PDF.js</strong> — Apache 2.0</div>
-                    <div><strong style="color:var(--text-primary)">JSZip</strong> — MIT licence</div>
-                    <div><strong style="color:var(--text-primary)">Mammoth.js</strong> — BSD-2-Clause</div>
-                    <div><strong style="color:var(--text-primary)">SheetJS</strong> — Apache 2.0</div>
-                </div>
-                <div class="modal-instructions-footer"><button class="modal-instructions-save" onclick="this.closest('.modal-overlay').remove()">OK</button></div>
-            </div>`;
-            document.body.appendChild(overlay);
-            requestAnimationFrame(() => overlay.classList.add('open'));
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-        });
-    }
-
-    // Coming soon rows
-    const showToast = (msg) => {
-        const t = document.createElement('div');
-        t.className = 'settings-toast';
-        t.textContent = msg;
-        document.body.appendChild(t);
-        requestAnimationFrame(() => t.classList.add('open'));
-        setTimeout(() => { t.classList.remove('open'); setTimeout(() => t.remove(), 300); }, 2000);
-    };
-    document.getElementById('gen-lang-row')?.addEventListener('click', () => showToast('Coming soon'));
-    document.getElementById('gen-expert-row')?.addEventListener('click', () => showToast('Coming soon'));
-}
-
-async function loadProfilePanel() {
-    // Show loading state
-    ['stat-tokens', 'stat-chats', 'stat-streak', 'stat-model', 'ov-mode', 'ov-reasoning', 'ov-skills', 'ov-chats'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = '...';
-    });
-    document.getElementById('profile-top-skills').innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Chargement...</div>';
-
-    try {
-        const [stats, activity, skills] = await Promise.all([
-            getProfileStats().catch(() => ({})),
-            getProfileActivity().catch(() => ({})),
-            listSkillsConfig().catch(() => [])
-        ]);
-
-        // User info
-        const username = document.getElementById('set-username')?.textContent || 'Utilisateur';
-        const emailEl = document.getElementById('profile-email');
-        const unameEl = document.getElementById('profile-username');
-        const avatarEl = document.getElementById('profile-avatar');
-        if (unameEl) unameEl.textContent = username;
-        if (avatarEl) avatarEl.textContent = (username[0] || 'U').toUpperCase();
-        if (emailEl) emailEl.textContent = username;
-
-        // Animate stats
-        animateValue('stat-tokens', formatTokens(stats.total_tokens || 0));
-        animateValue('stat-chats', String(stats.total_chats || 0));
-        animateValue('stat-streak', (stats.streak || 0) + ' jours');
-        animateValue('stat-model', shortModel(stats.top_model));
-
-        // Overview
-        const sk = stats.skills || {};
-        setText('ov-mode', 'Activé');
-        setText('ov-reasoning', 'Auto');
-        setText('ov-skills', (sk.auto || 0) + ' auto · ' + (sk.manual || 0) + ' manuel · ' + (sk.on_demand || 0) + ' demande');
-        setText('ov-chats', String(stats.total_chats || 0));
-
-        // Top skills
-        const topSkillsEl = document.getElementById('profile-top-skills');
-        const autoSkills = skills.filter(s => s.enabled && s.mode === 'auto').slice(0, 5);
-        if (autoSkills.length) {
-            topSkillsEl.innerHTML = autoSkills.map((s, i) =>
-                '<div class="profile-skill-row" style="animation:fadeIn 0.2s ease ' + (i * 0.05) + 's both">' +
-                    '<span class="profile-skill-rank">#' + (i + 1) + '</span>' +
-                    '<span class="profile-skill-name">' + esc(s.name) + '</span>' +
-                    '<span class="profile-skill-mode">auto</span>' +
-                '</div>'
-            ).join('');
-        } else {
-            topSkillsEl.innerHTML = '<div style="color:var(--text-secondary);font-size:13px;">Aucun skill actif en mode auto</div>';
-        }
-
-        // Heatmap - use requestAnimationFrame for smooth render
-        requestAnimationFrame(() => renderHeatmap(activity));
-    } catch (e) {
-        console.error('Profile load error:', e);
-    }
-}
-
-function renderHeatmap(activity) {
-    const canvas = document.getElementById('profile-heatmap');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    const w = canvas.parentElement.clientWidth || 520;
-    const h = 90;
-    canvas.style.width = w + 'px';
-    canvas.style.height = h + 'px';
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, w, h);
-    const colors = ['#16161b', '#1a472a', '#238636', '#26a641'];
-    const cellW = 10, cellH = 10, gap = 3;
-    const cols = Math.floor(w / (cellW + gap));
-    const today = new Date();
-    for (let col = 0; col < cols; col++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - (cols - 1 - col));
-        const key = d.toISOString().slice(0, 10);
-        const count = activity[key] || 0;
-        const color = count === 0 ? colors[0] : count <= 2 ? colors[1] : count <= 5 ? colors[2] : colors[3];
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.roundRect(col * (cellW + gap), 0, cellW, cellH, 2);
-        ctx.fill();
-    }
-}
-
-function animateValue(id, finalText) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(8px)';
-    el.textContent = finalText;
-    requestAnimationFrame(() => {
-        el.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0)';
-    });
-}
-
-function setText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-}
-
-function formatTokens(n) {
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-    return String(n);
-}
-
-function shortModel(m) {
-    if (!m) return '—';
-    const parts = m.split('/');
-    const name = parts[parts.length - 1] || m;
-    return name.length > 20 ? name.slice(0, 18) + '…' : name;
-}
-
 async function loadInstructionsPanel() {
     const textarea = document.getElementById('global-instructions-textarea');
     const saveBtn = document.getElementById('save-global-instructions');
@@ -1210,37 +577,6 @@ async function loadInstructionsPanel() {
     }
 }
 
-async function loadMemoryPanel() {
-    const enabledToggle = document.getElementById('gen-memory-enabled');
-    const captureToggle = document.getElementById('gen-memory-capture');
-    const clearBtn = document.getElementById('clear-memory');
-
-    if (enabledToggle) {
-        enabledToggle.checked = localStorage.getItem('marex-memory-enabled') !== '0';
-        enabledToggle.addEventListener('change', () => {
-            localStorage.setItem('marex-memory-enabled', enabledToggle.checked ? '1' : '0');
-        });
-    }
-
-    if (captureToggle) {
-        captureToggle.checked = localStorage.getItem('marex-memory-capture') !== '0';
-        captureToggle.addEventListener('change', () => {
-            localStorage.setItem('marex-memory-capture', captureToggle.checked ? '1' : '0');
-        });
-    }
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', async () => {
-            if (!confirm('Supprimer tous les éléments de mémoire stockés ?')) return;
-            try {
-                await deleteMemory();
-                clearBtn.textContent = '✓ Supprimé';
-                setTimeout(() => { clearBtn.textContent = 'Supprimer'; }, 2000);
-            } catch (e) { alert('Erreur: ' + (e.message || e)); }
-        });
-    }
-}
-
 function fillUserInfo() {
     let username = 'Utilisateur';
     try {
@@ -1249,8 +585,6 @@ function fillUserInfo() {
     refs.userName.textContent = username;
     refs.userAvatar.textContent = (username[0] || 'U').toUpperCase();
     refs.userEmailText.textContent = username;
-    refs.setUsername.textContent = username;
-    refs.setRole.textContent = 'Utilisateur';
 }
 
 // ── Sessions (groupées par projet, façon "Projets" de Codex) ──
@@ -1633,11 +967,10 @@ async function openFileViewer(path) {
             refs.fvBody.textContent = 'Fichier vide.';
             return;
         }
+        const shown = lines.length > MAX_VIEW_LINES ? lines.slice(0, MAX_VIEW_LINES) : lines;
         const codeEl = document.createElement('div');
         codeEl.className = 'fv-code';
-        let hoverTimer = null;
-        let tooltipEl = null;
-        for (let i = 0; i < lines.length; i++) {
+        for (let i = 0; i < shown.length; i++) {
             const lineEl = document.createElement('div');
             lineEl.className = 'fv-line';
             const numEl = document.createElement('span');
@@ -1645,56 +978,86 @@ async function openFileViewer(path) {
             numEl.textContent = String(i + 1);
             const textEl = document.createElement('span');
             textEl.className = 'fv-line-text';
-            textEl.textContent = lines[i];
+            textEl.textContent = shown[i];
             lineEl.appendChild(numEl);
             lineEl.appendChild(textEl);
             lineEl.dataset.line = i;
-            lineEl.addEventListener('mouseenter', (e) => {
-                clearTimeout(hoverTimer);
-                const line = parseInt(lineEl.dataset.line);
-                const text = lines[line] || '';
-                const charIdx = getHoverCharIndex(e, textEl);
-                hoverTimer = setTimeout(async () => {
-                    try {
-                        const token = (typeof Auth !== 'undefined' && Auth.getToken) ? Auth.getToken() : null;
-                        const headers = { 'Content-Type': 'application/json' };
-                        if (token) headers['Authorization'] = 'Bearer ' + token;
-                        const resp = await fetch('/api/lsp/hover', {
-                            method: 'POST', headers,
-                            body: JSON.stringify({ file: path, line: line, character: charIdx }),
-                            signal: AbortSignal.timeout(8000)
-                        });
-                        if (!resp.ok) return;
-                        const result = await resp.json();
-                        const text = (result && result.contents)
-                            ? (typeof result.contents === 'string' ? result.contents : (result.contents.value || ''))
-                            : '';
-                        if (!text) return;
-                        if (!tooltipEl) {
-                            tooltipEl = document.createElement('div');
-                            tooltipEl.className = 'fv-tooltip';
-                            refs.fvBody.appendChild(tooltipEl);
-                        }
-                        tooltipEl.textContent = text;
-                        tooltipEl.style.display = 'block';
-                        const rect = lineEl.getBoundingClientRect();
-                        const bodyRect = refs.fvBody.getBoundingClientRect();
-                        tooltipEl.style.top = (rect.top - bodyRect.top + refs.fvBody.scrollTop - 4) + 'px';
-                        tooltipEl.style.left = '60px';
-                    } catch (_) { /* ignore hover errors */ }
-                }, 400);
-            });
-            lineEl.addEventListener('mouseleave', () => {
-                clearTimeout(hoverTimer);
-                if (tooltipEl) tooltipEl.style.display = 'none';
-            });
             codeEl.appendChild(lineEl);
         }
         refs.fvBody.appendChild(codeEl);
+        if (lines.length > MAX_VIEW_LINES) {
+            const more = document.createElement('div');
+            more.className = 'fv-more';
+            more.textContent = 'Affichage limité aux ' + MAX_VIEW_LINES + ' premières lignes (' + lines.length + ' au total).';
+            refs.fvBody.appendChild(more);
+        }
+        setupFileHover(path);
     } catch (e) {
         refs.fvBody.classList.remove('loading');
         refs.fvBody.textContent = 'Erreur : ' + (e.message || e);
     }
+}
+
+let _fvHover = null;
+
+function setupFileHover(path) {
+    if (_fvHover) _fvHover.dispose();
+    const body = refs.fvBody;
+    let timer = null;
+    let tooltipEl = null;
+    let lastLine = null;
+    const hide = () => {
+        if (timer) { clearTimeout(timer); timer = null; }
+        if (tooltipEl) tooltipEl.style.display = 'none';
+    };
+    const onMove = (e) => {
+        const lineEl = e.target instanceof Element ? e.target.closest('.fv-line') : null;
+        if (!lineEl || lineEl === lastLine) return;
+        lastLine = lineEl;
+        hide();
+        const line = parseInt(lineEl.dataset.line, 10);
+        const textEl = lineEl.querySelector('.fv-line-text');
+        const charIdx = textEl ? getHoverCharIndex(e, textEl) : 0;
+        timer = setTimeout(async () => {
+            try {
+                const token = (typeof Auth !== 'undefined' && Auth.getToken) ? Auth.getToken() : null;
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const resp = await fetch('/api/lsp/hover', {
+                    method: 'POST', headers,
+                    body: JSON.stringify({ file: path, line: line, character: charIdx }),
+                    signal: AbortSignal.timeout(8000)
+                });
+                if (!resp.ok) return;
+                const result = await resp.json();
+                const text = (result && result.contents)
+                    ? (typeof result.contents === 'string' ? result.contents : (result.contents.value || ''))
+                    : '';
+                if (!text || lastLine !== lineEl) return;
+                if (!tooltipEl) {
+                    tooltipEl = document.createElement('div');
+                    tooltipEl.className = 'fv-tooltip';
+                    body.appendChild(tooltipEl);
+                }
+                tooltipEl.textContent = text;
+                tooltipEl.style.display = 'block';
+                const rect = lineEl.getBoundingClientRect();
+                const bodyRect = body.getBoundingClientRect();
+                tooltipEl.style.top = (rect.top - bodyRect.top + body.scrollTop - 4) + 'px';
+                tooltipEl.style.left = '60px';
+            } catch (_) { /* ignore hover errors */ }
+        }, 400);
+    };
+    const onLeave = () => { lastLine = null; hide(); };
+    body.addEventListener('mousemove', onMove);
+    body.addEventListener('mouseleave', onLeave);
+    _fvHover = {
+        dispose() {
+            body.removeEventListener('mousemove', onMove);
+            body.removeEventListener('mouseleave', onLeave);
+            hide();
+        }
+    };
 }
 
 function getHoverCharIndex(e, textEl) {
@@ -1711,21 +1074,6 @@ function setupSettings(router) {
         router.showMain();
         refs.settingsContent.scrollTop = 0;
     });
-    if (refs.profileBackBtn) {
-        refs.profileBackBtn.addEventListener('click', () => {
-            router.showMain();
-        });
-    }
-    function refreshAutoOverview() {
-        const el = document.getElementById('auto-overview');
-        if (!el) return;
-        const roles = ['plan', 'code', 'audit'];
-        const names = { plan: 'Plan', code: 'Code', audit: 'Audit' };
-        el.textContent = roles.map(r => {
-            const cfgModel = String(getAutoRoleConfig(r).model || '').trim();
-            return names[r] + ' → ' + (cfgModel ? resolveAgent(r).model : '(non configuré)');
-        }).join(' · ');
-    }
     document.querySelectorAll('.settings-nav-item[data-panel]').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.settings-nav-item[data-panel]').forEach(o => o.classList.remove('active'));
@@ -1734,12 +1082,6 @@ function setupSettings(router) {
             document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
             const panel = document.querySelector('.settings-panel[data-content="' + target + '"]');
             if (panel) panel.classList.add('active');
-            if (target === 'automatisation') {
-                refreshAutoOverview();
-                for (const r of ['plan', 'code', 'audit']) {
-                    if (typeof AUTO_ROLE_CARD_FILLERS[r] === 'function') AUTO_ROLE_CARD_FILLERS[r]();
-                }
-            }
             refs.settingsContent.scrollTop = 0;
         });
     });
@@ -1749,21 +1091,7 @@ function setupSettings(router) {
         router.showSettings();
         loadSkillsPanel();
         loadInstructionsPanel();
-        loadMemoryPanel();
-        loadGeneralPanel();
-        // Delay profile load to ensure DOM is ready
-        setTimeout(() => loadProfilePanel(), 50);
     });
-    // Profile button (user avatar or dedicated button)
-    const profileBtn = document.getElementById('btn-profile') || refs.userAvatar;
-    if (profileBtn) {
-        profileBtn.addEventListener('click', () => {
-            refs.userMenu.classList.remove('open');
-            refs.userBtn.classList.remove('open');
-            router.showProfile();
-            loadProfilePage();
-        });
-    }
     refs.setClearAll.addEventListener('click', async () => {
         if (!confirm('Supprimer définitivement toutes vos sessions Marexcode ?')) return;
         try {
@@ -1820,19 +1148,12 @@ function setupChat() {
     // Preload instructions at boot
     chat.preloadInstructions();
 
-    refs.sendBtn.addEventListener('click', () => {
-        if (localStorage.getItem('marex-auto-mode') === '1') chat.sendAuto();
-        else chat.send();
-    });
+    refs.sendBtn.addEventListener('click', () => chat.send());
     refs.stopBtn.addEventListener('click', () => chat.stop());
     refs.ta.addEventListener('keydown', (e) => {
-        const sendMode = localStorage.getItem('marex-send-mode') || 'enter';
-        if (e.key === 'Enter') {
-            if (sendMode === 'ctrl' && !e.ctrlKey) return;
-            if (sendMode === 'enter' && (e.shiftKey || e.ctrlKey)) return;
+        if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
             e.preventDefault();
-            if (localStorage.getItem('marex-auto-mode') === '1') chat.sendAuto();
-            else chat.send();
+            chat.send();
         }
     });
     const TA_MAX_HEIGHT = 200;
@@ -1877,8 +1198,7 @@ function boot() {
     router = initRouter({
         authGate: refs.authGate,
         mainFrame: refs.mainFrame,
-        settingsFrame: refs.settingsFrame,
-        profileFrame: refs.profileFrame
+        settingsFrame: refs.settingsFrame
     });
 
     if (!router.checkAuth()) return;
@@ -1936,42 +1256,11 @@ function boot() {
             marexPrefs.webSearch = !marexPrefs.webSearch;
             const toggle = document.getElementById('marex-websearch-toggle');
             if (toggle) toggle.checked = marexPrefs.webSearch;
-            const pills = document.getElementById('marex-websearch-pills');
-            if (pills) pills.style.display = marexPrefs.webSearch ? 'flex' : 'none';
             localStorage.setItem('marex-web-search', marexPrefs.webSearch ? '1' : '0');
             updateWebSearchGlobe();
         });
     }
     updateWebSearchGlobe();
-
-    // Mode Auto — toggle dans le composer (persisté marex-auto-mode)
-    function isAutoMode() { return localStorage.getItem('marex-auto-mode') === '1'; }
-    function updateAutoModeUI() {
-        const on = isAutoMode();
-        const btn = document.getElementById('auto-mode-btn');
-        if (btn) {
-            btn.classList.toggle('on', on);
-            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-            btn.title = on ? 'Mode Auto : activé — cliquez pour désactiver' : 'Mode Auto : désactivé — cliquez pour activer';
-        }
-        const ddModel = document.getElementById('dd-model');
-        if (ddModel) {
-            ddModel.classList.toggle('auto-locked', on);
-            ddModel.title = on ? 'Modèle choisi par rôle (Réglages > Mode Auto)' : '';
-        }
-        const settingsToggle = document.getElementById('gen-auto-mode-active');
-        if (settingsToggle) settingsToggle.checked = on;
-    }
-    window._updateAutoModeUI = updateAutoModeUI;
-    const autoBtn = document.getElementById('auto-mode-btn');
-    if (autoBtn) {
-        autoBtn.addEventListener('click', () => {
-            localStorage.setItem('marex-auto-mode', isAutoMode() ? '0' : '1');
-            updateAutoModeUI();
-            window.dispatchEvent(new CustomEvent('marex-auto-mode-changed'));
-        });
-    }
-    updateAutoModeUI();
 
     setupSettings(router);
     setupNewSession();

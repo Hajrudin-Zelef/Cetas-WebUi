@@ -1,6 +1,7 @@
 export function createAutoScroll(scrollEl) {
   const threshold = 50
   let userScrolled = false
+  let frame = null
   const observed = new WeakSet()
 
   const canScroll = () => scrollEl.scrollHeight - scrollEl.clientHeight > 1
@@ -22,7 +23,7 @@ export function createAutoScroll(scrollEl) {
   }
 
   const resizeObserver =
-    typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => onContentChange()) : null
+    typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => schedule()) : null
 
   const observe = (node) => {
     if (!resizeObserver || !(node instanceof Element) || observed.has(node)) return
@@ -35,7 +36,17 @@ export function createAutoScroll(scrollEl) {
     for (const child of scrollEl.children) observe(child)
   }
 
-  function onContentChange() {
+  // Coalesce toutes les demandes de scroll sur une seule frame : évite de lire
+  // scrollHeight (reflow) à chaque delta de streaming.
+  function schedule() {
+    if (frame !== null) return
+    frame = requestAnimationFrame(() => {
+      frame = null
+      apply()
+    })
+  }
+
+  function apply() {
     syncChildren()
     if (!canScroll()) {
       setUserScrolled(false)
@@ -68,8 +79,9 @@ export function createAutoScroll(scrollEl) {
   syncChildren()
 
   return {
-    onContentChange,
+    onContentChange: schedule,
     dispose() {
+      if (frame !== null) { cancelAnimationFrame(frame); frame = null }
       scrollEl.removeEventListener("scroll", handleScroll)
       scrollEl.removeEventListener("wheel", handleWheel)
       if (resizeObserver) resizeObserver.disconnect()

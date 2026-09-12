@@ -9,35 +9,13 @@
           Retour
         </button>
 
-        <div class="settings-cat-label">Personnel</div>
-        <button class="settings-nav-item active" data-panel="profil">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
-          Profil
-        </button>
-        <button class="settings-nav-item" data-panel="raccourcis">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M8 13h8"/></svg>
-          Raccourcis clavier
-        </button>
-
         <div class="settings-cat-label">Données</div>
-        <button class="settings-nav-item" data-panel="donnees">
+        <button class="settings-nav-item active" data-panel="donnees">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
           Sessions
         </button>
 
         <div class="settings-cat-label">Agent</div>
-        <button class="settings-nav-item" data-panel="general">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Général
-        </button>
-        <button class="settings-nav-item" data-panel="comportement">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Comportement
-        </button>
-        <button class="settings-nav-item" data-panel="automatisation">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-          Automatisation
-        </button>
         <button class="settings-nav-item" data-panel="skills">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
           Skills
@@ -50,60 +28,8 @@
 
       <div class="settings-content">
 
-        <!-- PROFIL -->
-        <div class="settings-panel active" data-content="profil">
-          <h1 class="settings-page-title">Profil</h1>
-          <div class="profile-user-card">
-            <div class="profile-avatar" id="profile-avatar">S</div>
-            <div class="profile-user-info">
-              <h2 id="profile-username">—</h2>
-              <p class="profile-role" id="profile-role">admin</p>
-              <p class="profile-email" id="profile-email">—</p>
-            </div>
-          </div>
-          <div class="profile-stats-grid">
-            <div class="profile-stat-card"><div class="profile-stat-value" id="stat-tokens">—</div><div class="profile-stat-label">Total tokens</div></div>
-            <div class="profile-stat-card"><div class="profile-stat-value" id="stat-chats">—</div><div class="profile-stat-label">Total chats</div></div>
-            <div class="profile-stat-card"><div class="profile-stat-value" id="stat-streak">—</div><div class="profile-stat-label">Série active</div></div>
-            <div class="profile-stat-card"><div class="profile-stat-value" id="stat-model">—</div><div class="profile-stat-label">Modèle favori</div></div>
-          </div>
-          <div class="settings-group-label">Activité (30 derniers jours)</div>
-          <div class="profile-card">
-            <div class="profile-heatmap-wrap"><canvas id="profile-heatmap" width="520" height="90"></canvas></div>
-            <div class="profile-heatmap-legend"><span>Moins</span><div class="profile-heatmap-box" style="background:#16161b"></div><div class="profile-heatmap-box" style="background:#1a472a"></div><div class="profile-heatmap-box" style="background:#238636"></div><div class="profile-heatmap-box" style="background:#26a641"></div><span>Plus</span></div>
-          </div>
-          <div class="settings-group-label">Aperçu activité</div>
-          <div class="profile-card">
-            <div class="profile-overview-row"><span class="profile-overview-label">Mode rapide</span><span class="profile-overview-value" id="ov-mode">—</span></div>
-            <div class="profile-overview-row"><span class="profile-overview-label">Raisonnement utilisé</span><span class="profile-overview-value" id="ov-reasoning">—</span></div>
-            <div class="profile-overview-row"><span class="profile-overview-label">Compétences actives</span><span class="profile-overview-value" id="ov-skills">—</span></div>
-            <div class="profile-overview-row"><span class="profile-overview-label">Total chats</span><span class="profile-overview-value" id="ov-chats">—</span></div>
-          </div>
-          <div class="settings-group-label">Skills les plus utilisés</div>
-          <div class="profile-card" id="profile-top-skills"><div style="color:var(--text-secondary);font-size:13px;">Chargement...</div></div>
-          <div style="margin-top:20px;">
-            <div class="settings-group-label">Compte</div>
-            <div class="settings-card">
-              <div class="settings-row"><div class="settings-row-text"><h3>Nom d'utilisateur</h3><p>Votre identifiant de connexion Cetas.</p></div><span class="settings-row-value" id="set-username">—</span></div>
-              <div class="settings-row"><div class="settings-row-text"><h3>Rôle</h3><p>Niveau d'accès sur la plateforme.</p></div><span class="settings-row-value" id="set-role">—</span></div>
-              <div class="settings-row"><div class="settings-row-text"><h3>Application</h3><p>Marexcode — Assistant de codage intégré à Cetas.</p></div><span class="settings-row-status">v1.0</span></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- RACCOURCIS -->
-        <div class="settings-panel" data-content="raccourcis">
-          <h1 class="settings-page-title">Raccourcis clavier</h1>
-          <div class="settings-group-label">Composer</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Envoyer le message</h3></div><span class="settings-row-value">Entrée</span></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Saut de ligne</h3></div><span class="settings-row-value">Maj + Entrée</span></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Arrêter la génération</h3></div><span class="settings-row-value">Échap</span></div>
-          </div>
-        </div>
-
         <!-- SESSIONS -->
-        <div class="settings-panel" data-content="donnees">
+        <div class="settings-panel active" data-content="donnees">
           <h1 class="settings-page-title">Sessions</h1>
           <div class="settings-group-label">Stockage</div>
           <div class="settings-card">
@@ -113,75 +39,6 @@
           <div class="settings-group-label">Compte</div>
           <div class="settings-card">
             <div class="settings-row"><div class="settings-row-text"><h3>Se déconnecter</h3><p>Vous reconnecter à Cetas sera nécessaire pour continuer.</p></div><button class="settings-btn danger" id="set-logout">Déconnexion</button></div>
-          </div>
-        </div>
-
-        <!-- GÉNÉRAL -->
-        <div class="settings-panel" data-content="general">
-          <h1 class="settings-page-title">Général</h1>
-          <div class="settings-group-label">Préférences</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Police de discussion</h3><p>Taille du texte dans les messages du chat.</p></div><select id="gen-font-size" class="settings-select"><option value="12">Petit (12px)</option><option value="14" selected>Moyen (14px)</option><option value="16">Grand (16px)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Réduire les animations</h3><p>Désactive les animations de streaming, spinners et transitions.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-reduce-motion"><span class="settings-toggle-slider"></span></label></div>
-          </div>
-          <div class="settings-group-label">Autorisations</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Auto-autoriser workspace actif</h3><p>L'agent peut lire/écrire dans le workspace actif sans demander confirmation.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-allow" checked><span class="settings-toggle-slider"></span></label></div>
-          </div>
-          <div class="settings-group-label">Éditeur</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Éditeur en texte brut</h3><p>Conserve le code, le Markdown et les liens en texte brut lors de la rédaction.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-plain-text"><span class="settings-toggle-slider"></span></label></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Afficher l'utilisation du contexte</h3><p>Affiche le nombre de tokens utilisés / disponibles au-dessus du champ de saisie.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-show-tokens" checked><span class="settings-toggle-slider"></span></label></div>
-          </div>
-          <div class="settings-group-label">Raccourci d'envoi</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Comportement de la touche Entrée</h3><p>Choisir dans quels cas Entrée envoie un prompt ou insère une nouvelle ligne.</p></div><select id="gen-send-mode" class="settings-select"><option value="enter">Entrée envoie</option><option value="ctrl">Ctrl+Entrée envoie</option></select></div>
-          </div>
-          <div class="settings-group-label">Instructions</div>
-          <div class="settings-card">
-            <div class="settings-row" style="flex-direction:column;gap:8px;">
-              <p style="font-size:12px;color:#8b949e;">Instructions globales appliquées à toutes les conversations. L'agent les lit au début de chaque session.</p>
-              <textarea id="gen-global-instructions" rows="8" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
-              <button class="settings-btn" id="gen-save-instructions">Enregistrer</button>
-            </div>
-          </div>
-          <div class="settings-group-label">À propos</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Licences open source</h3><p>Libraries tierces utilisées par Marexcode.</p></div><button class="settings-btn" id="gen-licenses">Voir les licences</button></div>
-            <div class="settings-row settings-row-clickable" id="gen-lang-row"><div class="settings-row-text"><h3>Langue interface</h3><p>Change la langue de l'interface Marexcode.</p></div><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-            <div class="settings-row settings-row-clickable" id="gen-expert-row"><div class="settings-row-text"><h3>Mode expert</h3><p>Accès complet aux commandes shell. Désactivé par défaut.</p></div><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-          </div>
-        </div>
-
-        <!-- COMPORTEMENT -->
-        <div class="settings-panel" data-content="comportement">
-          <h1 class="settings-page-title">Comportement</h1>
-          <div class="settings-group-label">Comportement de suivi</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>File d'attente des messages</h3><p>Mettre les suivis en file d'attente pendant que l'agent s'exécute, ou interrompre l'exécution en cours.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-message-queue"><span class="settings-toggle-slider"></span></label></div>
-          </div>
-          <div class="settings-group-label">Politique d'approbation</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Bash</h3><p>Confirmer avant d'exécuter des commandes shell.</p></div><select id="gen-perm-bash" class="settings-select"><option value="allow">Toujours autoriser</option><option value="ask" selected>Demander</option><option value="deny">Toujours bloquer</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Write</h3><p>Confirmer avant d'écrire/créer des fichiers.</p></div><select id="gen-perm-write" class="settings-select"><option value="allow">Toujours autoriser</option><option value="ask">Demander</option><option value="deny">Toujours bloquer</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Edit</h3><p>Confirmer avant de modifier des fichiers existants.</p></div><select id="gen-perm-edit" class="settings-select"><option value="allow">Toujours autoriser</option><option value="ask">Demander</option><option value="deny">Toujours bloquer</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>RunScript</h3><p>Confirmer avant d'exécuter un script python/node.</p></div><select id="gen-perm-runscript" class="settings-select"><option value="allow">Toujours autoriser</option><option value="ask">Demander</option><option value="deny">Toujours bloquer</option></select></div>
-          </div>
-          <div class="settings-group-label">Bac à sable</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Sandbox strict</h3><p>Restreint l'agent aux seuls fichiers du workspace actif. Désactivé = accès étendu au serveur.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-sandbox-strict" checked><span class="settings-toggle-slider"></span></label></div>
-          </div>
-          <div class="settings-group-label">Recherche Web</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Activer la recherche web</h3><p>L'agent peut rechercher sur le web via SearXNG.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-web-search" checked><span class="settings-toggle-slider"></span></label></div>
-          </div>
-          <div class="settings-group-label">Niveau de détail</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Mode de sortie</h3><p>Verbeux = réponses complètes. Compressé = réponses courtes (mode caveman).</p></div><select id="gen-output-mode" class="settings-select"><option value="verbose">Verbeux</option><option value="compressed">Compressé</option></select></div>
-          </div>
-          <div class="settings-group-label">Raisonnement</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Affichage du raisonnement</h3><p>Comment afficher le processus de réflexion de l'agent.</p></div><select id="gen-thinking-mode" class="settings-select"><option value="all">Afficher tout</option><option value="summary">Résumé uniquement</option><option value="hidden">Masqué</option></select></div>
           </div>
         </div>
 
@@ -202,122 +59,6 @@
               <p style="font-size:12px;color:#8b949e;">Ces instructions s'appliquent à toutes les conversations et tous les projets. L'agent les lit au début de chaque session.</p>
               <textarea id="global-instructions-textarea" rows="10" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
               <button class="settings-btn" id="save-global-instructions">Enregistrer</button>
-            </div>
-          </div>
-
-          <div class="settings-group-label">Mémoire</div>
-          <div class="settings-card">
-            <div class="settings-row">
-              <div class="settings-row-text">
-                <h3>Activer la mémoire locale</h3>
-                <p>Générer une mémoire à partir des chats lancés sur cet ordinateur et l'utiliser pour personnaliser les conversations que vous aurez ici ultérieurement.</p>
-              </div>
-              <label class="settings-toggle">
-                <input type="checkbox" id="gen-memory-enabled" checked>
-                <span class="settings-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-text">
-                <h3>Autoriser la génération locale de mémoire à partir des chats assistés par des outils</h3>
-                <p>Générer des éléments de mémoire à partir des chats ayant utilisé des outils MCP ou la Recherche sur le Web.</p>
-              </div>
-              <label class="settings-toggle">
-                <input type="checkbox" id="gen-memory-capture" checked>
-                <span class="settings-toggle-slider"></span>
-              </label>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-text">
-                <h3>Supprimer la mémoire locale</h3>
-                <p>Supprimer tous les éléments de mémoire stockés sur cet ordinateur.</p>
-              </div>
-              <button class="settings-btn danger" id="clear-memory">Supprimer</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- AUTOMATISATION (squelette — contenu à venir) -->
-        <div class="settings-panel" data-content="automatisation">
-          <h1 class="settings-page-title">Automatisation</h1>
-          <div class="settings-group-label">Pipeline</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Mode Auto actif</h3><p>Pipeline Plan → Code → Audit depuis le composer. Même état que le bouton éclair.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-mode-active"><span class="settings-toggle-slider"></span></label></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Approbation manuelle après Plan</h3><p>Pause le pipeline après la phase Plan pour validation humaine avant le Code.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-approval"><span class="settings-toggle-slider"></span></label></div>
-          </div>
-          <div class="settings-group-label">Rôles</div>
-          <div class="settings-card auto-role-card" data-auto-role="plan">
-            <div class="settings-row"><div class="settings-row-text"><h3>Plan — Architecte</h3><p>Modèle et réglages de la phase de plan.</p></div><span class="settings-row-value" id="gen-auto-summary-plan">—</span></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Provider</h3></div><select id="gen-auto-provider-plan" class="settings-select"><option value="">(par défaut)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Modèle</h3></div><select id="gen-auto-model-plan" class="settings-select"><option value="">(par défaut placeholder)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Contexte</h3></div><span class="settings-row-value" id="gen-auto-ctx-plan">—</span></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Température</h3><p>Laisser le provider décider si non définie.</p></div><div style="display:flex;align-items:center;gap:8px;"><label class="settings-toggle"><input type="checkbox" id="gen-auto-ttemp-plan"><span class="settings-toggle-slider"></span></label><input type="range" id="gen-auto-temp-plan" min="0" max="2" step="0.1" disabled style="width:110px;"><span id="gen-auto-tempval-plan" style="min-width:28px;">—</span></div></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>maxTokens custom</h3><p>auto (contexte natif ou plafond par défaut)</p></div><input type="number" id="gen-auto-maxtok-plan" min="1" placeholder="auto" class="settings-select" style="width:110px;"></div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;"><h3>Prompt système</h3><button class="settings-btn" id="gen-auto-resetprompt-plan">Réinitialiser au défaut</button></div>
-              <textarea id="gen-auto-sysprompt-plan" rows="6" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
-            </div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <button class="settings-btn" id="gen-auto-test-plan">Tester la connexion</button>
-              <div class="auto-test-result" id="gen-auto-testresult-plan" style="display:none;"></div>
-            </div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <h3>Outils actifs</h3>
-              <div id="gen-auto-tools-plan" style="display:flex;flex-wrap:wrap;gap:10px 14px;"></div>
-            </div>
-          </div>
-          <div class="settings-card auto-role-card" data-auto-role="code">
-            <div class="settings-row"><div class="settings-row-text"><h3>Code — Développeur</h3><p>Modèle et réglages de la phase d'implémentation.</p></div><span class="settings-row-value" id="gen-auto-summary-code">—</span></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Provider</h3></div><select id="gen-auto-provider-code" class="settings-select"><option value="">(par défaut)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Modèle</h3></div><select id="gen-auto-model-code" class="settings-select"><option value="">(par défaut placeholder)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Contexte</h3></div><span class="settings-row-value" id="gen-auto-ctx-code">—</span></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Température</h3><p>Laisser le provider décider si non définie.</p></div><div style="display:flex;align-items:center;gap:8px;"><label class="settings-toggle"><input type="checkbox" id="gen-auto-ttemp-code"><span class="settings-toggle-slider"></span></label><input type="range" id="gen-auto-temp-code" min="0" max="2" step="0.1" disabled style="width:110px;"><span id="gen-auto-tempval-code" style="min-width:28px;">—</span></div></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>maxTokens custom</h3><p>auto (contexte natif ou plafond par défaut)</p></div><input type="number" id="gen-auto-maxtok-code" min="1" placeholder="auto" class="settings-select" style="width:110px;"></div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;"><h3>Prompt système</h3><button class="settings-btn" id="gen-auto-resetprompt-code">Réinitialiser au défaut</button></div>
-              <textarea id="gen-auto-sysprompt-code" rows="6" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
-            </div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <button class="settings-btn" id="gen-auto-test-code">Tester la connexion</button>
-              <div class="auto-test-result" id="gen-auto-testresult-code" style="display:none;"></div>
-            </div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <h3>Outils actifs</h3>
-              <div id="gen-auto-tools-code" style="display:flex;flex-wrap:wrap;gap:10px 14px;"></div>
-            </div>
-          </div>
-          <div class="settings-card auto-role-card" data-auto-role="audit">
-            <div class="settings-row"><div class="settings-row-text"><h3>Audit — Auditeur</h3><p>Modèle et réglages de la phase de vérification.</p></div><span class="settings-row-value" id="gen-auto-summary-audit">—</span></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Provider</h3></div><select id="gen-auto-provider-audit" class="settings-select"><option value="">(par défaut)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Modèle</h3></div><select id="gen-auto-model-audit" class="settings-select"><option value="">(par défaut placeholder)</option></select></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Contexte</h3></div><span class="settings-row-value" id="gen-auto-ctx-audit">—</span></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Température</h3><p>Laisser le provider décider si non définie.</p></div><div style="display:flex;align-items:center;gap:8px;"><label class="settings-toggle"><input type="checkbox" id="gen-auto-ttemp-audit"><span class="settings-toggle-slider"></span></label><input type="range" id="gen-auto-temp-audit" min="0" max="2" step="0.1" disabled style="width:110px;"><span id="gen-auto-tempval-audit" style="min-width:28px;">—</span></div></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>maxTokens custom</h3><p>auto (contexte natif ou plafond par défaut)</p></div><input type="number" id="gen-auto-maxtok-audit" min="1" placeholder="auto" class="settings-select" style="width:110px;"></div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;width:100%;"><h3>Prompt système</h3><button class="settings-btn" id="gen-auto-resetprompt-audit">Réinitialiser au défaut</button></div>
-              <textarea id="gen-auto-sysprompt-audit" rows="6" style="width:100%;background:var(--bg-input,#1a1d23);color:inherit;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px;font-size:13px;font-family:monospace;resize:vertical;"></textarea>
-            </div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <button class="settings-btn" id="gen-auto-test-audit">Tester la connexion</button>
-              <div class="auto-test-result" id="gen-auto-testresult-audit" style="display:none;"></div>
-            </div>
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <h3>Outils actifs</h3>
-              <div id="gen-auto-tools-audit" style="display:flex;flex-wrap:wrap;gap:10px 14px;"></div>
-            </div>
-          </div>
-          <div class="settings-group-label">Comportement du flow</div>
-          <div class="settings-card">
-            <div class="settings-row"><div class="settings-row-text"><h3>Arrêt sur erreur</h3><p>Interrompt le pipeline dès qu'une phase échoue. Décoché : les phases suivantes tentent quand même.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-stop-on-error" checked><span class="settings-toggle-slider"></span></label></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Tentatives par phase</h3><p>Nombre de relances automatiques d'une phase échouée (0 = aucune).</p></div><input type="number" id="gen-auto-max-retries" min="0" max="5" value="0" class="settings-select" style="width:80px;"></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Compaction agressive du contexte</h3><p>Borne le résultat transmis d'une phase à la suivante (4 000 premiers caractères).</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-compact"><span class="settings-toggle-slider"></span></label></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Budget max (tokens)</h3><p>Stoppe le pipeline avant une phase si le cumul dépasse cette limite. Vide = illimité.</p></div><input type="number" id="gen-auto-budget" min="1000" placeholder="illimité" class="settings-select" style="width:120px;"></div>
-            <div class="settings-row"><div class="settings-row-text"><h3>Log détaillé</h3><p>Trace les phases et erreurs du pipeline dans la console du navigateur.</p></div><label class="settings-toggle"><input type="checkbox" id="gen-auto-verbose-log"><span class="settings-toggle-slider"></span></label></div>
-          </div>
-          <div class="settings-group-label">Aperçu</div>
-          <div class="settings-card">
-            <div class="settings-row" style="flex-direction:column;gap:6px;">
-              <p id="auto-overview" style="font-size:12px;color:var(--text-secondary);margin:0;">—</p>
             </div>
           </div>
         </div>

@@ -1,8 +1,9 @@
 export const MAREX_TOOLS = (typeof MAREXCODE_TOOLS !== 'undefined') ? MAREXCODE_TOOLS : [];
 
-import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions, trackActivity, getMemory, listTree } from './api.js';
-import { runAutoMode } from './runtime.js';
-import { createMarkdownRenderer } from './markdown/render.js';
+const REASONING_TRANSLATE_DELAY_MS = 60000;
+
+import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions } from './api.js';
+import { createMarkdownRenderer } from './markdown.js';
 import { createAutoScroll } from './auto-scroll.js';
 import { createTextShimmer } from './text-shimmer.js';
 import { createTextReveal } from './text-reveal.js';
@@ -25,9 +26,10 @@ export function createChat(deps) {
     let thinkStepEl = null;
     let thinkShimmer = null;
     let statusReveal = null;
-    let cachedInstructions = { global: '', workspace: '', memory: '' };
+    let cachedInstructions = { global: '', workspace: '' };
     let messageQueue = [];
     let pendingImages = [];
+    let translateTimer = null;
     const md = createMarkdownRenderer();
     const autoScroll = createAutoScroll(chatLog);
     const panelScroll = sidePanelBody ? createAutoScroll(sidePanelBody) : null;
@@ -81,14 +83,12 @@ export function createChat(deps) {
 
     async function preloadInstructions() {
         try {
-            const [globalInstr, workspaceInstr, memoryInstr] = await Promise.all([
+            const [globalInstr, workspaceInstr] = await Promise.all([
                 getGlobalInstructions().catch(() => ({ content: '' })),
-                window.activeWorkspaceId ? getWorkspaceInstructions(window.activeWorkspaceId).catch(() => ({ content: '' })) : Promise.resolve({ content: '' }),
-                getMemory().catch(() => ({ content: '' }))
+                window.activeWorkspaceId ? getWorkspaceInstructions(window.activeWorkspaceId).catch(() => ({ content: '' })) : Promise.resolve({ content: '' })
             ]);
             cachedInstructions.global = (globalInstr.content || '').trim();
             cachedInstructions.workspace = (workspaceInstr.content || '').trim();
-            cachedInstructions.memory = (memoryInstr.content || '').trim();
         } catch (e) { /* ignore */ }
     }
 
@@ -121,15 +121,6 @@ export function createChat(deps) {
         const d = document.createElement('div');
         d.textContent = String(s == null ? '' : s);
         return d.innerHTML;
-    }
-
-    function renderMarkdown(md) {
-        if (typeof window.marked === 'function' || (window.marked && typeof window.marked.parse === 'function')) {
-            const parse = typeof window.marked === 'function' ? window.marked : window.marked.parse;
-            const html = parse(md || '', { breaks: true, gfm: true });
-            return typeof window.DOMPurify === 'function' ? window.DOMPurify.sanitize(html) : html;
-        }
-        return esc(md);
     }
 
     function addMsg(cls, content, useMarkdown) {
@@ -180,43 +171,6 @@ export function createChat(deps) {
         return m;
     }
 
-    function computeDiff(oldContent, newContent) {
-        const oldLines = (oldContent || '').split('\n');
-        const newLines = (newContent || '').split('\n');
-        const result = [];
-        const maxLen = Math.max(oldLines.length, newLines.length);
-        for (let i = 0; i < maxLen; i++) {
-            const oldLine = oldLines[i];
-            const newLine = newLines[i];
-            if (oldLine === undefined) {
-                result.push({ type: 'add', content: newLine });
-            } else if (newLine === undefined) {
-                result.push({ type: 'del', content: oldLine });
-            } else if (oldLine !== newLine) {
-                result.push({ type: 'del', content: oldLine });
-                result.push({ type: 'add', content: newLine });
-            } else {
-                result.push({ type: 'same', content: newLine });
-            }
-        }
-        return result;
-    }
-
-    function renderDiffContent(oldContent, newContent) {
-        const diff = computeDiff(oldContent, newContent);
-        let html = '';
-        for (const line of diff) {
-            if (line.type === 'add') {
-                html += '<div class="diff-add">+ ' + esc(line.content) + '</div>';
-            } else if (line.type === 'del') {
-                html += '<div class="diff-del">- ' + esc(line.content) + '</div>';
-            } else {
-                html += '<div class="diff-same">  ' + esc(line.content) + '</div>';
-            }
-        }
-        return html;
-    }
-
     function ensureToolGroup() {
         if (currentToolGroupEl) return currentToolGroupEl;
         const group = document.createElement('div');
@@ -259,13 +213,6 @@ export function createChat(deps) {
             return 'MCP ' + (mcpParts[1] || '') + '.' + mcpParts.slice(2).join('_') + '…';
         }
         return name;
-    }
-
-    function formatBashOutput(stdout) {
-        if (!stdout) return '';
-        const lines = stdout.split('\n');
-        if (lines.length <= 6) return stdout;
-        return lines.slice(-6).join('\n');
     }
 
     function addChatToolBlock(name, args, result) {
@@ -494,7 +441,12 @@ export function createChat(deps) {
             const txt = thinkBlockEl.querySelector('.sp-think-text');
             if (txt) {
                 txt.textContent = raw;
-                translateReasoning(raw).then((fr) => { if (fr) txt.textContent = fr; });
+                if (translateTimer) clearTimeout(translateTimer);
+                translateTimer = setTimeout(() => {
+                    translateTimer = null;
+                    if (!txt.isConnected) return;
+                    translateReasoning(raw).then((fr) => { if (fr && txt.isConnected) txt.textContent = fr; });
+                }, REASONING_TRANSLATE_DELAY_MS);
             }
         }
         thinkBlockEl = null;
@@ -540,6 +492,7 @@ export function createChat(deps) {
     }
 
     function setSession(s) {
+        if (translateTimer) { clearTimeout(translateTimer); translateTimer = null; }
         session = s;
         thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null;
         _resetThinkStream();
@@ -554,6 +507,7 @@ export function createChat(deps) {
     }
 
     function newSession() {
+        if (translateTimer) { clearTimeout(translateTimer); translateTimer = null; }
         session = { id: null, title: 'Nouvelle conversation', model: session && session.model ? session.model : null, messages: [] };
         chatLog.innerHTML = '';
         fileContents = {};
@@ -824,6 +778,7 @@ export function createChat(deps) {
     }
 
     async function send() {
+        if (translateTimer) { clearTimeout(translateTimer); translateTimer = null; }
         const text = ta.value.trim();
         if (!text && pendingImages.length === 0) return;
         if (text.startsWith('/')) {
@@ -867,7 +822,6 @@ export function createChat(deps) {
         session.messages.push({ role: 'user', content: userContent });
         addMsg('user', userContent);
         updateTokenCounter();
-        trackActivity().catch(() => {});
 
         const baseSys = 'You are Marexcode, a professional AI coding assistant integrated into Cetas. PRIORITY RULE: if the user\'s question is general, conceptual, or does not require action on the workspace (e.g. \"what is JSON\", \"explain X\", general knowledge or discussion) — respond directly in text, WITHOUT using any tool. Only use Ls/Glob/Read/Write/Edit/Grep/Bash/TodoWrite when the task explicitly requires reading, creating, modifying, or analyzing workspace files. You help the user read, write, edit, and analyze code in their workspace when relevant. RULES FOR CODE TASKS: 1) Use the tools (Ls, Glob, Read, Write, Edit, Grep, Bash, TodoWrite) to actually accomplish the task, NOT just explain it. 2) Use Ls or Glob to discover the workspace structure before reading files. 3) Then read the relevant files before proposing changes. 4) After each modification, state the file and line. 5) If a command fails, read the error and fix it. 6) Be concise and cite exact paths. 7) Never modify outside the sandbox, never request sudo. 8) For any multi-step task: use TodoWrite AT THE START to list the plan, then update it after each completed step to reflect status (pending → in_progress → completed). 9) For a complex task: analyze → plan (TodoWrite) → execute → verify. 10) When planning or implementing a complex task, use AT LEAST one relevant skill from the AVAILABLE SKILLS below to guide your approach. 11) STRICT READING RULE, NO EXCEPTIONS: every Read call MUST have an explicit limit=50 and offset, regardless of the file\'s apparent size, even if the user says \"read\" or \"show me\" a file. NEVER call Read without limit, no matter the file size. 12) NO FULL REPRODUCTION: after reading a file with Read, NEVER copy its full content into your response (no code block reproducing the file line by line). Only summarize: the file\'s purpose in 1 sentence, its structure (headings/sections) as a short list, and the 2-3 most important points. If the file is longer than 50 lines and the user wants to see the full content, tell them its length and ask if they want a specific section (e.g. \"it\'s 117 lines, want to see a particular section?\") instead of displaying everything yourself. 13) MCP TOOLS: tools prefixed with \"mcp_\" connect to external services. Use them PROACTIVELY: context7 for library documentation (resolve-library-id then query-docs), fetch for web content, memory for knowledge graph, filesystem for file operations. When the user asks about a library/framework, ALWAYS use context7 first to get accurate docs. When the user asks to search the web or fetch a URL, use fetch. When the user wants to remember facts across sessions, use memory. 14) CUSTOM TOOLS: tools prefixed with \"custom_\" are user-defined commands from tools.json. Use them when the user asks to run a specific workflow, deploy, test, or any task matching a custom tool description. Pass the exact parameters the tool expects. 15) WEB SEARCH: when using web_search for a GENERAL question (not a coding task), include a "Sources:" section at the end with relevant URLs as markdown hyperlinks: [Title](URL). For coding tasks, do NOT include sources — focus on the code solution only. 16) LANGUAGE: ALWAYS respond in the same language the user uses in their last message. If the user writes in French, respond in French. If in English, respond in English. Never switch language on your own.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
@@ -897,9 +851,6 @@ export function createChat(deps) {
         }
         if (cachedInstructions.workspace) {
             instructionsBlock += '\n\nPROJECT-SPECIFIC INSTRUCTIONS:\n' + cachedInstructions.workspace;
-        }
-        if (cachedInstructions.memory) {
-            instructionsBlock += '\n\nLOCAL MEMORY (facts learned from previous sessions):\n' + cachedInstructions.memory;
         }
 
         // Output mode
@@ -966,7 +917,9 @@ export function createChat(deps) {
             if (typeof streamModelWithTools !== 'function') {
                 throw new Error('streamModelWithTools indisponible');
             }
-            if (typeof marexInjectWebSearch === 'function') marexInjectWebSearch(model);
+            var webSearchEnabled = true;
+            try { webSearchEnabled = localStorage.getItem('marex-web-search') !== '0'; } catch (e) {}
+            if (typeof marexInjectWebSearch === 'function') marexInjectWebSearch(model, webSearchEnabled);
             await streamModelWithTools(
                 model,
                 history,
@@ -990,152 +943,6 @@ export function createChat(deps) {
             }
             if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
             addMsg('error', 'Error: ' + (err && err.message ? err.message : err));
-        }
-    }
-
-    // Pause d'approbation (mode Auto) : bannière inline après la phase Plan,
-    // résolue par les boutons Continuer/Annuler — Promise<boolean> consommée
-    // par runAutoMode (requireApproval/onApprovalNeeded, A3).
-    function requestApproval(planContent) {
-        return new Promise((resolve) => {
-            const wrap = document.createElement('div');
-            wrap.className = 'msg assistant';
-            const label = document.createElement('div');
-            label.className = 'auto-phase-badge';
-            label.textContent = 'Approbation requise — Plan terminé';
-            const preview = document.createElement('div');
-            preview.className = 'auto-phase-content';
-            preview.textContent = planContent ? String(planContent).slice(0, 2000) : '(plan indisponible)';
-            const bar = document.createElement('div');
-            bar.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
-            const ok = document.createElement('button');
-            ok.className = 'settings-btn';
-            ok.textContent = 'Continuer';
-            const no = document.createElement('button');
-            no.className = 'settings-btn danger';
-            no.textContent = 'Annuler';
-            const done = (v) => { wrap.remove(); resolve(v); };
-            ok.addEventListener('click', () => done(true));
-            no.addEventListener('click', () => done(false));
-            bar.appendChild(ok);
-            bar.appendChild(no);
-            wrap.appendChild(label);
-            wrap.appendChild(preview);
-            wrap.appendChild(bar);
-            chatLog.appendChild(wrap);
-            autoScroll.onContentChange();
-        });
-    }
-
-    async function sendAuto() {
-        const text = ta.value.trim();
-        if (!text) return;
-        if (text.startsWith('/')) {
-            const handled = await handleSlashCommand(text);
-            if (handled) { ta.value = ''; ta.dispatchEvent(new Event('input')); return; }
-        }
-        if (running) return;
-        setRunning(true);
-        ta.value = '';
-        ta.dispatchEvent(new Event('input'));
-        ta.style.height = '44px';
-        setChatVisible(true);
-        session.model = 'auto';
-        session.project = getActiveProject ? getActiveProject() : session.project;
-        if (!session.title || session.title === 'Nouvelle conversation') {
-            session.title = text.length > 40 ? text.substring(0, 40) + '…' : text;
-        }
-        session.messages.push({ role: 'user', content: text });
-        addMsg('user', text);
-        trackActivity().catch(() => {});
-
-        let tree = { files: [] };
-        try { tree = await listTree(); } catch (e) { /* index optionnel */ }
-
-        controller = new AbortController();
-        pendingEl = null;
-        thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = '';
-        userClosedPanel = false;
-        _resetThinkStream();
-
-        let phaseBodyEl = null;
-        let phaseRaw = '';
-        let lastPhase = '';
-
-        const finalizePhase = () => {
-            if (phaseBodyEl) {
-                phaseBodyEl.innerHTML = '<div class="md">' + renderMarkdown(phaseRaw) + '</div>';
-                phaseBodyEl = null;
-            }
-        };
-
-        const flowOpts = {
-            continueOnError: localStorage.getItem('marex-auto-stop-on-error') === '0',
-            maxRetries: Math.max(0, Math.min(5, parseInt(localStorage.getItem('marex-auto-max-retries') || '0', 10) || 0)),
-            compactPrevious: localStorage.getItem('marex-auto-compact') === '1',
-            maxBudgetTokens: parseInt(localStorage.getItem('marex-auto-budget') || '0', 10) || null,
-            verboseLog: localStorage.getItem('marex-auto-verbose-log') === '1',
-            approvalEnabled: localStorage.getItem('marex-auto-approval') === '1',
-        };
-        try {
-        await runAutoMode({
-            task: text,
-            tree: tree,
-            signal: controller.signal,
-            continueOnError: flowOpts.continueOnError,
-            maxRetries: flowOpts.maxRetries,
-            compactPrevious: flowOpts.compactPrevious,
-            maxBudgetTokens: flowOpts.maxBudgetTokens,
-            requireApproval: flowOpts.approvalEnabled || undefined,
-            onApprovalNeeded: flowOpts.approvalEnabled ? requestApproval : undefined,
-            onThinking: (t) => onThinking(t),
-            onPhase: (p) => {
-                if (flowOpts.verboseLog) console.debug('[auto] phase', p.phase, 'tentative', p.attempt, '→', p.model);
-                finalizePhase();
-                const wrap = document.createElement('div');
-                wrap.className = 'msg assistant';
-                const badge = document.createElement('div');
-                badge.className = 'auto-phase-badge';
-                badge.textContent = 'Phase ' + p.phase + ' — ' + p.agent + ' (' + p.model + ')';
-                const body = document.createElement('div');
-                body.className = 'auto-phase-content';
-                wrap.appendChild(badge);
-                wrap.appendChild(body);
-                chatLog.appendChild(wrap);
-                autoScroll.onContentChange();
-                phaseBodyEl = body;
-                phaseRaw = '';
-                lastPhase = p.phase;
-            },
-            onChunk: (c) => {
-                phaseRaw += c;
-                if (phaseBodyEl) phaseBodyEl.textContent = phaseRaw;
-                autoScroll.onContentChange();
-            },
-            onDone: (outputs) => {
-                if (flowOpts.verboseLog) console.debug('[auto] terminé', (outputs || []).map(o => o.phase + (o.failed ? ' (échec)' : '')).join(', '));
-                finalizePhase();
-                const combined = (outputs || [])
-                    .filter(o => o.content)
-                    .map(o => '### ' + o.phase + '\n' + o.content)
-                    .join('\n\n');
-                if (combined) session.messages.push({ role: 'assistant', content: combined });
-            },
-            onError: (err) => {
-                if (flowOpts.verboseLog) console.debug('[auto] erreur', lastPhase, err && err.message);
-                finalizePhase();
-                if (err && err.message === 'AUTH_REQUIRED') { if (onAuthRequired) onAuthRequired(); return; }
-                addMsg('error', 'Auto (' + lastPhase + ') : ' + (err && err.message ? err.message : err));
-            },
-        });
-        } catch (e) {
-            addMsg('error', 'Auto : ' + (e && e.message ? e.message : e));
-        } finally {
-            finalizePhase();
-            finishThinking();
-            if (onSave) onSave(session);
-            setRunning(false);
-            controller = null;
         }
     }
 
@@ -1346,7 +1153,6 @@ export function createChat(deps) {
 
     return {
         send,
-        sendAuto,
         stop,
         setSession,
         getSession,

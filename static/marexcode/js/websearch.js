@@ -43,35 +43,38 @@ window.executeWebSearch = async function(query) {
     }
 };
 
-window.marexInjectWebSearch = function(modelId) {
+function marexRemoveWebSearchTool() {
     if (typeof MAREXCODE_TOOLS === 'undefined') return;
+    for (var i = MAREXCODE_TOOLS.length - 1; i >= 0; i--) {
+        if (MAREXCODE_TOOLS[i].function && MAREXCODE_TOOLS[i].function.name === 'web_search') {
+            MAREXCODE_TOOLS.splice(i, 1);
+        }
+    }
+}
+
+window.marexInjectWebSearch = function(modelId, enabled) {
+    if (typeof MAREXCODE_TOOLS === 'undefined') return;
+    if (enabled === false || marexHasNativeSearch(modelId)) {
+        marexRemoveWebSearchTool();
+        return;
+    }
     var hasWsTool = MAREXCODE_TOOLS.some(function(t) {
         return t.function && t.function.name === 'web_search';
     });
-    if (marexHasNativeSearch(modelId)) {
-        if (hasWsTool) {
-            for (var i = MAREXCODE_TOOLS.length - 1; i >= 0; i--) {
-                if (MAREXCODE_TOOLS[i].function && MAREXCODE_TOOLS[i].function.name === 'web_search') {
-                    MAREXCODE_TOOLS.splice(i, 1);
+    if (!hasWsTool) {
+        MAREXCODE_TOOLS.push({
+            type: 'function',
+            function: {
+                name: 'web_search',
+                description: 'Recherche web pour obtenir des informations actuelles. Utilise Tavily, Exa, Brave, Jina, SearXNG ou DuckDuckGo. TOUJOURS inclure les sources en markdown à la fin de ta réponse.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        query: { type: 'string', description: 'La requête de recherche' }
+                    },
+                    required: ['query']
                 }
             }
-        }
-    } else {
-        if (!hasWsTool) {
-            MAREXCODE_TOOLS.push({
-                type: 'function',
-                function: {
-                    name: 'web_search',
-                    description: 'Recherche web pour obtenir des informations actuelles. Utilise Tavily, Exa, Brave, Jina, SearXNG ou DuckDuckGo. TOUJOURS inclure les sources en markdown à la fin de ta réponse.',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            query: { type: 'string', description: 'La requête de recherche' }
-                        },
-                        required: ['query']
-                    }
-                }
-            });
-        }
+        });
     }
 };

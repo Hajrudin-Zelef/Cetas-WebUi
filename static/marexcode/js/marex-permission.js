@@ -57,13 +57,9 @@ export function setRule(tool, rule) {
     try { localStorage.setItem('marex-permission-rules', JSON.stringify(rules)); } catch (e) {}
 }
 
-export function isAutoAllowWorkspace() {
+function isAutoAllowWorkspace() {
     try { return localStorage.getItem('marex-auto-allow') === '1'; } catch (e) {}
     return true; // default ON
-}
-
-export function setAutoAllowWorkspace(val) {
-    try { localStorage.setItem('marex-auto-allow', val ? '1' : '0'); } catch (e) {}
 }
 
 export function decidePermission(toolNameRaw, rule) {

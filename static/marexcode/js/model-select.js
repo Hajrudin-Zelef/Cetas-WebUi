@@ -98,7 +98,3 @@ export function getSelectedModelId(menuEl) {
     const item = menuEl.querySelector('.cdrop-item.selected');
     return item ? item.getAttribute('data-model') : null;
 }
-
-export function modelLabelForId(id) {
-    return modelLabel(id);
-}

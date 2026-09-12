@@ -129,10 +129,6 @@ export async function saveSkillsConfig(config) {
     return apiFetch('/api/marexcode/skills/config', { method: 'PUT', body: JSON.stringify(config) });
 }
 
-export async function getSkillContent(id) {
-    return apiFetch('/api/marexcode/skills/' + encodeURIComponent(id) + '/content');
-}
-
 // ── Workspaces multi-projets ────────────────────────────────────────
 
 export async function listWorkspaces() {
@@ -169,30 +165,4 @@ export async function saveGlobalInstructions(content) {
     return apiFetch('/api/marexcode/global-instructions', { method: 'PUT', body: JSON.stringify({ content }) });
 }
 
-// ── Profile ─────────────────────────────────────────────────────────
 
-export async function getProfileStats() {
-    return apiFetch('/api/marexcode/profile/stats');
-}
-
-export async function getProfileActivity() {
-    return apiFetch('/api/marexcode/profile/activity');
-}
-
-export async function trackActivity() {
-    return apiFetch('/api/marexcode/profile/activity', { method: 'POST' });
-}
-
-// ── Local memory ───────────────────────────────────────────────────
-
-export async function getMemory() {
-    return apiFetch('/api/marexcode/memory');
-}
-
-export async function saveMemory(content) {
-    return apiFetch('/api/marexcode/memory', { method: 'PUT', body: JSON.stringify({ content }) });
-}
-
-export async function deleteMemory() {
-    return apiFetch('/api/marexcode/memory', { method: 'DELETE' });
-}
