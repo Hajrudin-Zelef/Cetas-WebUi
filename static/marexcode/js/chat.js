@@ -15,6 +15,7 @@ import { createAutoScroll } from './auto-scroll.js';
 import { createTextShimmer } from './text-shimmer.js';
 import { createTextReveal } from './text-reveal.js';
 import { translateReasoning as translateReasoningText } from './reasoning-translate.js';
+import { getModelContextWindow, formatCtxTokens } from '../../js/data/model-contexts.js';
 
 var _ctxUsed = 0;
 var _ctxMax = 32768;

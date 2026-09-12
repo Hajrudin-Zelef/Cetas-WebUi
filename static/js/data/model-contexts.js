@@ -89,7 +89,7 @@ const MODEL_CONTEXTS = {
     "opencode/nemotron-3.5-lightning-free-zen": 131072,
 };
 
-function getModelContextWindow(modelId) {
+export function getModelContextWindow(modelId) {
     if (!modelId) return 32768;
     if (MODEL_CONTEXTS[modelId]) return MODEL_CONTEXTS[modelId];
     for (var key in MODEL_CONTEXTS) {
@@ -98,7 +98,7 @@ function getModelContextWindow(modelId) {
     return 32768;
 }
 
-function formatCtxTokens(n) {
+export function formatCtxTokens(n) {
     if (!n) return '0';
     if (n < 1000) return String(n);
     var k = n / 1000;
