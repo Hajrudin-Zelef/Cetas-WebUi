@@ -62,8 +62,16 @@ async function _bindPresets() {
             await _api('DELETE', '/api/marexcode/presets/' + encodeURIComponent(id));
             refresh();
         } else if (action === 'apply') {
-            await _api('POST', '/api/marexcode/presets/apply', { id });
-            alert('Preset applique.');
+            const data = await _api('POST', '/api/marexcode/presets/apply', { id });
+            if (data.ok && data.preset) {
+                if (data.preset.model && window._marexSelectModel) {
+                    window._marexSelectModel(data.preset.model);
+                }
+                if (data.preset.systemPrompt && window._marexSetSystemPrompt) {
+                    window._marexSetSystemPrompt(data.preset.systemPrompt);
+                }
+                alert('Preset "' + (data.preset.name || id) + '" applique.');
+            }
         } else if (action === 'edit') {
             const p = _presets.find(x => x.id === id);
             if (!p) return;
@@ -83,9 +91,13 @@ async function _bindPresets() {
         btnNew.addEventListener('click', async () => {
             const name = prompt('Nom du preset:');
             if (!name) return;
-            const model = prompt('Modele (id):', '');
+            const curModel = (typeof localStorage !== 'undefined' && localStorage.getItem('marex-last-model')) || '';
+            const model = prompt('Modele (id):', curModel);
+            if (model === null) return;
             const provider = prompt('Provider:', 'openai');
-            await _api('POST', '/api/marexcode/presets', { name, model: model || '', provider: provider || '', systemPrompt: '' });
+            if (provider === null) return;
+            const sysprompt = prompt('System prompt (laisser vide pour garder le defaut):', '');
+            await _api('POST', '/api/marexcode/presets', { name, model: model || '', provider: provider || '', systemPrompt: sysprompt || '' });
             refresh();
         });
     }
@@ -205,7 +217,10 @@ async function _bindAPIKey() {
 
     if (btnGen) {
         btnGen.addEventListener('click', async () => {
-            await _api('POST', '/api/marexcode/apikey', { action: 'generate' });
+            const data = await _api('POST', '/api/marexcode/apikey', { action: 'generate' });
+            if (data.ok && data.key) {
+                prompt('Cle generee (copiez-la) :', data.key);
+            }
             refresh();
         });
     }

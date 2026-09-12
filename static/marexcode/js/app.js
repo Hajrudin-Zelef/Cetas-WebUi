@@ -1252,6 +1252,16 @@ function boot() {
         updateWebSearchGlobe();
     });
 
+    window._marexSelectModel = function(modelId) {
+        selectModel(refs.menuModel, refs.labelModel, modelId, (m) => {
+            const s = chat.getSession();
+            if (s) s.model = m;
+        });
+    };
+    window._marexSetSystemPrompt = function(prompt) {
+        window._marexCustomSysPrompt = prompt;
+    };
+
     const webGlobe = document.getElementById('web-globe-btn');
     if (webGlobe) {
         webGlobe.addEventListener('click', () => {

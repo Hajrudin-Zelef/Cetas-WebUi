@@ -884,7 +884,8 @@ export function createChat(deps) {
         }
 
         const sys = (skill ? skill + '\n\n' : '') + layer1_identity + '\n\n' + layer2_tools + layer3_date + instructionsBlock + skillsPrompt + outputInstruction;
-        const history = [{ role: 'system', content: sys }].concat(session.messages);
+        const customSys = (typeof window._marexCustomSysPrompt === 'string' && window._marexCustomSysPrompt) ? '\n\nUSER CUSTOM INSTRUCTIONS:\n' + window._marexCustomSysPrompt : '';
+        const history = [{ role: 'system', content: sys + customSys }].concat(session.messages);
         pendingEl = null; pendingMd = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
         userClosedPanel = false;
         _resetThinkStream();
