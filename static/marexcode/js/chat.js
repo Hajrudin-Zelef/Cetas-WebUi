@@ -16,6 +16,9 @@ import { createTextShimmer } from './text-shimmer.js';
 import { createTextReveal } from './text-reveal.js';
 import { translateReasoning as translateReasoningText } from './reasoning-translate.js';
 
+var _ctxUsed = 0;
+var _ctxMax = 32768;
+
 export function createChat(deps) {
     const { chatLog, chatPanel, ta, sendBtn, stopBtn, onSave, onAuthRequired, getSystemPrompt, getActiveProject,
         sidePanel, sidePanelBody, sidePanelEmpty, sidePanelSpinner, sidePanelClose } = deps;
@@ -1212,6 +1215,26 @@ export function createChat(deps) {
         el.textContent = txt;
         chatLog.appendChild(el);
         autoScroll.onContentChange();
+        updateCtxCounter(estTokens);
+    }
+
+    function updateCtxCounter(newTokens) {
+        _ctxUsed += newTokens;
+        var ctxEl = document.getElementById('ctx-counter');
+        if (!ctxEl) {
+            ctxEl = document.createElement('div');
+            ctxEl.id = 'ctx-counter';
+            ctxEl.className = 'ctx-counter';
+            if (sidePanelBody) sidePanelBody.insertBefore(ctxEl, sidePanelBody.firstChild);
+        }
+        var model = session && session.model;
+        if (typeof getModelContextWindow === 'function') {
+            _ctxMax = getModelContextWindow(model);
+        }
+        var pct = Math.min(100, Math.round(_ctxUsed * 100 / _ctxMax));
+        var color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#eab308' : '#22c55e';
+        ctxEl.innerHTML = '<span style="color:' + color + '">' + formatCtxTokens(_ctxUsed) + ' / ' + formatCtxTokens(_ctxMax) + '</span>';
+        ctxEl.title = _ctxUsed.toLocaleString('fr') + ' / ' + _ctxMax.toLocaleString('fr') + ' tokens (' + pct + '%)';
     }
 
     return {

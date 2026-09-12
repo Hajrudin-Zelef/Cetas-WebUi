@@ -91,6 +91,7 @@
                             placeholder="Écrivez votre message..."
                             rows="1"
                         ></textarea>
+                        <div id="ctx-counter" class="ctx-counter-input" style="display:none"></div>
                     </div>
                     <!-- Ligne 2 -->
                     <div class="input-line-2">
@@ -198,6 +199,15 @@
                     <div class="plus-menu-pills plus-menu-pills-tight" id="plus-websearch-depth" style="display:none">
                         <button type="button" class="plus-menu-pill active" data-depth="standard">Standard</button>
                         <button type="button" class="plus-menu-pill" data-depth="deep">Approfondi</button>
+                    </div>
+                </div>
+                <div class="plus-menu-sep"></div>
+                <!-- Section Tokens max -->
+                <div class="plus-menu-section">
+                    <div class="plus-menu-section-title">Tokens max</div>
+                    <div class="plus-menu-row" style="flex-direction:column;gap:4px;padding:4px 0">
+                        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary,#8b949e)"><span>300</span><span id="plus-max-tok-val">32K</span><span>32K</span></div>
+                        <input type="range" id="plus-max-tok-slider" min="300" max="32768" step="100" value="32768" style="width:100%;accent-color:var(--accent,#2563eb)">
                     </div>
                 </div>
             </div>

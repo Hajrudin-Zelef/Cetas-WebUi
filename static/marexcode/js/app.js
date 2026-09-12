@@ -353,6 +353,33 @@ function setupPlusMenu() {
         localStorage.setItem('marex-web-search', webToggle.checked ? '1' : '0');
         updateWebSearchGlobe();
     });
+
+    const tokDivider = document.createElement('div');
+    tokDivider.className = 'cdrop-divider';
+    menu.appendChild(tokDivider);
+
+    const tokLabel = document.createElement('div');
+    tokLabel.className = 'cdrop-section-label';
+    tokLabel.textContent = 'Tokens max';
+    menu.appendChild(tokLabel);
+
+    const tokRow = document.createElement('div');
+    tokRow.className = 'cdrop-row';
+    tokRow.style.flexDirection = 'column';
+    tokRow.style.gap = '4px';
+    tokRow.style.padding = '6px 10px';
+    var savedMaxTok = parseInt(localStorage.getItem('marex-max-tokens') || '32768', 10);
+    tokRow.innerHTML = '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary,#8b949e)"><span>300</span><span id="max-tok-val">' + savedMaxTok.toLocaleString('fr') + '</span><span>32K</span></div>' +
+        '<input type="range" id="max-tok-slider" min="300" max="32768" step="100" value="' + savedMaxTok + '" style="width:100%;accent-color:var(--accent,#2563eb)">';
+    menu.appendChild(tokRow);
+
+    const tokSlider = tokRow.querySelector('#max-tok-slider');
+    const tokVal = tokRow.querySelector('#max-tok-val');
+    tokSlider.addEventListener('input', () => {
+        var v = parseInt(tokSlider.value, 10);
+        tokVal.textContent = v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'K' : v;
+        localStorage.setItem('marex-max-tokens', String(v));
+    });
 }
 
 // ── Dropdowns (cdrops) ──

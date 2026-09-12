@@ -79,6 +79,16 @@ body.dark .marex-plus-dropdown { box-shadow:0 8px 30px rgba(0,0,0,0.5); }
   font-family: monospace;
 }
 
+/* Compteur contexte dans le panneau thinking */
+.ctx-counter {
+  font-size: 12px;
+  font-family: monospace;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  color: var(--text-secondary, #8b949e);
+}
+
 /* Métriques sidebar */
 .sb-metrics { padding: 0 12px 8px; }
 .sb-metric-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }

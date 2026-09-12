@@ -4,6 +4,34 @@ import "./dom.js";
 
 import { escHtml, escHtmlAttr, safeUrl, isTextFile, arrayBufferToBase64, isPdf, getModelLabel, fmtTokens, fmtCost } from "./utils.js";
 
+function formatCtxTokens(n) {
+    if (!n) return "0";
+    if (n < 1000) return String(n);
+    var k = n / 1000;
+    return (k >= 100 ? Math.round(k) : (Math.round(k * 10) / 10).toFixed(1).replace(/\.0$/, "")) + "K";
+}
+
+function getModelContextWindow(id) {
+    var map = {
+        "gpt-5.6-sol": 1e6, "gpt-5.6-terra": 1e6, "gpt-5.6-luna": 1e6,
+        "gpt-5.5-2026-04-23": 1e6, "gpt-5.4-2026-03-05": 1e6, "gpt-5.2-2025-12-11": 1e6,
+        "gpt-4.1-2025-04-14": 1e6, "gpt-5.4-mini-2026-03-17": 1e6, "gpt-5.4-nano-2026-03-17": 1e6,
+        "claude-fable-5": 2e5, "claude-opus-4-8": 2e5, "claude-sonnet-5": 2e5,
+        "claude-opus-4-7": 2e5, "claude-opus-4-6": 2e5, "claude-sonnet-4-5": 2e5, "claude-haiku-4-5": 2e5,
+        "gemini-3.5-flash": 1e6, "gemini-3.6-flash": 1e6, "gemini-3.5-flash-lite": 1e6,
+        "gemini-3-flash-preview": 1e6, "gemini-3.1-flash-lite": 1e6,
+        "deepseek-chat": 131072, "deepseek-flash": 131072, "deepseek-v4-pro": 1e6,
+        "grok-4.5": 5e5, "grok-4-1-fast-reasoning": 2e6,
+        "mistral-medium-3-5": 131072, "mistral-large-latest": 131072, "mistral-small-latest": 131072,
+        "google/gemini-2.5-flash": 1e6, "anthropic/claude-sonnet-4.5": 2e5,
+        "google/gemini-2.5-flash-lite": 1e6,
+    };
+    if (!id) return 32768;
+    if (map[id]) return map[id];
+    for (var k in map) { if (id.includes(k) || k.includes(id)) return map[k]; }
+    return 32768;
+}
+
 import { applyTheme, initTheme, setOnThemeChange } from "../ui/theme.js";
 
 import { initLightbox } from "../ui/lightbox.js";
@@ -663,6 +691,17 @@ function updateTokenDisplay() {
     tokenInfo.textContent = `↑ ${STATE.totalInputTokens.toLocaleString("fr-FR")} ↓ ${STATE.totalOutputTokens.toLocaleString("fr-FR")} Tokens`;
     const t = STATE.totalCost + STATE.totalImageCost + STATE.totalAudioCost + STATE.totalTitleCost;
     costInfo.textContent = t > 0 ? `Coût estimé : $${t.toFixed(4)}` : "Coût estimé : —";
+    var ctxEl = document.getElementById("ctx-counter");
+    if (ctxEl && typeof getModelContextWindow === "function") {
+        var model = STATE.selectedModel || "";
+        var ctxMax = getModelContextWindow(model);
+        var ctxUsed = STATE.totalInputTokens + STATE.totalOutputTokens;
+        var pct = Math.min(100, Math.round(ctxUsed * 100 / ctxMax));
+        var color = pct >= 90 ? "#ef4444" : pct >= 70 ? "#eab308" : "#22c55e";
+        ctxEl.style.display = ctxUsed > 0 ? "" : "none";
+        ctxEl.innerHTML = '<span style="color:' + color + '">' + formatCtxTokens(ctxUsed) + " / " + formatCtxTokens(ctxMax) + "</span>";
+        ctxEl.title = ctxUsed.toLocaleString("fr") + " / " + ctxMax.toLocaleString("fr") + " tokens (" + pct + "%)";
+    }
 }
 
 function _rebindStreamToVisibleDOM(e) {

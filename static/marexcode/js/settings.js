@@ -19,6 +19,7 @@ let _tasks = [];
 export function initSettingsFeatures() {
     _bindPresets();
     _bindAgent();
+    _bindMaxTokens();
     _bindTasks();
     _bindAPIKey();
     _bindMarexLink();
@@ -138,6 +139,16 @@ async function _bindAgent() {
             if (memLabel) memLabel.textContent = memSelect.value;
         });
     }
+}
+
+function _bindMaxTokens() {
+    const sel = $('max-tokens-select');
+    if (!sel) return;
+    var saved = localStorage.getItem('marex-max-tokens') || '32768';
+    sel.value = saved;
+    sel.addEventListener('change', () => {
+        localStorage.setItem('marex-max-tokens', sel.value);
+    });
 }
 
 async function _bindTasks() {
