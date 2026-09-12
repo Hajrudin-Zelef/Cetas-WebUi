@@ -129,8 +129,12 @@ async function _bindAgent() {
         });
     }
     if (memSelect) {
+        var savedMemMode = localStorage.getItem('marex-mem-mode') || 'always';
+        memSelect.value = savedMemMode;
+        if (memLabel) memLabel.textContent = savedMemMode;
         memSelect.addEventListener('change', async () => {
             await _api('POST', '/api/marexcode/agent', { mem_mode: memSelect.value });
+            localStorage.setItem('marex-mem-mode', memSelect.value);
             if (memLabel) memLabel.textContent = memSelect.value;
         });
     }

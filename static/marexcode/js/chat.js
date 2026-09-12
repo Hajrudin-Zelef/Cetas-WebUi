@@ -947,7 +947,13 @@ export function createChat(deps) {
 
             var allTools = MAREX_TOOLS.concat(typeof MEM_TOOLS !== 'undefined' ? MEM_TOOLS : []);
 
-            if (window._marexSessionId && typeof fetchMemIndex === 'function') {
+            var memMode = 'always';
+            try { memMode = localStorage.getItem('marex-mem-mode') || 'always'; } catch (e) {}
+            if (memMode === 'off') {
+                allTools = allTools.filter(function(t) { return !t.function.name.startsWith('mem_'); });
+            }
+
+            if (window._marexSessionId && typeof fetchMemIndex === 'function' && memMode !== 'off') {
                 try {
                     var memIdx = await fetchMemIndex(window._marexSessionId);
                     if (memIdx && memIdx.content) {

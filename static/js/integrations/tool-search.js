@@ -25,7 +25,26 @@ async function streamModelWithTools(model, history, onChunk, onDone, onError, to
     idleTimer = setTimeout(function() { idleFired = true; try { ctl.abort(); } catch(e) {} }, idleMs);
   };
   armIdle();
+
+  function _normalizeSysMsgs(msgs) {
+    var sysParts = [];
+    var out = [];
+    for (var i = 0; i < msgs.length; i++) {
+      if (msgs[i] && 'system' === msgs[i].role) {
+        var c = typeof msgs[i].content === 'string' ? msgs[i].content : '';
+        if (c) sysParts.push(c);
+      } else {
+        out.push(msgs[i]);
+      }
+    }
+    if (sysParts.length > 0) {
+      out.unshift({ role: 'system', content: sysParts.join('\n\n') });
+    }
+    return out;
+  }
+
   try {
+    history = _normalizeSysMsgs(history);
     var sysMsg = null;
     for (var k = 0; k < history.length; k++) {
       if (history[k] && 'system' === history[k].role) {
@@ -38,6 +57,7 @@ async function streamModelWithTools(model, history, onChunk, onDone, onError, to
     var fmtMsgs = provider.formatMessages(history);
     var body = provider.buildBody(model, fmtMsgs, sysMsg, !!(Array.isArray(tools) && tools.length) || !!(_opts && _opts.webSearch), reqOpts);
     body.tools && 0 !== body.tools.length || (body.tools = typeof WEB_SEARCH_TOOLS !== 'undefined' ? WEB_SEARCH_TOOLS : []);
+    body.parallel_tool_calls = false;
     if (window.FORCE_WEB_SEARCH && body.tools && body.tools.some(function(t) { return t.function && 'web_search' === t.function.name; })) {
       body.tool_choice = { type: 'function', function: { name: 'web_search' } };
     }
@@ -128,6 +148,7 @@ async function streamModelWithTools(model, history, onChunk, onDone, onError, to
     }
     if (!rawContent && nudgeCount < maxNudges && Array.isArray(effectiveTools) && effectiveTools.length > 0) {
       nudgeCount++;
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('marexcode-tool', { detail: { name: 'DropReasoning', args: {}, result: null, phase: 'nudge' } }));
       var nudge = 'Tu as raisonne mais pas utilise d\'outil ni repondu. Agis MAINTENANT: appelle l\'outil approprie directement, ou donne ta reponse finale si tu as deja l\'info. N\'explique pas, agis.';
       if (nudgeCount > 1) {
         nudge = 'Tu es bloque a decrire le meme plan sans l\'executer. Arrete de raisonner. Dans ton PROCHAIN message, appelle UN outil maintenant, ou ecris ta reponse finale en texte brut avec ce que tu sais deja -- plus de plan, plus de reflexion, agis ou reponds instantanement.';
