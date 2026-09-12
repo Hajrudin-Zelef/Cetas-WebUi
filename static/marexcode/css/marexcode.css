@@ -22,9 +22,13 @@ html,body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;
-  background:#000000;
+  background:transparent;
   overflow:hidden;
 }
+
+/* html porte le fond canvas (derrière le .stars-container z-index:-1) ;
+   body doit rester transparent, sinon son fond opaque masque les étoiles. */
+html{ background:#090a0f; }
 
 /* Cadre extérieur : occupe tout le viewport */
 .frame{
