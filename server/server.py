@@ -1737,6 +1737,9 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if path == "/api/marexcode/link/status":
             self._link_status()
             return
+        if path == "/api/marexcode/metrics":
+            self._metrics_get()
+            return
         if self._serve_static():
             return
         self.send_response(404)
@@ -3279,6 +3282,69 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             self._error(400, "Token requis")
             return
         self._respond_json({"ok": True, "message": "Token recu (tunnel non implemente)"})
+
+    # ── Métriques sidebar ────────────────────────────────────────────
+
+    def _metrics_get(self):
+        username = self._get_authenticated_user()
+        if not username:
+            return
+        import subprocess
+        metrics = {"vram": [], "ram": {"used": 0, "total": 0}, "disk": {"used": 0, "total": 0}, "cpu": 0}
+
+        try:
+            out = subprocess.check_output([
+                "nvidia-smi", "--query-gpu=name,memory.used,memory.total,utilization.gpu,temperature.gpu",
+                "--format=csv,noheader,nounits"
+            ], timeout=5, stderr=subprocess.DEVNULL).decode()
+            for line in out.strip().split("\n"):
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) == 5:
+                    metrics["vram"].append({
+                        "name": parts[0], "used": int(parts[1]), "total": int(parts[2]),
+                        "util": int(parts[3]), "temp": int(parts[4])
+                    })
+        except Exception:
+            pass
+
+        try:
+            with open("/proc/meminfo", "r") as f:
+                for line in f:
+                    if line.startswith("MemTotal:"):
+                        metrics["ram"]["total"] = int(line.split()[1]) // 1024
+                    elif line.startswith("MemAvailable:"):
+                        avail = int(line.split()[1]) // 1024
+                        metrics["ram"]["used"] = metrics["ram"]["total"] - avail
+        except Exception:
+            pass
+
+        try:
+            st = os.statvfs("/")
+            metrics["disk"]["total"] = (st.f_blocks * st.f_frsize) // (1024 * 1024)
+            metrics["disk"]["used"] = metrics["disk"]["total"] - (st.f_bavail * st.f_frsize) // (1024 * 1024)
+        except Exception:
+            pass
+
+        try:
+            with open("/proc/stat", "r") as f:
+                line = f.readline()
+            parts = line.split()
+            user, nice, sys_, idle, iowait = int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])
+            total = user + nice + sys_ + idle + iowait
+            import time
+            time.sleep(0.1)
+            with open("/proc/stat", "r") as f:
+                line = f.readline()
+            parts = line.split()
+            user2, nice2, sys2, idle2, iowait2 = int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4]), int(parts[5])
+            total2 = user2 + nice2 + sys2 + idle2 + iowait2
+            idle_delta = idle2 - idle
+            total_delta = total2 - total
+            metrics["cpu"] = round((1 - idle_delta / total_delta) * 100, 1) if total_delta > 0 else 0
+        except Exception:
+            pass
+
+        self._respond_json(metrics)
 
     def _error(self, code: int, msg: str):
         body = json.dumps({"error": msg}).encode()

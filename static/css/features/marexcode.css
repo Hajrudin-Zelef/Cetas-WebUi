@@ -69,3 +69,13 @@ body.dark .marex-plus-dropdown { box-shadow:0 8px 30px rgba(0,0,0,0.5); }
 
 /* Bouton sidebar Marexcode (module actif) */
 .dev-module-btn[data-module="marexcode"] { opacity: 1; border-style: solid; color: var(--text); }
+
+/* Métriques sidebar */
+.sb-metrics { padding: 0 12px 8px; }
+.sb-metric-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+.sb-metric-label { font-size:11px; color:var(--text-secondary, #8b949e); width:40px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sb-metric-bar { flex:1; height:6px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
+.sb-metric-fill { height:100%; background:var(--accent, #2563eb); border-radius:3px; transition:width 0.5s ease; }
+.sb-metric-fill.gpu { background:#22c55e; }
+.sb-metric-value { font-size:10px; color:var(--text-secondary, #8b949e); width:80px; text-align:right; flex-shrink:0; }
+.sb-metric-sub { font-size:10px; color:var(--text-secondary, #8b949e); padding-left:46px; margin-bottom:4px; }

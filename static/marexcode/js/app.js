@@ -5,6 +5,7 @@ import { initRouter } from './router.js';
 import { COMPETENCES } from './skills.js';
 import { getPermission, setPermission, checkToolPermission, getRule, setRule } from './marex-permission.js';
 import { initSettingsFeatures } from './settings.js';
+import { initMetrics } from './metrics.js';
 
 const $ = id => document.getElementById(id);
 
@@ -1275,6 +1276,7 @@ function boot() {
     updateWebSearchGlobe();
 
     setupSettings(router);
+    initMetrics();
     setupNewSession();
 
     refs.fvClose.addEventListener('click', () => refs.fileViewer.classList.remove('open'));
