@@ -1447,7 +1447,7 @@ html,body{
   z-index: 0;
   height: 100%;
   width: 100%;
-  opacity: 0.3;
+  opacity: 0.8;
   overflow: hidden;
   pointer-events: none;
 }
