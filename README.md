@@ -15,7 +15,7 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 ### Chat & Modèles
 - **SamAgent** — routeur intelligent multi-tiers : accueil chaleureux avec propositions cliquables, fallback 3 niveaux, rotation aléatoire dans des pools de modèles — aucun point de défaillance unique
 - **17 providers supportés** : OpenAI, Anthropic, Google, Mistral, DeepSeek, Grok/xAI, Z.ai/GLM, Perplexity, OpenRouter, Groq, Nvidia, Cabreras, OpenCode (Zen + Go) + modèles locaux (Ollama, LM Studio, LlamaCpp)
-- **~80 modèles IA** : GPT-5.6, Claude Fable 5, Gemini 3.6, DeepSeek V4, Grok 4.5, etc.
+- **128 modèles IA** (109 texte + 5 image + 3 recherche + 6 TTS + 5 STT) : GPT-5.6, Claude Fable 5, Gemini 3.6, DeepSeek V4, Grok 4.5, etc.
 - **Génération d'images** : GPT Image 2, Gemini (Nano Banana)
 - **Synthèse vocale (TTS)** : OpenAI, Google, Mistral, Nvidia, système
 - **Transcription audio (STT)** : Navigateur natif, OpenAI Whisper, OpenRouter, Google, Mistral
@@ -35,19 +35,18 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 - PWA installable, mode hors-ligne via service worker
 
 ### Marexcode — Assistant de code
-- **Outils complets** : `Ls` (arborescence), `Read` (pagination offset/limit), `Write` (avec détection existed), `Edit` (diff unifié), `Grep` (limite configurable, ignore binaires), `Bash` (timeout configurable), `Glob` (recherche par pattern)
+- **Outils complets** : `Ls` (arborescence), `Read` (pagination offset/limit), `Write` (avec détection existed), `Edit` (diff unifié), `Grep` (limite configurable, ignore binaires), `Bash` (timeout configurable), `Glob` (recherche par pattern), `RunScript` (python/node, langage fermé, sandbox durcie)
 - **Tool loop refactoré** : boucle sans cap d'itérations, déduplication des tool calls (Bash exclu), nudge si modèle bloque (max 2), overflow retry avec tools désactivés, `parallel_tool_calls=false`
-- **Mémoire persistante** : 5 outils (`mem_search`, `mem_read`, `mem_add`, `mem_edit`, `mem_delete`), stockage par session dans `{workspace}/memory/{session_id}/`, index `MEMORY.md` auto-maintenu
+- **Mémoire persistante** : 5 outils (`mem_search`, `mem_read`, `mem_add`, `mem_edit`, `mem_delete`), stockage par session dans `{workspace}/memory/{session_id}/`, index `MEMORY.md` auto-maintenu, recherche **reranker cross-encoder ONNX** (ms-marco-MiniLM) avec fallback TF-IDF
 - **LSP** : intelligence code via Language Server Protocol (pyright, typescript-language-server, bash-ls, html/css/json-ls) — hover tooltips dans le file viewer
 - **MCP** : 4 serveurs connectés (context7, fetch, memory, filesystem = 26 tools) — injection dynamique au boot
 - **Custom Tools** : outils user-defined via `tools.json` — auto-extraction des paramètres `{name}`
 - **Formatters** : auto-format après Write/Edit (ruff pour Python, prettier pour JS/TS/JSON/CSS/HTML/MD)
 - **Undo/Redo** : journal `undo_log.json` (max 50 entries), boutons ↩ ↪, Ctrl+Z/Y
 - **WebSearch** : backend `websearch.py` — 6 providers en cascade (Tavily → Exa → Brave API → Jina → SearXNG → DuckDuckGo), icône globe toggle, native pour OpenRouter
-- **Skills system** : 54 skills OpenCode avec modes auto/manual/on_demand, injection dans le system prompt
+- **Skills system** : 100 skills OpenCode (`.opencode/skills/`) avec modes auto/manual/on_demand, config gérée via Settings → Skills. Dans Marexcode, l'injection des skills dans le system prompt a été retirée pour économiser des tokens.
 - **Multi-workspaces** : chaque upload crée un workspace séparé, activation via sidebar
-- **Profile/stats** : page profil avec token counts, chats, série active, top model, heatmap 30 jours
-- **Memory system** : mémoire locale persistante (`memory.md`), toggle activation/capture
+- **Memory system** : mémoire par session (pages Markdown + index `MEMORY.md`), mode Auto / Sur demande / Désactivée (Settings → Features)
 - **Instructions** : instructions globales + par projet (MAREXCODE.md)
 - **Slash Commands** : 12 commandes built-in (`/help`, `/clear`, `/model`, `/undo`, `/redo`, `/compact`, `/init`, `/mcp`, `/cost`, `/workspace`, `/skills`, `/diff`) + autocomplete dropdown
 - **TodoWrite** : planification multi-étapes live dans le fil de chat (statuts pending/in_progress/completed)
@@ -64,6 +63,9 @@ Cetas est une alternative aux assistants IA propriétaires. Les clés API resten
 - **Stats fin de tour** : `8s · 94 tok · 13.7 tok/s` — temps de génération, tokens, vitesse
 - **Compteur contexte** : `10.2K / 131K` — tokens utilisés / contexte max du modèle (78 modèles référencés)
 - **Slider max tokens** : réglage 300 → 32K dans le menu `+`
+- **Loaders animés** : loader wifi (recherche web), loader de génération, ripple loader d'accueil
+- **Thème clair + palette d'accent** : 8 couleurs d'accent (Settings → Interface)
+- **Icônes dédiées** : favicons/icônes Marexcode (`.ico`, PNG 16→512, maskables)
 
 ### Productivité
 - **Canvas intégré** : panneau latéral pour contexte long
@@ -118,13 +120,16 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-### Sans Docker (usage local)
+### Application desktop (Windows)
 
 ```bash
-python3 -m http.server 8080
+pip install -r requirements.txt
+python cetas.py
 ```
 
-Ouvrir `http://localhost:8080` dans le navigateur.
+Ouvre une fenêtre native (pywebview) avec le proxy Python intégré, le rendu SSI et le vault local — aucune dépendance à nginx. Build portable : `cetas.spec` (PyInstaller), `build_windows.ps1`, `installer.iss` (Inno Setup).
+
+> Ne pas servir le dossier `static/` avec un simple `python -m http.server` : le frontend dépend du SSI (assemblage des partials) et du proxy `/api/`, tous deux fournis par `server/server.py` (mode desktop) ou nginx (Docker).
 
 ## Déploiement
 
@@ -133,8 +138,9 @@ Voir **[DEPLOY.md](./Docs/DEPLOY.md)** — guide complet pour installer sur un V
 ## Stack technique
 
 - **Frontend** : Vanilla JS (ES modules), CSS custom properties, HTML5 Canvas
-- **Backend proxy** : Python stdlib, AES-256-GCM, JWT, scrypt, subprocess (sandbox Marexcode), duckduckgo-search, google-auth
-- **Outils IA** : Ls, Glob, Read (pagination), Write, Edit (diff unifié), Grep, Bash (sandbox), TodoWrite (virtuel client-side), LSP (6 serveurs), MCP (4 serveurs), Custom Tools, Formatters, Undo/Redo, Images, Slash Commands
+- **Backend proxy** : Python stdlib, AES-256-GCM, JWT, scrypt, subprocess (sandbox Marexcode), duckduckgo-search, google-auth (OAuth), MCP (`mcp`, `mcp-server-fetch`, `httpx2`)
+- **Mémoire** : reranker cross-encoder ONNX (`onnxruntime`, `tokenizers`, `numpy`, `huggingface_hub`) — fallback TF-IDF
+- **Outils IA** : Ls, Glob, Read (pagination), Write, Edit (diff unifié), Grep, Bash (sandbox), RunScript (python/node), TodoWrite (virtuel client-side), LSP (6 serveurs : pyright, typescript-language-server, bash-language-server, html/css/json), MCP (4 serveurs), Custom Tools, Formatters (ruff, prettier), Undo/Redo, Images, Slash Commands
 - **Recherche web** : backend `websearch.py` — 6 providers (Tavily, Exa, Brave API, Jina, SearXNG, DuckDuckGo) — chaîne auto avec fallback
 - **Serveur** : Nginx Alpine, Docker
 - **Recherche** : SearXNG (méta-moteur auto-hébergé)
