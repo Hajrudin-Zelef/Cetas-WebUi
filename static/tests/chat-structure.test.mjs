@@ -8,6 +8,8 @@ const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const appSource = readFileSync(resolve(ROOT, 'js/core/app.js'), 'utf8');
 const moduleSource = readFileSync(resolve(ROOT, 'js/features/chat.js'), 'utf8');
 
+globalThis.window = { location: { hostname: 'localhost' }, __wrapTables: undefined };
+
 test('app.js imports createChat from chat.js', () => {
     assert.match(appSource, /import \{ createChat \} from "\.\.\/features\/chat\.js"/);
 });
