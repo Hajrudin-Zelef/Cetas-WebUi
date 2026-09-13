@@ -502,6 +502,7 @@ export function createChat(deps) {
             controller.abort();
             setRunning(false);
             finishThinking();
+            stopLiveTurnStats();
             if (pendingEl) {
                 if (pendingMd) md.finalize(pendingMd, rawAcc);
                 session.messages.push({ role: 'assistant', content: rawAcc });
@@ -925,6 +926,7 @@ export function createChat(deps) {
         const onError = (err) => {
             setRunning(false);
             finishThinking();
+            stopLiveTurnStats();
             if (pendingEl) {
                 if (pendingMd) md.finalize(pendingMd, rawAcc);
                 if (rawAcc) session.messages.push({ role: 'assistant', content: rawAcc });
@@ -976,6 +978,7 @@ export function createChat(deps) {
         } catch (err) {
             setRunning(false);
             finishThinking();
+            stopLiveTurnStats();
             if (pendingEl) {
                 if (pendingMd) md.finalize(pendingMd, rawAcc);
                 if (rawAcc) session.messages.push({ role: 'assistant', content: rawAcc });
@@ -1194,10 +1197,16 @@ export function createChat(deps) {
 
     let _liveStatsTimer = null;
     let _liveStatsEl = null;
+    let _liveLoaderEl = null;
 
     function startLiveTurnStats(el) {
         stopLiveTurnStats();
         if (!el) return;
+        const loader = document.createElement('div');
+        loader.className = 'marex-loader';
+        loader.innerHTML = '<div class="loader"><div class="loader__inner"></div><div class="loader__orbit"><div class="loader__dot"></div><div class="loader__dot"></div><div class="loader__dot"></div><div class="loader__dot"></div></div></div>';
+        el.insertBefore(loader, el.firstChild);
+        _liveLoaderEl = loader;
         const span = document.createElement('div');
         span.className = 'gen-stats-live';
         el.appendChild(span);
@@ -1235,6 +1244,7 @@ export function createChat(deps) {
     function stopLiveTurnStats() {
         if (_liveStatsTimer) { clearInterval(_liveStatsTimer); _liveStatsTimer = null; }
         if (_liveStatsEl) { _liveStatsEl.remove(); _liveStatsEl = null; }
+        if (_liveLoaderEl) { _liveLoaderEl.remove(); _liveLoaderEl = null; }
     }
 
     function showTurnStats(stats, content, usage) {

@@ -3541,7 +3541,7 @@ Object.assign(window, {
     if (!b) {
         b = document.createElement("div");
         b.className = "web-search-indicator";
-        b.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Recherche web en cours...</span>';
+        b.innerHTML = '<div class="wifi-loader-icon"><div class="wifi-loader"><svg class="circle-outer" viewBox="0 0 86 86"><circle class="back" cx="43" cy="43" r="40"></circle><circle class="front" cx="43" cy="43" r="40"></circle></svg><svg class="circle-middle" viewBox="0 0 60 60"><circle class="back" cx="30" cy="30" r="27"></circle><circle class="front" cx="30" cy="30" r="27"></circle></svg><svg class="circle-inner" viewBox="0 0 34 34"><circle class="back" cx="17" cy="17" r="14"></circle><circle class="front" cx="17" cy="17" r="14"></circle></svg></div></div><span>Recherche web en cours...</span>';
         a.parentElement.insertBefore(b, a);
     }
     b.style.display = "flex";

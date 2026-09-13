@@ -2262,10 +2262,30 @@ body.ocean-theme .typing-avatar {
 
 /* Web search indicator (déplacé depuis style.css inline — perdait au build Docker) */
 .web-search-indicator{display:flex;align-items:center;gap:8px;padding:8px 12px;margin:8px 0;background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(139,92,246,.1));border:1px solid rgba(59,130,246,.3);border-radius:8px;font-size:.85rem;color:var(--text);animation:web-search-pulse 1.5s ease-in-out infinite}
-.web-search-indicator svg{flex-shrink:0;color:#3b82f6;animation:web-search-spin 1s linear infinite}
 .web-search-indicator span{font-weight:500}
 @keyframes web-search-pulse{0%,100%{opacity:1}50%{opacity:.7}}
-@keyframes web-search-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* Loader wifi (inspire uiverse.io/mobinkakei/pink-deer-76) */
+.web-search-indicator .wifi-loader-icon{position:relative;width:24px;height:24px;flex-shrink:0}
+.web-search-indicator .wifi-loader{position:absolute;top:50%;left:50%;width:64px;height:64px;margin:-32px 0 0 -32px;transform:scale(.3);display:flex;justify-content:center;align-items:center}
+.web-search-indicator .wifi-loader svg{position:absolute;display:flex;justify-content:center;align-items:center}
+.web-search-indicator .wifi-loader svg circle{position:absolute;fill:none;stroke-width:6px;stroke-linecap:round;stroke-linejoin:round;transform:rotate(-100deg);transform-origin:center}
+.web-search-indicator .wifi-loader svg circle.back{stroke:color-mix(in srgb,var(--accent,#3B87CE) 28%,transparent)}
+.web-search-indicator .wifi-loader svg circle.front{stroke:var(--accent,#3B87CE)}
+.web-search-indicator .wifi-loader svg.circle-outer{height:86px;width:86px}
+.web-search-indicator .wifi-loader svg.circle-outer circle{stroke-dasharray:62.75 188.25}
+.web-search-indicator .wifi-loader svg.circle-outer circle.back{animation:ws-circle-outer 1.8s ease infinite .3s}
+.web-search-indicator .wifi-loader svg.circle-outer circle.front{animation:ws-circle-outer 1.8s ease infinite .15s}
+.web-search-indicator .wifi-loader svg.circle-middle{height:60px;width:60px}
+.web-search-indicator .wifi-loader svg.circle-middle circle{stroke-dasharray:42.5 127.5}
+.web-search-indicator .wifi-loader svg.circle-middle circle.back{animation:ws-circle-middle 1.8s ease infinite .25s}
+.web-search-indicator .wifi-loader svg.circle-middle circle.front{animation:ws-circle-middle 1.8s ease infinite .1s}
+.web-search-indicator .wifi-loader svg.circle-inner{height:34px;width:34px}
+.web-search-indicator .wifi-loader svg.circle-inner circle{stroke-dasharray:22 66}
+.web-search-indicator .wifi-loader svg.circle-inner circle.back{animation:ws-circle-inner 1.8s ease infinite .2s}
+.web-search-indicator .wifi-loader svg.circle-inner circle.front{animation:ws-circle-inner 1.8s ease infinite .05s}
+@keyframes ws-circle-outer{0%{stroke-dashoffset:25}25%{stroke-dashoffset:0}65%{stroke-dashoffset:301}80%,100%{stroke-dashoffset:276}}
+@keyframes ws-circle-middle{0%{stroke-dashoffset:17}25%{stroke-dashoffset:0}65%{stroke-dashoffset:204}80%,100%{stroke-dashoffset:187}}
+@keyframes ws-circle-inner{0%{stroke-dashoffset:9}25%{stroke-dashoffset:0}65%{stroke-dashoffset:106}80%,100%{stroke-dashoffset:97}}
 
 .gen-stats-visible {
     font-size: 0.72rem;
