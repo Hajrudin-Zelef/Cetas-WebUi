@@ -707,7 +707,7 @@ function updateTokenDisplay() {
 function _rebindStreamToVisibleDOM(e) {
     if (!e) return;
     const t = addMessage("assistant", "");
-    if (t.classList.add("streaming"), e.assistantDiv = t, "text" === e.type) {
+    if (t.classList.add("streaming"), startLiveGenStats(t), e.assistantDiv = t, "text" === e.type) {
         if (e.sr = createStreamRenderer(t, (() => t.querySelector(".message-text")), e.accumulatedText), 
         e.accumulatedText) {
             const n = t.querySelector(".message-text");
@@ -1187,7 +1187,45 @@ function collapseThinkBlock(e) {
     }));
 }
 
+const _liveStatsMap = new WeakMap();
+
+function startLiveGenStats(el) {
+    if (!el) return;
+    const textEl = () => el.querySelector(".message-text");
+    const span = document.createElement("span");
+    span.className = "gen-stats-live";
+    el.appendChild(span);
+    const start = Date.now();
+    const tick = () => {
+        const secs = (Date.now() - start) / 1000;
+        const t = textEl();
+        const chars = t ? t.textContent.length : 0;
+        const tok = Math.ceil(chars / 4);
+        let txt = secs.toFixed(0) + "s";
+        if (tok > 0) {
+            txt += " · " + tok + " tok";
+            const rate = secs > 0 ? (tok / secs).toFixed(1) : "0";
+            txt += " · " + rate + " tok/s";
+        }
+        span.textContent = txt;
+    };
+    tick();
+    const timer = setInterval(tick, 500);
+    _liveStatsMap.set(el, { timer, span });
+}
+
+function stopLiveGenStats(el) {
+    if (!el) return;
+    const entry = _liveStatsMap.get(el);
+    if (entry) {
+        clearInterval(entry.timer);
+        entry.span && entry.span.remove();
+        _liveStatsMap.delete(el);
+    }
+}
+
 function endStreaming(e) {
+    stopLiveGenStats(e);
     window.Ocean?.setPaused && window.Ocean.setPaused(!1);
     const t = e.offsetWidth;
     e.classList.remove("streaming"), e.classList.add("streaming-done"), e.style.minWidth = t + "px", 
@@ -1572,7 +1610,15 @@ function addRegenBtn() {
     const n = document.createElement("button");
     n.className = "regen-btn", n.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>', 
     n.title = "Régénérer la réponse", n.addEventListener("click", regenerateLastResponse), 
-    t.appendChild(n), scrollToBottom();
+    t.appendChild(n);
+    const genTimeEl = e[e.length - 1].querySelector(".message-gen-time");
+    if (genTimeEl && genTimeEl.dataset.tooltip) {
+        const statsSpan = document.createElement("span");
+        statsSpan.className = "gen-stats-visible";
+        statsSpan.textContent = genTimeEl.dataset.tooltip;
+        t.appendChild(statsSpan);
+    }
+    scrollToBottom();
 }
 
 async function regenerateLastResponse() {
@@ -1602,6 +1648,7 @@ async function regenerateLastResponse() {
     });
     const o = addMessage("assistant", "");
     o.classList.add("streaming");
+    startLiveGenStats(o);
     const a = Date.now();
     if (STATE.currentImageModel && !getImageModelEditeur(STATE.currentImageModel) && (STATE.currentModel = STATE.currentImageModel, 
     STATE.currentImageModel = null), STATE.currentImageModel) {
@@ -1828,6 +1875,7 @@ function startEditMessage(e, t) {
         });
         const g = addMessage("assistant", "");
         g.classList.add("streaming");
+        startLiveGenStats(g);
         const h = Date.now();
         var v = STATE.currentModel || STATE.currentSearchModel, T = null, y = null, _routerIntent = null, _routerScore = null;
         if (v && 0 === v.indexOf("samagent-") && "function" == typeof routeModel) {
@@ -2153,6 +2201,7 @@ async function sendMessage() {
     STATE._activeStreams.set(n, a);
     const r = addMessage("assistant", "");
     r.classList.add("streaming");
+    startLiveGenStats(r);
     _showThinkingIndicator(r);
     const s = Date.now();
     STATE.currentImageModel && !getImageModelEditeur(STATE.currentImageModel) && (STATE.currentModel = STATE.currentImageModel, 

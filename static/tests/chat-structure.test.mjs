@@ -18,6 +18,13 @@ test('chat.js exports createChat factory', () => {
     assert.match(moduleSource, /export function createChat\s*\(/);
 });
 
+test('app.js active addRegenBtn renders .gen-stats-visible from the gen-time tooltip', () => {
+    const fn = appSource.match(/function addRegenBtn\(\)\s*\{[\s\S]*?\n\}/);
+    assert.ok(fn, 'addRegenBtn() not found in app.js');
+    assert.match(fn[0], /gen-stats-visible/);
+    assert.match(fn[0], /message-gen-time/);
+});
+
 test('createChat factory API includes required functions', async () => {
     const chatModule = await import('../js/features/chat.js');
     assert.equal(typeof chatModule.createChat, 'function');

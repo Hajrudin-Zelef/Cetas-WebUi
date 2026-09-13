@@ -79,6 +79,15 @@ body.dark .marex-plus-dropdown { box-shadow:0 8px 30px rgba(0,0,0,0.5); }
   font-family: monospace;
 }
 
+/* Stats live pendant le streaming */
+.gen-stats-live {
+  font-size: 11px;
+  color: var(--text-secondary, #8b949e);
+  padding: 2px 4px 0;
+  font-family: monospace;
+  opacity: 0.75;
+}
+
 /* Compteur contexte dans le panneau thinking */
 .ctx-counter {
   font-size: 12px;

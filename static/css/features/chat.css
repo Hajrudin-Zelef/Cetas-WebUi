@@ -2274,3 +2274,11 @@ body.ocean-theme .typing-avatar {
     white-space: nowrap;
     align-self: center;
 }
+
+.gen-stats-live {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted, #888);
+    margin-top: 4px;
+    opacity: 0.8;
+}
