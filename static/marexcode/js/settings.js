@@ -24,6 +24,46 @@ export function initSettingsFeatures() {
     _bindAPIKey();
     _bindMarexLink();
     _bindEngine();
+    _bindInterface();
+}
+
+const THEME_KEY = 'marex-theme';
+const ACCENT_KEY = 'marex-accent';
+const ACCENT_IDS = ['red', 'green', 'gold', 'blue', 'sky', 'violet', 'orange', 'gray'];
+
+export function applyThemePrefs() {
+    try {
+        const theme = localStorage.getItem(THEME_KEY) || 'dark';
+        document.body.classList.toggle('light', theme === 'light');
+        let accent = localStorage.getItem(ACCENT_KEY) || 'sky';
+        if (ACCENT_IDS.indexOf(accent) < 0) accent = 'sky';
+        document.body.setAttribute('data-accent', accent);
+    } catch (e) {}
+}
+
+function _bindInterface() {
+    const toggle = $('theme-light-toggle');
+    const palette = $('accent-palette');
+    if (!toggle && !palette) return;
+    applyThemePrefs();
+    if (toggle) {
+        toggle.checked = (localStorage.getItem(THEME_KEY) || 'dark') === 'light';
+        toggle.addEventListener('change', () => {
+            localStorage.setItem(THEME_KEY, toggle.checked ? 'light' : 'dark');
+            applyThemePrefs();
+        });
+    }
+    if (palette) {
+        const current = localStorage.getItem(ACCENT_KEY) || 'sky';
+        palette.querySelectorAll('.accent-swatch').forEach(sw => {
+            sw.classList.toggle('active', sw.dataset.accent === current);
+            sw.addEventListener('click', () => {
+                localStorage.setItem(ACCENT_KEY, sw.dataset.accent);
+                applyThemePrefs();
+                palette.querySelectorAll('.accent-swatch').forEach(o => o.classList.toggle('active', o === sw));
+            });
+        });
+    }
 }
 
 async function _bindPresets() {

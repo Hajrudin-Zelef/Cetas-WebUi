@@ -23,7 +23,7 @@ function esc(s) {
     return d.innerHTML;
 }
 
-function modelLabel(id) {
+export function getModelLabel(id) {
     const m = getCatalog().find(x => x.id === id);
     return m ? m.label : id;
 }
@@ -77,7 +77,7 @@ export function initModelSelect(menuEl, labelEl, onSelect) {
     if (target) {
         const item = menuEl.querySelector('.cdrop-item[data-model="' + CSS.escape(target) + '"]');
         if (item) item.classList.add('selected');
-        labelEl.textContent = modelLabel(target);
+        labelEl.textContent = getModelLabel(target);
         if (onSelect) onSelect(target);
     }
     return target;
@@ -88,7 +88,7 @@ export function selectModel(menuEl, labelEl, id, onSelect) {
     menuEl.querySelectorAll('.cdrop-item').forEach(o => o.classList.remove('selected'));
     if (item) {
         item.classList.add('selected');
-        labelEl.textContent = modelLabel(id);
+        labelEl.textContent = getModelLabel(id);
         localStorage.setItem('marex-last-model', id);
         if (onSelect) onSelect(id);
     }

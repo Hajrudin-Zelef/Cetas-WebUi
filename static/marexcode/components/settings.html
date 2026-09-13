@@ -30,6 +30,12 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Features
         </button>
+
+        <div class="settings-cat-label">Paramètre</div>
+        <button class="settings-nav-item" data-panel="interface">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="14.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="15.5" r="2.5"/><path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20z"/></svg>
+          Interface
+        </button>
       </div>
 
       <div class="settings-content">
@@ -112,6 +118,31 @@
             <div class="settings-row"><div class="settings-row-text"><h3>Etat du moteur</h3><p>llama-server local ou distant.</p></div><span class="settings-row-value" id="engine-status">—</span></div>
             <div class="settings-row"><div class="settings-row-text"><h3>Demarrer / Arreter</h3></div><div style="display:flex;gap:6px"><button class="settings-btn" id="btn-engine-start">Demarrer</button><button class="settings-btn danger" id="btn-engine-stop">Arreter</button></div></div>
             <div class="settings-row"><div class="settings-row-text"><h3>Logs</h3></div><button class="settings-btn" id="btn-engine-logs">Voir les logs</button></div>
+          </div>
+        </div>
+
+        <!-- INTERFACE -->
+        <div class="settings-panel" data-content="interface">
+          <h1 class="settings-page-title">Interface</h1>
+          <div class="settings-group-label">Theme</div>
+          <div class="settings-card">
+            <div class="settings-row"><div class="settings-row-text"><h3>Theme clair</h3><p>Fond clair, texte sombre. Desactive = theme sombre.</p></div><label class="settings-toggle"><input type="checkbox" id="theme-light-toggle"><span class="settings-toggle-slider"></span></label></div>
+          </div>
+          <div class="settings-group-label">Couleur d'accent</div>
+          <div class="settings-card">
+            <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:12px;">
+              <div class="settings-row-text"><h3>Palette</h3><p>Boutons, liens actifs, elements actifs de la sidebar, badges du raisonnement.</p></div>
+              <div class="accent-palette" id="accent-palette">
+                <button class="accent-swatch" data-accent="red" title="Rouge"></button>
+                <button class="accent-swatch" data-accent="green" title="Vert clair"></button>
+                <button class="accent-swatch" data-accent="gold" title="Jaune or"></button>
+                <button class="accent-swatch" data-accent="blue" title="Bleu"></button>
+                <button class="accent-swatch" data-accent="sky" title="Bleu ciel"></button>
+                <button class="accent-swatch" data-accent="violet" title="Violet"></button>
+                <button class="accent-swatch" data-accent="orange" title="Orange"></button>
+                <button class="accent-swatch" data-accent="gray" title="Gris"></button>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -21,6 +21,16 @@
           Retour à Cetas
         </button>
 
+        <div class="sb-group-label">Metriques</div>
+        <div id="sb-metrics" class="sb-metrics">
+          <div class="sb-metric-line" id="metric-cpu"><span class="sb-metric-dot" id="metric-cpu-dot"></span><span class="sb-metric-label">CPU :</span><span class="sb-metric-value" id="metric-cpu-val">—</span></div>
+          <div class="sb-metric-line" id="metric-ram"><span class="sb-metric-dot" id="metric-ram-dot"></span><span class="sb-metric-label">RAM :</span><span class="sb-metric-value" id="metric-ram-val">—</span></div>
+          <div class="sb-metric-line" id="metric-disk"><span class="sb-metric-dot" id="metric-disk-dot"></span><span class="sb-metric-label">Disk :</span><span class="sb-metric-value" id="metric-disk-val">—</span></div>
+          <div class="sb-metric-line" id="metric-net"><span class="sb-metric-dot" id="metric-net-dot"></span><span class="sb-metric-label">Réseau :</span><span class="sb-metric-value" id="metric-net-val">—</span></div>
+          <div id="metric-vram-list"></div>
+        </div>
+        <div class="sb-divider"></div>
+
         <button class="new-session-btn" id="new-session-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           Nouvelle conversation
@@ -66,15 +76,6 @@
         <div class="sb-collapsible" id="panel-history">
           <div class="sb-tree-empty" id="sessions-empty">Aucune discussion.</div>
           <div id="sessions-list"></div>
-        </div>
-
-        <div class="sb-divider"></div>
-        <div class="sb-group-label">Metriques</div>
-        <div id="sb-metrics" class="sb-metrics">
-          <div class="sb-metric-row" id="metric-cpu"><span class="sb-metric-label">CPU</span><div class="sb-metric-bar"><div class="sb-metric-fill" id="metric-cpu-fill" style="width:0%"></div></div><span class="sb-metric-value" id="metric-cpu-val">—</span></div>
-          <div class="sb-metric-row" id="metric-ram"><span class="sb-metric-label">RAM</span><div class="sb-metric-bar"><div class="sb-metric-fill" id="metric-ram-fill" style="width:0%"></div></div><span class="sb-metric-value" id="metric-ram-val">—</span></div>
-          <div class="sb-metric-row" id="metric-disk"><span class="sb-metric-label">Disk</span><div class="sb-metric-bar"><div class="sb-metric-fill" id="metric-disk-fill" style="width:0%"></div></div><span class="sb-metric-value" id="metric-disk-val">—</span></div>
-          <div id="metric-vram-list"></div>
         </div>
 
       </div>

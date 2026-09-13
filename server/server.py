@@ -3396,7 +3396,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         if not username:
             return
         import subprocess
-        metrics = {"vram": [], "ram": {"used": 0, "total": 0}, "disk": {"used": 0, "total": 0}, "cpu": 0}
+        metrics = {"vram": [], "ram": {"used": 0, "total": 0}, "disk": {"used": 0, "total": 0}, "cpu": 0, "net": {"rx": 0, "tx": 0}}
 
         try:
             out = subprocess.check_output([
@@ -3428,6 +3428,21 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
             st = os.statvfs("/")
             metrics["disk"]["total"] = (st.f_blocks * st.f_frsize) // (1024 * 1024)
             metrics["disk"]["used"] = metrics["disk"]["total"] - (st.f_bavail * st.f_frsize) // (1024 * 1024)
+        except Exception:
+            pass
+
+        try:
+            with open("/proc/net/dev", "r") as f:
+                for line in f:
+                    if ":" not in line:
+                        continue
+                    iface, data = line.split(":", 1)
+                    if iface.strip() == "lo":
+                        continue
+                    parts = data.split()
+                    if len(parts) >= 9:
+                        metrics["net"]["rx"] += int(parts[0])
+                        metrics["net"]["tx"] += int(parts[8])
         except Exception:
             pass
 

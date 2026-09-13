@@ -16,6 +16,7 @@ import { createTextShimmer } from './text-shimmer.js';
 import { createTextReveal } from './text-reveal.js';
 import { translateReasoning as translateReasoningText } from './reasoning-translate.js';
 import { getModelContextWindow, formatCtxTokens } from '../../js/data/model-contexts.js';
+import { getModelLabel, getCatalog } from './model-select.js';
 
 var _ctxUsed = 0;
 var _ctxMax = 32768;
@@ -887,6 +888,7 @@ export function createChat(deps) {
         pendingMd = document.createElement('div');
         pendingMd.className = 'md';
         pendingEl.appendChild(pendingMd);
+        startLiveTurnStats(pendingEl);
         ensureStatusLine();
         updateStatus('Generating…');
 
@@ -907,8 +909,9 @@ export function createChat(deps) {
                 pendingEl = null;
                 pendingMd = null;
             }
+            stopLiveTurnStats();
             if (stats && stats.elapsedMs) {
-                showTurnStats(stats, rawAcc);
+                showTurnStats(stats, rawAcc, usage);
             }
             if (onSave) onSave(session);
             // Process queue
@@ -1189,7 +1192,52 @@ export function createChat(deps) {
         });
     }
 
-    function showTurnStats(stats, content) {
+    let _liveStatsTimer = null;
+    let _liveStatsEl = null;
+
+    function startLiveTurnStats(el) {
+        stopLiveTurnStats();
+        if (!el) return;
+        const span = document.createElement('div');
+        span.className = 'gen-stats-live';
+        el.appendChild(span);
+        _liveStatsEl = span;
+        const ctxEl = _ensureCtxPanel();
+        const modelLine = ctxEl.querySelector('.ctx-live-model');
+        const timeLine = ctxEl.querySelector('.ctx-live-time');
+        const tokensLine = ctxEl.querySelector('.ctx-live-tokens');
+        if (modelLine) {
+            modelLine.textContent = 'Modèle : ';
+            const nameEl = document.createElement('span');
+            nameEl.className = 'ctx-live-model-name';
+            nameEl.textContent = getModelLabel(session && session.model) || '';
+            modelLine.appendChild(nameEl);
+        }
+        const start = Date.now();
+        const tick = () => {
+            const secs = (Date.now() - start) / 1000;
+            const chars = (rawAcc || '').length;
+            const tok = Math.ceil(chars / 4);
+            let txt = secs.toFixed(0) + 's';
+            if (tok > 0) {
+                txt += ' · ' + tok + ' tok';
+                const rate = secs > 0 ? (tok / secs).toFixed(1) : '0';
+                txt += ' · ' + rate + ' tok/s';
+            }
+            span.textContent = txt;
+            if (timeLine) timeLine.textContent = 'Temps de génération : ' + secs.toFixed(0) + 's';
+            if (tokensLine) tokensLine.textContent = 'Output - t/s : ' + tok + ' tok' + (secs > 0 ? ' (' + (tok / secs).toFixed(0) + '/s)' : '');
+        };
+        tick();
+        _liveStatsTimer = setInterval(tick, 500);
+    }
+
+    function stopLiveTurnStats() {
+        if (_liveStatsTimer) { clearInterval(_liveStatsTimer); _liveStatsTimer = null; }
+        if (_liveStatsEl) { _liveStatsEl.remove(); _liveStatsEl = null; }
+    }
+
+    function showTurnStats(stats, content, usage) {
         const el = document.createElement('div');
         el.className = 'chat-turn-stats';
         const secs = (stats.elapsedMs / 1000).toFixed(1);
@@ -1204,11 +1252,17 @@ export function createChat(deps) {
         el.textContent = txt;
         chatLog.appendChild(el);
         autoScroll.onContentChange();
+        updateCtxTurnUsage(usage);
         updateCtxCounter(estTokens);
     }
 
-    function updateCtxCounter(newTokens) {
-        _ctxUsed += newTokens;
+    function _ctxUsageHtml() {
+        var pct = _ctxMax > 0 ? Math.min(100, Math.round(_ctxUsed * 100 / _ctxMax)) : 0;
+        var color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#eab308' : '#22c55e';
+        return 'Contexte : <span style="color:' + color + '">' + formatCtxTokens(_ctxUsed) + ' / ' + formatCtxTokens(_ctxMax) + '</span> · ' + pct + '% utilisé';
+    }
+
+    function _ensureCtxPanel() {
         var ctxEl = document.getElementById('ctx-counter');
         if (!ctxEl) {
             ctxEl = document.createElement('div');
@@ -1216,13 +1270,47 @@ export function createChat(deps) {
             ctxEl.className = 'ctx-counter';
             if (sidePanelBody) sidePanelBody.insertBefore(ctxEl, sidePanelBody.firstChild);
         }
-        var model = session && session.model;
-        if (typeof getModelContextWindow === 'function') {
-            _ctxMax = getModelContextWindow(model);
+        if (!ctxEl.querySelector('.ctx-live-usage')) {
+            var model = session && session.model;
+            if (typeof getModelContextWindow === 'function') _ctxMax = getModelContextWindow(model);
+            ctxEl.innerHTML =
+                '<div class="ctx-live-model">Modèle : <span class="ctx-live-model-name"></span></div>' +
+                '<div class="ctx-live-time">Temps de génération : 0s</div>' +
+                '<div class="ctx-live-input">Input : —</div>' +
+                '<div class="ctx-live-tokens">Output - t/s : 0 tok</div>' +
+                '<div class="ctx-live-usage">' + _ctxUsageHtml() + '</div>' +
+                '<div class="ctx-live-cost">Coût : —</div>';
+            var nameEl = ctxEl.querySelector('.ctx-live-model-name');
+            if (nameEl) nameEl.textContent = getModelLabel(model) || '';
         }
-        var pct = Math.min(100, Math.round(_ctxUsed * 100 / _ctxMax));
-        var color = pct >= 90 ? '#ef4444' : pct >= 70 ? '#eab308' : '#22c55e';
-        ctxEl.innerHTML = '<span style="color:' + color + '">' + formatCtxTokens(_ctxUsed) + ' / ' + formatCtxTokens(_ctxMax) + '</span>';
+        return ctxEl;
+    }
+
+    function formatTurnCost(model, inTok, outTok) {
+        var m = null;
+        try { m = getCatalog().find(function(x) { return x.id === model; }) || null; } catch (e) { m = null; }
+        if (!m || (!m.inputPer1M && !m.outputPer1M)) return 'n/a';
+        var cost = ((inTok || 0) / 1e6) * (m.inputPer1M || 0) + ((outTok || 0) / 1e6) * (m.outputPer1M || 0);
+        return '$' + cost.toFixed(4);
+    }
+
+    function updateCtxTurnUsage(usage) {
+        var ctxEl = _ensureCtxPanel();
+        var inTok = usage ? (usage.input_tokens != null ? usage.input_tokens : usage.prompt_tokens) : null;
+        var outTok = usage ? (usage.output_tokens != null ? usage.output_tokens : usage.completion_tokens) : null;
+        var inputEl = ctxEl.querySelector('.ctx-live-input');
+        var costEl = ctxEl.querySelector('.ctx-live-cost');
+        if (inputEl) inputEl.textContent = 'Input : ' + (inTok != null ? Number(inTok).toLocaleString('fr') + ' tok' : '—');
+        if (costEl) costEl.textContent = 'Coût : ' + formatTurnCost(session && session.model, inTok, outTok);
+    }
+
+    function updateCtxCounter(newTokens) {
+        _ctxUsed += newTokens;
+        var ctxEl = _ensureCtxPanel();
+        var model = session && session.model;
+        if (typeof getModelContextWindow === 'function') _ctxMax = getModelContextWindow(model);
+        ctxEl.querySelector('.ctx-live-usage').innerHTML = _ctxUsageHtml();
+        var pct = _ctxMax > 0 ? Math.min(100, Math.round(_ctxUsed * 100 / _ctxMax)) : 0;
         ctxEl.title = _ctxUsed.toLocaleString('fr') + ' / ' + _ctxMax.toLocaleString('fr') + ' tokens (' + pct + '%)';
     }
 
