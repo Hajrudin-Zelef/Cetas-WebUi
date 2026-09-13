@@ -9,7 +9,7 @@ if (typeof window !== 'undefined' && typeof window._streamIdleTimeoutMs !== 'num
     window._streamIdleTimeoutMs = 300000;
 }
 
-import { listSkillsConfig, getGlobalInstructions, getWorkspaceInstructions } from './api.js';
+import { getGlobalInstructions, getWorkspaceInstructions } from './api.js';
 import { createMarkdownRenderer } from './markdown.js';
 import { createAutoScroll } from './auto-scroll.js';
 import { createTextShimmer } from './text-shimmer.js';
@@ -858,22 +858,7 @@ export function createChat(deps) {
         const layer3_date = '\n\nCurrent date: ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
 
-        let skillsPrompt = '';
-        try {
-            const skillsConfig = await listSkillsConfig();
-            if (skillsConfig && skillsConfig.length) {
-                const autoSkills = skillsConfig.filter(s => s.enabled && s.mode === 'auto');
-                const manualSkills = skillsConfig.filter(s => s.enabled && s.mode === 'manual');
-                if (autoSkills.length) {
-                    skillsPrompt += '\n\nSKILLS DISPONIBLES (utilise automatiquement) :\n' +
-                        autoSkills.map(s => '- ' + s.id + ': ' + s.description).join('\n');
-                }
-                if (manualSkills.length) {
-                    skillsPrompt += '\n\nSKILLS SUR DEMANDE :\n' +
-                        manualSkills.map(s => '- ' + s.id + ': ' + s.description).join('\n');
-                }
-            }
-        } catch (e) { }
+        let skillsPrompt = ''; // skills déconnectés de Marexcode (économie tokens) — plus d'appel listSkillsConfig()
 
         let instructionsBlock = '';
         if (cachedInstructions.global) {
