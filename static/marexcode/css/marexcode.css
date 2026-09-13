@@ -1437,3 +1437,5 @@ html,body{
 .text-reveal{ display:inline-block; transition:opacity .18s ease, transform .18s ease; }
 .text-reveal.is-swapping{ opacity:0; transform:translateY(-4px); }
 @media (prefers-reduced-motion: reduce){ .text-shimmer{ animation:none; color:inherit; -webkit-text-fill-color:currentColor; background-image:none; } .text-reveal{ transition:none; } }
+
+.agent-toggle-btn.active{color:#f5c518;filter:drop-shadow(0 0 4px rgba(245,197,24,.6));}

@@ -857,6 +857,7 @@ export function createChat(deps) {
 
         const layer3_date = '\n\nCurrent date: ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '.';
         const skill = getSystemPrompt ? getSystemPrompt() : '';
+        const agentMode = localStorage.getItem('marex-agent-mode') === '1';
 
         let skillsPrompt = ''; // skills déconnectés de Marexcode (économie tokens) — plus d'appel listSkillsConfig()
 
@@ -874,7 +875,7 @@ export function createChat(deps) {
             outputInstruction = '\n\nOUTPUT MODE: COMPRESSED. One sentence max.';
         }
 
-        const sys = (skill ? skill + '\n\n' : '') + layer1_identity + '\n\n' + layer2_rules + layer3_date + instructionsBlock + skillsPrompt + outputInstruction;
+        const sys = (skill ? skill + '\n\n' : '') + layer1_identity + (agentMode ? ('\n\n' + layer2_rules) : '') + layer3_date + instructionsBlock + skillsPrompt + outputInstruction;
         const customSys = (typeof window._marexCustomSysPrompt === 'string' && window._marexCustomSysPrompt) ? '\n\nUSER CUSTOM INSTRUCTIONS:\n' + window._marexCustomSysPrompt : '';
         const history = [{ role: 'system', content: sys + customSys }].concat(session.messages);
         pendingEl = null; pendingMd = null; thinkBadgeEl = null; thinkBlockEl = null; thinkStepEl = null; thinkText = ''; rawAcc = '';
@@ -939,7 +940,7 @@ export function createChat(deps) {
             try { webSearchEnabled = localStorage.getItem('marex-web-search') !== '0'; } catch (e) {}
             if (typeof marexInjectWebSearch === 'function') marexInjectWebSearch(model, webSearchEnabled);
 
-            var allTools = MAREX_TOOLS.concat(typeof MEM_TOOLS !== 'undefined' ? MEM_TOOLS : []);
+            var allTools = agentMode ? MAREX_TOOLS.concat(typeof MEM_TOOLS !== 'undefined' ? MEM_TOOLS : []) : [];
 
             var memMode = 'always';
             try { memMode = localStorage.getItem('marex-mem-mode') || 'always'; } catch (e) {}

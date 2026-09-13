@@ -1291,6 +1291,21 @@ function boot() {
         window._marexCustomSysPrompt = prompt;
     };
 
+    const agentToggleBtn = document.getElementById('agent-toggle-btn');
+    if (agentToggleBtn) {
+        const syncAgentBtn = () => {
+            const on = localStorage.getItem('marex-agent-mode') === '1';
+            agentToggleBtn.classList.toggle('active', on);
+            agentToggleBtn.title = on ? 'Mode Agent (outils de code) — activé' : 'Mode Agent (outils de code) — désactivé';
+        };
+        agentToggleBtn.addEventListener('click', () => {
+            const on = localStorage.getItem('marex-agent-mode') === '1';
+            localStorage.setItem('marex-agent-mode', on ? '0' : '1');
+            syncAgentBtn();
+        });
+        syncAgentBtn();
+    }
+
     const webGlobe = document.getElementById('web-globe-btn');
     if (webGlobe) {
         webGlobe.addEventListener('click', () => {
