@@ -2266,3 +2266,11 @@ body.ocean-theme .typing-avatar {
 .web-search-indicator span{font-weight:500}
 @keyframes web-search-pulse{0%,100%{opacity:1}50%{opacity:.7}}
 @keyframes web-search-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+.gen-stats-visible {
+    font-size: 0.72rem;
+    color: var(--text-muted, #888);
+    margin-left: 6px;
+    white-space: nowrap;
+    align-self: center;
+}

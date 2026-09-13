@@ -349,7 +349,15 @@ export function createChat(deps) {
         const n = document.createElement("button");
         n.className = "regen-btn", n.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
         n.title = "Régénérer la réponse", n.addEventListener("click", regenerateLastResponse),
-        t.appendChild(n), scrollToBottom();
+        t.appendChild(n);
+        const genTimeEl = e[e.length - 1].querySelector(".message-gen-time");
+        if (genTimeEl && genTimeEl.dataset.tooltip) {
+            const statsSpan = document.createElement("span");
+            statsSpan.className = "gen-stats-visible";
+            statsSpan.textContent = genTimeEl.dataset.tooltip;
+            t.appendChild(statsSpan);
+        }
+        scrollToBottom();
     }
 
     function _samAgentMakeClickable(e) {
