@@ -122,6 +122,9 @@ RUN cat /usr/share/nginx/html/static/css/base/variables.css \
     | cleancss -o /usr/share/nginx/html/static/css/style.css
 RUN cleancss /usr/share/nginx/html/static/css/ocean.css -o /usr/share/nginx/html/static/css/ocean.css
 
+# Précompression gzip (servie telle quelle par nginx via gzip_static)
+RUN cd /usr/share/nginx/html/static && find . -type f \( -name '*.js' -o -name '*.css' -o -name '*.svg' -o -name '*.html' \) -size +1k ! -name '*.gz' | while read -r f; do gzip -9 -c "$f" > "$f.gz"; done
+
 # Supprimer node_modules (plus nécessaire après minification)
 RUN npm uninstall -g terser clean-css-cli && rm -rf /root/.npm
 

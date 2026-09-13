@@ -46,7 +46,6 @@ deploy.py
 deploy.spec
 index.md
 installer.iss
-nginx.conf
 vision-agent.py
 
 # Temporary files

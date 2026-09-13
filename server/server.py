@@ -18,6 +18,7 @@ import logging
 import importlib.util
 import datetime
 import time
+import time
 import uuid
 import threading
 import subprocess
@@ -946,8 +947,10 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
     else:
         conn = http.client.HTTPConnection(host, port, timeout=300)
     try:
+        t_upstream = time.time()
         conn.request(method, url_path, body=body, headers=headers)
         response = conn.getresponse()
+        upstream_headers_ms = int((time.time() - t_upstream) * 1000)
 
         # Forward response headers (sauf ceux gérés par nginx/http)
         resp_headers = {}
@@ -955,6 +958,7 @@ def _build_upstream(method: str, provider: str, path: str, body: bytes, content_
             hl = h.lower()
             if hl not in ("transfer-encoding", "content-encoding", "content-length", "connection", "date", "server"):
                 resp_headers[h] = v
+        resp_headers["X-Cetas-Upstream-Ms"] = str(upstream_headers_ms)
 
         return response.status, resp_headers, response, conn
     except Exception:
@@ -2146,6 +2150,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
         username = self._get_authenticated_user()
         if not username:
             return
+        t_request = time.time()
         # Parse /api/proxy/{provider}/...
         path_parts = self.path[len("/api/proxy/"):]
         if "/" not in path_parts:
@@ -2232,7 +2237,7 @@ class ProxyHandler(MarexcodeMixin, BaseHTTPRequestHandler):
                 except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
                     break
 
-            log.info("%s /api/proxy/%s/... -> %d", method, provider, status)
+            log.info("%s /api/proxy/%s/... -> %d (%.0fms)", method, provider, status, (time.time() - t_request) * 1000)
         finally:
             try:
                 response.close()
